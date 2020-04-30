@@ -2341,7 +2341,7 @@ object PcmdCallHeavyEquipmentSquad : CommandScript
 		for (int i = 0; i < patrolCars.GetNumVehicles(); i++)
 		{
 			Vehicle *aCar = patrolCars.GetVehicle(i);
-			if (StrCompare(aCar->GetPrototypeFileName(), OBJ_HES) == 0 && aCar->GetPlayerMP() == Caller->GetPlayerMP() && !aCar->HasCommand(DUMMY_VCALLED) && (aCar->HasCommand(CMD_STANDBY_OFF) || aCar->IsCollidingWithVirtualObject(VO_SQUAD01)))
+			if (StrCompare(aCar->GetPrototypeFileName(), OBJ_HES) == 0 && aCar->GetPlayerMP() == Caller->GetPlayerMP() && !aCar->HasCommand(DUMMY_VCALLED) && (aCar->HasCommand(CMD_STANDBY_OFF) || aCar->IsCollidingWithVirtualObject(VO_SQUAD02)))
 			{
 				float distCurrCar = Math::dist(CmdPos.x, CmdPos.y, aCar->GetPosition().x, aCar->GetPosition().y);
 				if (distCurrCar < bestCar || bestCar == 0.)
@@ -2482,12 +2482,12 @@ object PcmdCallHeavyEquipmentSquad : CommandScript
 		}
 		System::Log("Buy Heavy equipment squad");
 		int Money = Mission::GetMoneyLeft();
-		if (Money <= 1200)
+		if (Money <= 1500)
 		{
 			Mission::PlayHint(HINT_NOHES);
 			return;
 		}
-		int NewMoney = Money - 1200;
+		int NewMoney = Money - 1500;
 		Mission::SetMoney(NewMoney);
 		Vehicle n;
 		Person p1;
