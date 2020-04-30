@@ -1,17 +1,17 @@
 //******************************************************************************************
-// #Version 2.7#										
-//												
-// 		Includes: All Sirens Commands								
-//												
-//	- VcmdSiren										
-//	- DummyUpdatePos									
-//	- DummyDisableSiren									
-//	- DummyFindPath									
-//	- DummyHasSiren									
-//												
-// 		Script by Bass-Ti	
-//		Modified by Hoppah																		
-//												
+// #Version 2.7#
+//
+// 		Includes: All Sirens Commands
+//
+//	- VcmdSiren
+//	- DummyUpdatePos
+//	- DummyDisableSiren
+//	- DummyFindPath
+//	- DummyHasSiren
+//
+// 		Script by Bass-Ti
+//		Modified by Hoppah
+//
 //******************************************************************************************
 
 const char CMD_AUTOSIREN_OFF[]		= "VcmdAutoSirenOff";
@@ -41,6 +41,7 @@ const char PROTO_USFS01[] = "mod:Prototypes/Vehicles/02 LA Fire Department/usfs_
 const char PROTO_USFS02[] = "mod:Prototypes/Vehicles/02 LA Fire Department/usfs_engine.e4p";
 const char PROTO_EMS[] = "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems.e4p";
 const char PROTO_EMS2[] = "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems2.e4p";
+const char PROTO_EMS3[] = "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems3.e4p";
 const char PROTO_AMBULANCE01[] = "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance01.e4p";
 const char PROTO_AMBULANCE02[] = "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance02.e4p";
 const char PROTO_AMBULANCE03[] = "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance03.e4p";
@@ -55,6 +56,7 @@ const char PROTO_CV_LAPD_ST[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapd_sl
 const char PROTO_CV_LAAP[] = "mod:Prototypes/Vehicles/03 LA Police/cv_laap.e4p";
 const char PROTO_CV_LAPP[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapp.e4p";
 const char PROTO_CV_UMPC[] = "mod:Prototypes/Vehicles/03 LA Police/cv_umpc.e4p";
+const char PROTO_CV_UMPC3[] = "mod:Prototypes/Vehicles/03 LA Police/cv_umpc3.e4p";
 const char PROTO_CV_CHP[] = "mod:Prototypes/Vehicles/03 LA Police/cv_chp.e4p";
 const char PROTO_CV_CHP2[] = "mod:Prototypes/Vehicles/03 LA Police/cv_chp2.e4p";
 const char PROTO_CV_LASD[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lasd.e4p";
@@ -97,7 +99,7 @@ object VcmdSiren : CommandScript
 			SetIcon("sirenson");
 
 		if(Caller->HasCommand(DUMMY_HOSESON))
-			return false;	
+			return false;
 
 		return true;
 	}
@@ -152,6 +154,7 @@ object VcmdSiren : CommandScript
  			StrCompare(v.GetPrototypeFileName(), PROTO_USFS01) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_EMS) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_EMS2) == 0 ||
+			StrCompare(v.GetPrototypeFileName(), PROTO_EMS3) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_AMBULANCE01) == 0 ||
   			StrCompare(v.GetPrototypeFileName(), PROTO_AMBULANCE02) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_AMBULANCE03) == 0 ||
@@ -175,7 +178,8 @@ object VcmdSiren : CommandScript
 			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD_K9) == 0 ||
 			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAAP) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPP) == 0 ||
-  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_UMPC) == 0 ||
+  		StrCompare(v.GetPrototypeFileName(), PROTO_CV_UMPC) == 0 ||
+			StrCompare(v.GetPrototypeFileName(), PROTO_CV_UMPC3) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_CHP) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_CHP2) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LASD) == 0 ||
