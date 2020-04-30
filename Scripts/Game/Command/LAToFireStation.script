@@ -6,7 +6,7 @@
 //	- VcmdToFireStation
 //
 //		Script by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -43,7 +43,7 @@ const char OBJ_ENGINE02[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fir
 const char OBJ_USAR[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/usar_squad.e4p";
 const char OBJ_LADDER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/aerial_ladder.e4p";
 const char OBJ_TILLER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
-const char OBJ_BATTALION[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/battalion_chief_vehicle.e4p";
+const char OBJ_EMSCHIEF[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems2.e4p";
 const char OBJ_HAZMATSQUAD[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_equipment_squad.e4p";
 const char OBJ_AMBULANCE01[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance01.e4p";
 const char OBJ_AMBULANCE02[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance02.e4p";
@@ -79,6 +79,8 @@ const char VO_ENGINE04[]			= "fs_engine04";
 const char VO_ENGINE05[]			= "fs_engine05";
 const char VO_BATTALION[]			= "fs_battalion";
 const char VO_BATTALION2[]			= "fs_battalion2";
+const char VO_EMSCAPTAIN[]			= "fs_emsCaptain";
+const char VO_EMSCAPTAIN2[]			= "fs_emsCaptain2";
 const char VO_USAR[]				= "fs_usar";
 const char VO_LADDER[]				= "fs_ladder";
 const char VO_HAZMAT[]				= "fs_hazmat";
@@ -115,23 +117,23 @@ object VcmdToFireStation : CommandScript
 			return false;
 
  		Vehicle v(Caller);
-		if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02) || v.IsCollidingWithVirtualObject(VO_BATTALION) || (v.HasCommand(DUMMY_ISTRAILED) && !v.HasCommand(CMD_GETTILLER)) || v.HasCommand(DUMMY_HOSESON) || v.IsInstalled())
+		if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02) || v.IsCollidingWithVirtualObject(VO_EMSCAPTAIN) || v.IsCollidingWithVirtualObject(VO_BATTALION) || (v.HasCommand(DUMMY_ISTRAILED) && !v.HasCommand(CMD_GETTILLER)) || v.HasCommand(DUMMY_HOSESON) || v.IsInstalled())
 			return false;
-			
+
 		if (!v.HasCommand("MoveTo"))
 			return false;
-			
+
 		if (v.HasCommand(CMD_FLOODLIGHTS_OFF) && (StrCompare(v.GetPrototypeFileName(), OBJ_HAZMATSQUAD) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0))
 			return false;
 
 		return true;
 	}
-	
+
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
 			return false;
-			
+
 		return true;
 	}
 
@@ -184,6 +186,21 @@ object VcmdToFireStation : CommandScript
 			{
 				ActorList l1 = Game::GetActors(VO_BATTALION2);
 				ActorList l2 = Game::GetActors(VO_BATTALION);
+			}
+		}
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		{
+			GameObjectList l4;
+			Game::CollectObstaclesOnVirtualObject(VO_EMSCAPTAIN, l4, ACTOR_VEHICLE);
+			if(l4.GetNumObjects() > 0)
+			{
+				Mission::PlayHint(HINT_NOSPACE);
+				v.PushActionReturnToBase(ACTION_NEWLIST);
+				return;
+			} else
+			{
+				ActorList l1 = Game::GetActors(VO_EMSCAPTAIN2);
+				ActorList l2 = Game::GetActors(VO_EMSCAPTAIN);
 			}
 		}
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0)
@@ -244,7 +261,7 @@ object VcmdToFireStation : CommandScript
  			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE02, l5, ACTOR_VEHICLE);
 			if(l5.GetNumObjects() == 0 && !Possible)
 				Possible = true;
-			
+
 			GameObjectList l6;
  			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE03, l6, ACTOR_VEHICLE);
 			if(l6.GetNumObjects() == 0 && !Possible)
@@ -283,10 +300,10 @@ object VcmdToFireStation : CommandScript
 		}
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
  		{
-			GameObjectList cpl1 = Game::GetGameObjects(NAME_CONTROLPANEL);  
+			GameObjectList cpl1 = Game::GetGameObjects(NAME_CONTROLPANEL);
 			if(cpl1.GetNumObjects() > 0)
 				GameObject cp1 = cpl1.GetObject(0);
-			GameObjectList cpl2 = Game::GetGameObjects(NAME_CONTROLPANEL2);  
+			GameObjectList cpl2 = Game::GetGameObjects(NAME_CONTROLPANEL2);
 			if(cpl2.GetNumObjects() > 0)
 				GameObject cp2 = cpl2.GetObject(0);
 			bool FS1Closer = false;
@@ -392,10 +409,10 @@ object DummyCheckParked : CommandScript
 	{
 		bool ParkinglotFound = false;
 		Vector Pos = Caller->GetPosition();
-		GameObjectList cpl1 = Game::GetGameObjects(NAME_CONTROLPANEL);  
+		GameObjectList cpl1 = Game::GetGameObjects(NAME_CONTROLPANEL);
 		if(cpl1.GetNumObjects() > 0)
 			GameObject cp1 = cpl1.GetObject(0);
-		GameObjectList cpl2 = Game::GetGameObjects(NAME_CONTROLPANEL2);  
+		GameObjectList cpl2 = Game::GetGameObjects(NAME_CONTROLPANEL2);
 		if(cpl2.GetNumObjects() > 0)
 			GameObject cp2 = cpl2.GetObject(0);
 		bool FS1Closer = false;
@@ -420,6 +437,22 @@ object DummyCheckParked : CommandScript
 				ParkinglotFound = true;
 				ActorList l1 = Game::GetActors(VO_BATTALION);
 				ActorList l2 = Game::GetActors(VO_BATTALION2);
+			}
+		}
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		{
+			GameObjectList l3;
+			Game::CollectObstaclesOnVirtualObject(VO_EMSCAPTAIN, l3, ACTOR_VEHICLE);
+			if(l3.GetNumObjects() > 0)
+			{
+				Mission::PlayHint(HINT_NOSPACE);
+				v.PushActionReturnToBase(ACTION_NEWLIST);
+				return;
+			} else
+			{
+				ParkinglotFound = true;
+				ActorList l1 = Game::GetActors(VO_EMSCAPTAIN);
+				ActorList l2 = Game::GetActors(VO_EMSCAPTAIN2);
 			}
 		}
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE02) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE03) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE04) == 0)
@@ -463,7 +496,7 @@ object DummyCheckParked : CommandScript
 				ActorList l3 = Game::GetActors(VO_AMBULANCE01);
 				if(l3.GetNumActors() > 0)
 					Vector Forward = l3.GetActor(0)->GetPosition();
-		
+
 				GameObjectList l4;
 				Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE03, l4, ACTOR_VEHICLE);
 				for (int i = 0; i < l4.GetNumObjects(); i++)
@@ -495,7 +528,7 @@ object DummyCheckParked : CommandScript
 					Vehicle m = l5.GetObject(i);
 					m.PushActionMove(ACTION_NEWLIST, Forward);
 				}
-			
+
 				GameObjectList l6;
 				Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE03, l6, ACTOR_VEHICLE);
 				for (int i = 0; i < l6.GetNumObjects(); i++)
@@ -688,13 +721,18 @@ object DummyCheckParked : CommandScript
 				v.PushActionMove(ACTION_APPEND, Park);
 				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
 			} else
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+			{
+				v.PushActionMove(ACTION_APPEND, Park);
+				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
+			} else
 			{
 				if(FS1Closer)
 					v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 7, false);
 				else
 					v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 8, false);
 				v.PushActionWait(ACTION_APPEND, 1.8f);
-			
+
 				v.PushActionMove(ACTION_APPEND, Park);
 				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
 				v.PushActionWait(ACTION_APPEND, 0.5f);
@@ -734,6 +772,8 @@ object DummyAtFireStation : CommandScript
 		Vehicle v(Caller);
 		if(StrCompare(v.GetPrototypeFileName(), OBJ_BATTALION) == 0)
 			ActorList l1 = Game::GetActors(VO_SPAWN02);
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
 		else if(v.IsCollidingWithVirtualObject(VO_SQUAD01))
 			ActorList l1 = Game::GetActors(VO_SPAWN01);
 		else if(v.IsCollidingWithVirtualObject(VO_SQUAD02))
