@@ -1,4 +1,9 @@
 //******************************************************************************************
+//
+// DJ Additions:
+// - VcmdCallBatChief
+//
+//
 // #Version 1.5#
 //
 // 		Includes: All command for the fire station.
@@ -25,7 +30,7 @@
 //	- VcmdRepairVehicles
 //
 //		Script by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -535,13 +540,13 @@ object VcmdRoof : CommandScript
 				GameObject *obj = l1.GetObject(i);
 				if(obj->GetUserData() == 0)
 				{
-					obj->Hide(); 
+					obj->Hide();
 					obj->SetUserData(1);
 				} else
 				{
-					obj->Show(); 
+					obj->Show();
 					obj->SetUserData(0);
-				} 
+				}
 			}
 		}
 		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
@@ -552,13 +557,13 @@ object VcmdRoof : CommandScript
 				GameObject *obj = l1.GetObject(i);
 				if(obj->GetUserData() == 0)
 				{
-					obj->Hide(); 
+					obj->Hide();
 					obj->SetUserData(1);
 				} else
 				{
-					obj->Show(); 
+					obj->Show();
 					obj->SetUserData(0);
-				} 
+				}
 			}
 		}
 	}
@@ -644,6 +649,66 @@ object VcmdGarageDoorsDown : CommandScript
 	}
 };
 
+object VcmdCallBatChief : CommandScript
+{
+	VcmdCallBatChief()
+	{
+		SetCursor("alarm");
+		SetIcon("callchief"); // needs changing
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+
+		Person p = Game::CreatePerson(OBJ_CHIEF, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
 object VcmdCallEMT : CommandScript
 {
 	VcmdCallEMT()
@@ -692,7 +757,7 @@ object VcmdCallEMT : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-		
+
 		Person p = Game::CreatePerson(OBJ_EMT, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -752,7 +817,7 @@ object VcmdCallEMTSCBA : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-		
+
 		Person p = Game::CreatePerson(OBJ_EMT_SCBA, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -812,7 +877,7 @@ object VcmdCallEMTStretcher : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-		
+
 		Person p = Game::CreatePerson(OBJ_EMT_STRETCHER, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -873,7 +938,7 @@ object VcmdCallPM : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-		
+
 		Person p = Game::CreatePerson(OBJ_PM, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -935,7 +1000,7 @@ object VcmdCallPMSCBA : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-		
+
 		Person p = Game::CreatePerson(OBJ_PM_SCBA, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -997,7 +1062,7 @@ object VcmdCallPMStretcher : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-				
+
 		Person p = Game::CreatePerson(OBJ_PM_STRETCHER, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -1058,7 +1123,7 @@ object VcmdCallDiver : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-				
+
 		Person p = Game::CreatePerson(OBJ_DIVER, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -1118,7 +1183,7 @@ object VcmdCallHazmat : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-				
+
 		Person p = Game::CreatePerson(OBJ_HAZMAT, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -1177,7 +1242,7 @@ object VcmdCallUSARFF : CommandScript
 
 		if(l2.GetNumActors() > 0)
 			Vector MoveTo = l2.GetActor(0)->GetPosition();
-				
+
 		Person p = Game::CreatePerson(OBJ_USARFF, UNNAMED);
 		if (Game::FindFreePosition(&p, Spawn))
 		{
@@ -1269,11 +1334,11 @@ object DummyDisableAlarm : CommandScript
  	{
  		return false;
  	}
- 
+
  	bool CheckPossible(GameObject *Caller)
  	{
  		return false;
- 	} 
+ 	}
 
 	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
 	{
@@ -1308,11 +1373,11 @@ object DummyCallCrew : CommandScript
  	{
  		return false;
  	}
- 
+
  	bool CheckPossible(GameObject *Caller)
  	{
  		return false;
- 	} 
+ 	}
 
 	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
 	{
@@ -1360,7 +1425,7 @@ object DummyCallCrew : CommandScript
 					obj->AttachSound(soundID);
 				}
 			}
-		} 
+		}
 		else
 		{
 			ActorList l1 = Game::GetActors(VO_SPAWN02);
@@ -1409,11 +1474,11 @@ object DummyGates : CommandScript
  	{
  		return false;
  	}
- 
+
  	bool CheckPossible(GameObject *Caller)
  	{
  		return false;
- 	} 
+ 	}
 
 	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
 	{
@@ -1429,18 +1494,18 @@ object DummyGates : CommandScript
 		GameObjectList gate02b = Game::GetGameObjects(NAME_GATE02B);
 		GameObjectList gate03b = Game::GetGameObjects(NAME_GATE03B);
 		GameObjectList gate04b = Game::GetGameObjects(NAME_GATE04B);
-		GameObjectList gate05b = Game::GetGameObjects(NAME_GATE05B); 
+		GameObjectList gate05b = Game::GetGameObjects(NAME_GATE05B);
 		GameObjectList gate06b = Game::GetGameObjects(NAME_GATE06B);
 		GameObjectList gate07b = Game::GetGameObjects(NAME_GATE07B);
-		GameObjectList gate08b = Game::GetGameObjects(NAME_GATE08B); 
-		ActorList vogate01a = Game::GetActors(VO_GATE01A); 
+		GameObjectList gate08b = Game::GetGameObjects(NAME_GATE08B);
+		ActorList vogate01a = Game::GetActors(VO_GATE01A);
 		ActorList vogate02a = Game::GetActors(VO_GATE02A);
-		ActorList vogate03a = Game::GetActors(VO_GATE03A); 
+		ActorList vogate03a = Game::GetActors(VO_GATE03A);
 		ActorList vogate04a = Game::GetActors(VO_GATE04A);
-		ActorList vogate05a = Game::GetActors(VO_GATE05A); 
-		ActorList vogate06a = Game::GetActors(VO_GATE06A); 
+		ActorList vogate05a = Game::GetActors(VO_GATE05A);
+		ActorList vogate06a = Game::GetActors(VO_GATE06A);
 		ActorList vogate07a = Game::GetActors(VO_GATE07A);
-		ActorList vogate08a = Game::GetActors(VO_GATE08A); 
+		ActorList vogate08a = Game::GetActors(VO_GATE08A);
  		ActorList vogate01b = Game::GetActors(VO_GATE01B);
 		ActorList vogate02b = Game::GetActors(VO_GATE02B);
 		ActorList vogate03b = Game::GetActors(VO_GATE03B);
@@ -1457,7 +1522,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate01a.GetObject(i);
 				Actor *vogate = vogate01a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1468,7 +1533,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate02a.GetObject(i);
 				Actor *vogate = vogate02a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1480,7 +1545,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate03a.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1492,7 +1557,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate04a.GetObject(i);
 				Actor *vogate = vogate04a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1503,7 +1568,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate05a.GetObject(i);
 				Actor *vogate = vogate05a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1517,7 +1582,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate01a.GetObject(i);
 				Actor *vogate = vogate01a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1528,7 +1593,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate02a.GetObject(i);
 				Actor *vogate = vogate02a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1540,7 +1605,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate03a.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1552,7 +1617,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate04a.GetObject(i);
 				Actor *vogate = vogate04a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1563,7 +1628,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate05a.GetObject(i);
 				Actor *vogate = vogate05a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1574,7 +1639,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate01b.GetObject(i);
 				Actor *vogate = vogate01b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1585,7 +1650,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate02b.GetObject(i);
 				Actor *vogate = vogate02b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1597,7 +1662,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate03b.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1609,7 +1674,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate04b.GetObject(i);
 				Actor *vogate = vogate04b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1620,7 +1685,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate05b.GetObject(i);
 				Actor *vogate = vogate05b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1634,7 +1699,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate06a.GetObject(i);
 				Actor *vogate = vogate06a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1645,7 +1710,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate07a.GetObject(i);
 				Actor *vogate = vogate07a.GetActor(i);
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1657,7 +1722,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate08a.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 0)
-				{ 
+				{
 					gate->SetUserData(1);
 					gate->SetAnimation(ANI_OPEN);
 					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
@@ -1672,7 +1737,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate06a.GetObject(i);
 				Actor *vogate = vogate06a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1683,7 +1748,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate07a.GetObject(i);
 				Actor *vogate = vogate07a.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1695,7 +1760,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate08a.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1707,7 +1772,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate06b.GetObject(i);
 				Actor *vogate = vogate06b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1718,7 +1783,7 @@ object DummyGates : CommandScript
 				GameObject *gate = gate07b.GetObject(i);
 				Actor *vogate = vogate07b.GetActor(i);
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1730,7 +1795,7 @@ object DummyGates : CommandScript
 				Actor *vogate = vogate08b.GetActor(i);
 				Vector GateSnd = gate->GetPosition();
 				if (gate->GetUserData() == 1)
-				{ 
+				{
 					gate->SetUserData(0);
 					gate->SetAnimation(ANI_CLOSE);
 					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
@@ -1741,7 +1806,7 @@ object DummyGates : CommandScript
 		if(ChildID == 5) //= Battalion chief 'calls vehicle cmds' for opening/closing front gates fire station 1
 		{
 			Vehicle v(Caller);
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate01a.GetNumObjects(); i++)
 				{
@@ -1827,7 +1892,7 @@ object DummyGates : CommandScript
 						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
 						Audio::PlaySample3D(SND_GATE, GateSnd);
 					}
-				}	
+				}
 			}
 			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
 			{
@@ -1897,9 +1962,9 @@ object DummyGates : CommandScript
 						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
 						Audio::PlaySample3D(SND_GATE, GateSnd);
 					}
-				}	
+				}
 			}
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate08a.GetNumObjects(); i++)
 				{
@@ -1926,7 +1991,7 @@ object DummyGates : CommandScript
 		if(ChildID == 7) //To fire station cmd to open rear gates fire station 1
 		{
 			Vehicle v(Caller);
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate01b.GetNumObjects(); i++)
 				{
@@ -1988,7 +2053,7 @@ object DummyGates : CommandScript
 						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
 						Audio::PlaySample3D(SND_GATE, GateSnd);
 					}
-				}	
+				}
 			}
 			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
 			{
@@ -2040,9 +2105,9 @@ object DummyGates : CommandScript
 						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
 						Audio::PlaySample3D(SND_GATE, GateSnd);
 					}
-				}	
+				}
 			}
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate08b.GetNumObjects(); i++)
 				{
@@ -2062,7 +2127,7 @@ object DummyGates : CommandScript
 		if(ChildID == 9) //To fire station cmd to close rear gates fire station 1
 		{
 			Vehicle v(Caller);
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate01b.GetNumObjects(); i++)
 				{
@@ -2178,7 +2243,7 @@ object DummyGates : CommandScript
 					}
 				}
 			}
-			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW)
 			{
 				for(int i=0; i < gate08b.GetNumObjects(); i++)
 				{
@@ -2210,7 +2275,7 @@ object VcmdAutoStaffOn : CommandScript
 	{
 		if (!Caller->IsValid() || !Game::IsFreeplay())
 			return false;
-			
+
 		return true;
 	}
 
@@ -2241,7 +2306,7 @@ object VcmdAutoStaffOff : CommandScript
 	{
 		if (!Caller->IsValid() || !Game::IsFreeplay())
 			return false;
-			
+
 		return true;
 	}
 
@@ -2275,14 +2340,14 @@ object VcmdRepairVehicles : CommandScript
 
 		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
 			return false;
-			
+
 		int Money = Mission::GetMoneyLeft();
 		if (Money < PRICE_REPAIR)
-			return false;			
-			
+			return false;
+
 		Vehicle v(Caller);
 		if (v.HasCommand(DUMMY_ALARM))
-			return false;	
+			return false;
 
 		return true;
 	}
@@ -2314,7 +2379,7 @@ object VcmdRepairVehicles : CommandScript
 				l2 = Game::GetActors(VO_SPAWN02);
 				l3 = Game::GetActors(VO_MOVETO02);
 			}
-			
+
 			Vector Spawn = l2.GetActor(0)->GetPosition();
 			Vector MoveTo = l3.GetActor(0)->GetPosition();
 			bool repair = false;
@@ -2333,8 +2398,8 @@ object VcmdRepairVehicles : CommandScript
 				if (Money >= PRICE_REPAIR)
 				{
 					int NewMoney = Money - PRICE_REPAIR;
-					Mission::SetMoney(NewMoney);			
-				}			
+					Mission::SetMoney(NewMoney);
+				}
 				Person p = Game::CreatePerson(OBJ_ENGINEER, UNNAMED);
 				if (Game::FindFreePosition(&p, Spawn))
 				{
@@ -2354,19 +2419,19 @@ object VcmdRepairVehicles : CommandScript
 			Vehicle cp(Target);
 			GameObjectList l1;
 			ActorList l2;
-			bool repair = false;			
+			bool repair = false;
 			if(cp.HasName(NAME_CONTROLPANEL))
 			{
 				Game::CollectObstaclesOnVirtualObject(VO_SQUAD01, l1, ACTOR_VEHICLE);
 				l2 = Game::GetActors(VO_SPAWN01);
-			}	
+			}
 			if(cp.HasName(NAME_CONTROLPANEL2))
 			{
 				Game::CollectObstaclesOnVirtualObject(VO_SQUAD02, l1, ACTOR_VEHICLE);
 				l2 = Game::GetActors(VO_SPAWN02);
 			}
-			
-			Vector Delete = l2.GetActor(0)->GetPosition();			
+
+			Vector Delete = l2.GetActor(0)->GetPosition();
 			for(int i=0; i < l1.GetNumObjects(); i++)
 			{
 				if (!repair)
@@ -2387,7 +2452,7 @@ object VcmdRepairVehicles : CommandScript
 				Mission::PlayHint(HINT_REPAIRED);
 				p.PushActionMove(ACTION_NEWLIST, Delete);
 				p.PushActionDeleteOwner(ACTION_APPEND);
-			}			
+			}
 		}
 	}
 };
