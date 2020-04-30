@@ -1,0 +1,476 @@
+//******************************************************************************************
+// #Version 2.5#
+//
+// 		Includes: All Changing clothes commands
+//
+//	- PcmdChangeToFF
+//	- PcmdChangeToMask
+//	- PcmdGetTrafficVest
+//	- PcmdRemoveTrafficVest
+//	- PcmdGetTacVest
+//	- PcmdRemoveTacVest
+//	- DummyChange
+//
+//		Original script for Emergency 3 by Rev Bem
+//		Made compatible for Emergency 4 by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_DOORS[]				= "OpenCloseDoor2";
+
+const char OBJ_EMT[]				= "mod:Prototypes/Persons/02 LA Fire Department/ff_emt.e4p";
+const char OBJ_EMT_SCBA[]			= "mod:Prototypes/Persons/02 LA Fire Department/ff_emt_scba.e4p";
+
+const char OBJ_PM[]				= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic.e4p";
+const char OBJ_PM_SCBA[]			= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic_scba.e4p";
+
+const char OBJ_USFS_FF[]			= "mod:Prototypes/Persons/02 LA Fire Department/usfs_ff.e4p";
+const char OBJ_USFS_FF_SCBA[]			= "mod:Prototypes/Persons/02 LA Fire Department/usfs_ff_scba.e4p";
+
+const char OBJ_OFFICER_M[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p";
+const char OBJ_OFFICER_F[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p";
+const char OBJ_OFFICER_LASD[]			= "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p";
+const char OBJ_OFFICER_CHP[]			= "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p";
+const char OBJ_TRAFFIC_OFFICER_M[]		= "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_m.e4p";
+const char OBJ_TRAFFIC_OFFICER_F[]		= "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_f.e4p";
+const char OBJ_TRAFFIC_OFFICER_LASD[]		= "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p";
+const char OBJ_TRAFFIC_OFFICER_CHP[]		= "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p";
+const char OBJ_FBI[]				= "mod:Prototypes/Persons/07 Government/fbi_agent.e4p";
+const char OBJ_FBI_TAC[]			= "mod:Prototypes/Persons/07 Government/fbi_agent_tac.e4p";
+const char DUMMY_CHANGE[]			= "DummyChange";
+const char SND_SCBA[]				= "mod:Audio/FX/Misc/SCBA.wav";
+
+object PcmdChangeToFF : CommandScript
+{
+	PcmdChangeToFF()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		//SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFIREAXE);
+		SetNeedsCarWithFlagSet(OF_HAS_FIREAXE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_FIREAXE))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_RW || v.GetVehicleType() == VT_FIREFIGHTERS_GTF || v.GetVehicleType() == VT_FIREFIGHTERS_DLK || v.GetVehicleType() == VT_FIREFIGHTERS_TLF || v.GetVehicleType() == VT_FIREFIGHTERS_LPF || v.GetVehicleType() == VT_AMBULANCE_ITW || v.GetVehicleType() == VT_AMBULANCE_RTW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 1, false);
+	}
+};
+
+object PcmdChangeToMask : CommandScript
+{
+	PcmdChangeToMask()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		//SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFIREAXE);
+		SetNeedsCarWithFlagSet(OF_HAS_FIREAXE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_FIREAXE))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_RW || v.GetVehicleType() == VT_FIREFIGHTERS_GTF || v.GetVehicleType() == VT_FIREFIGHTERS_DLK || v.GetVehicleType() == VT_FIREFIGHTERS_TLF || v.GetVehicleType() == VT_FIREFIGHTERS_LPF || v.GetVehicleType() == VT_AMBULANCE_ITW || v.GetVehicleType() == VT_AMBULANCE_RTW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 2, false);
+	}
+};
+
+object PcmdGetTrafficVest: CommandScript
+{
+	PcmdGetTrafficVest()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_POLICE_STW || v.GetVehicleType() == VT_POLICE_MTW || v.GetVehicleType() == VT_POLICE_SW || v.GetVehicleType() == VT_POLICE_GTW || v.GetVehicleType() == VT_POLICE_WAW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 3, false);
+	}
+};
+
+object PcmdRemoveTrafficVest: CommandScript
+{
+	PcmdRemoveTrafficVest()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_POLICE_STW || v.GetVehicleType() == VT_POLICE_MTW || v.GetVehicleType() == VT_POLICE_SW || v.GetVehicleType() == VT_POLICE_GTW || v.GetVehicleType() == VT_POLICE_WAW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 4, false);
+	}
+};
+
+
+object PcmdGetTacVest : CommandScript
+{
+	PcmdGetTacVest()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_POLICE_STW || v.GetVehicleType() == VT_POLICE_MTW || v.GetVehicleType() == VT_POLICE_SW || v.GetVehicleType() == VT_POLICE_GTW || v.GetVehicleType() == VT_POLICE_WAW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 5, false);
+	}
+};
+
+object PcmdRemoveTacVest : CommandScript
+{
+	PcmdRemoveTacVest()
+	{
+		SetCursor("clothes");
+		SetIcon("clothes");
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_POLICE_STW || v.GetVehicleType() == VT_POLICE_MTW || v.GetVehicleType() == VT_POLICE_SW || v.GetVehicleType() == VT_POLICE_GTW || v.GetVehicleType() == VT_POLICE_WAW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 6, false);
+	}
+};
+
+object DummyChange : CommandScript
+{
+	DummyChange()
+	{
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Vector Pos = p.GetPosition();
+			float r[9];
+		p.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+		int PlayerID = p.GetPlayerMP();
+		float health = p.GetHealth();
+		p.PushActionSwitchAnim(ACTION_NEWLIST, "useobjmid");
+		p.PushActionWait(ACTION_APPEND, 5.0f);
+		p.SetCommandable(false);
+		Person n;
+		if(childID == 1)
+		{
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_EMT_SCBA) == 0)
+            			n = Game::CreatePerson(OBJ_EMT, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_PM_SCBA) == 0)
+            			n = Game::CreatePerson(OBJ_PM, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_USFS_FF_SCBA) == 0)
+            			n = Game::CreatePerson(OBJ_USFS_FF, Target->GetName());
+		}
+		if(childID == 2)
+		{
+			Audio::PlaySample3D(SND_SCBA, Pos, false);
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_EMT) == 0)
+            			n = Game::CreatePerson(OBJ_EMT_SCBA, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_PM) == 0)
+            			n = Game::CreatePerson(OBJ_PM_SCBA, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_USFS_FF) == 0)
+            			n = Game::CreatePerson(OBJ_USFS_FF_SCBA, Target->GetName());
+			int Money = Mission::GetMoneyLeft();
+			int NewMoney = Money - 50;
+			Mission::SetMoney(NewMoney);
+		}
+		if(childID == 3)
+		{
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_M) == 0)
+            			n = Game::CreatePerson(OBJ_TRAFFIC_OFFICER_M, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_F) == 0)
+            			n = Game::CreatePerson(OBJ_TRAFFIC_OFFICER_F, Target->GetName());
+ 			if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_LASD) == 0)
+            			n = Game::CreatePerson(OBJ_TRAFFIC_OFFICER_LASD, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_CHP) == 0)
+            			n = Game::CreatePerson(OBJ_TRAFFIC_OFFICER_CHP, Target->GetName());
+		}
+		if(childID == 4)
+		{
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_M) == 0)
+            			n = Game::CreatePerson(OBJ_OFFICER_M, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_F) == 0)
+            			n = Game::CreatePerson(OBJ_OFFICER_F, Target->GetName());
+ 			if(StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_LASD) == 0)
+            			n = Game::CreatePerson(OBJ_OFFICER_LASD, Target->GetName());
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_CHP) == 0)
+            			n = Game::CreatePerson(OBJ_OFFICER_CHP, Target->GetName());
+		}
+		if(childID == 5)
+		{
+            		n = Game::CreatePerson(OBJ_FBI_TAC, Target->GetName());
+			int Money = Mission::GetMoneyLeft();
+			int NewMoney = Money - 200;
+			Mission::SetMoney(NewMoney);
+		}
+		if(childID == 6)
+		{
+            		n = Game::CreatePerson(OBJ_FBI, Target->GetName());
+
+		}
+		if(n.HasCommand("Heal"))
+		{
+			n.RemoveCommand("Heal");
+			n.RemoveCommand("RemoveEquipment");
+			n.AssignCommand("PcmdHeal");
+		}
+		p.PushActionDeleteOwner(ACTION_APPEND);
+		n.SetPlayerMP(PlayerID);
+		n.SetHealth(health);
+		n.SetUpgradeLevel(3);
+		n.SetPosition(Pos);
+		n.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+		n.Hide();
+		n.PushActionWait(ACTION_NEWLIST, 5.f);
+		n.PushActionShowHide(ACTION_APPEND, false); 
+		Vehicle v(Target);
+		v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);                
+	}
+};
+

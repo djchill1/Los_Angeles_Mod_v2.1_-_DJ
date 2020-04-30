@@ -1,0 +1,179 @@
+//******************************************************************************************
+// #Version 2.1#
+//
+// 		Includes: All Flood Light commands
+//
+//	- PcmdFloodLightInstall
+//	- PcmdFloodLightDeinstall
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_INSTALL_FLOODLIGHT[]		= "PcmdFloodLightInstall";
+const char CMD_DEINSTALL_FLOODLIGHT[]	= "PcmdFloodLightDeinstall";
+const char CMD_FLOODLIGHTS_OFF[]		= "VcmdFloodLightsOff";
+const char CMD_ROTATE_CW[]			= "VcmdRotateClockwise";
+const char CMD_ROTATE_CCW[]			= "VcmdRotateCounterClockwise";
+const char CMD_MOVETO[]				= "MoveTo";
+const char CMD_ENTERCAR[]			= "EnterCar";
+const char CMD_USE[]				= "Use";
+const char CMD_ENTERHOUSE[]			= "EnterHouse";
+const char OBJ_FLOODLIGHT[]			= "mod:Prototypes/Vehicles/06 Objects/floodlight.e4p";
+const char NAME_FLOODLIGHT[]			= "Floodlight";
+const char HINT_FLOODLIGHT[]			= "No space to install flood light!";
+
+object PcmdFloodLightInstall : CommandScript
+{
+	PcmdFloodLightInstall()
+	{
+		SetCursor("floodlight");
+		SetIcon("floodlight");
+ 		SetGroupLeader(true);
+		SetPriority(300);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_PERSON)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_PERSON)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Caller->PushActionWait(ACTION_NEWLIST, 0.1f);
+		Vector CarPos = Caller->GetPosition();
+			float r[9];
+			float childr[9];
+		Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+		if (Game::FindFreePosition(Caller, CarPos, 20.f))
+		{
+                	Vehicle v;
+                  v = Game::CreateVehicle(OBJ_FLOODLIGHT, NAME_FLOODLIGHT);
+			if (v.IsValid())
+			{
+				float dx = 10.f, dy = 0.f, dz = 0.f;
+				Math::RotateVector(dx, dy, dz, r);
+				Math::EulerToMatrix(90.0f, 0.f, 0.f, childr);
+				Math::MultiplyMatrices(childr, r);
+				CarPos = CarPos + Vector(dx, dy, 0);
+				v.SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+				v.SetPosition(CarPos);
+				v.UpdatePlacement();
+			}
+			v.SetCommandable(true);
+			v.EnableSpecialLights(true);
+			v.AssignCommand(CMD_FLOODLIGHTS_OFF);
+			v.AssignCommand(CMD_ROTATE_CW);
+			v.AssignCommand(CMD_ROTATE_CCW);
+
+			int UnitID = p.GetID();
+			v.SetUserData(UnitID);
+
+			int PlayerID = p.GetPlayerMP();
+			v.SetPlayerMP(PlayerID);
+
+			p.RemoveCommand(CMD_INSTALL_FLOODLIGHT);
+			p.RemoveCommand(CMD_ENTERCAR);
+			p.RemoveCommand(CMD_ENTERHOUSE);
+			p.RemoveCommand(CMD_USE);
+			p.RemoveCommand(CMD_MOVETO);
+			p.AssignCommand(CMD_DEINSTALL_FLOODLIGHT);
+			p.PushActionRemoveEquipment(ACTION_APPEND);
+			p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+			p.Deselect();
+			v.Select();			
+		}
+		else
+		{
+			Mission::PlayHint(HINT_FLOODLIGHT);
+		}
+	}
+};
+
+object PcmdFloodLightDeinstall : CommandScript
+{
+	PcmdFloodLightDeinstall()
+	{
+    		SetIcon("use");
+    		SetCursor("use");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING);
+		SetPossibleCallers(ACTOR_PERSON);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || (Caller->GetID()==Target->GetID()))
+			return false;
+
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+                  if(StrCompare(v.GetPrototypeFileName(), OBJ_FLOODLIGHT) == 0)
+                  {
+                  	return true;
+                  }
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+ 		Person p(Caller);
+		int UnitID = p.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_FLOODLIGHT);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == UnitID)
+			{
+				obj->PushActionDeleteOwner(ACTION_NEWLIST);
+
+				p.AssignCommand(CMD_INSTALL_FLOODLIGHT);
+				p.RemoveCommand(CMD_DEINSTALL_FLOODLIGHT);	
+				p.AssignCommand(CMD_ENTERCAR);
+				p.AssignCommand(CMD_MOVETO);
+				p.AssignCommand(CMD_ENTERHOUSE);
+				p.AssignCommand(CMD_USE);
+				p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped");
+				p.SetEquipment(EQUIP_THW_CASE);
+			}
+		}
+	}
+};

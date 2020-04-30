@@ -1,0 +1,173 @@
+//******************************************************************************************
+// #Version 1.5#
+//
+// 		Includes: All Flood Lights commands
+//
+//	- VcmdFloodLightsOn
+//	- VcmdFloodLightsOff
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_FLOODLIGHTS_ON[]			= "VcmdFloodLightsOn";
+const char CMD_FLOODLIGHTS_OFF[]		= "VcmdFloodLightsOff";
+const char CMD_MCU_DEINSTALL[]			= "VcmdMCUDeinstall";
+const char PROTO_HAZMAT[] 			= "mod:Prototypes/Vehicles/02 LA Fire Department/hazmat_squad.e4p";
+const char PROTO_USAR[] 			= "mod:Prototypes/Vehicles/02 LA Fire Department/usar_squad.e4p";
+const char PROTO_MCU[] 				= "mod:Prototypes/Vehicles/01 LA Ambulance/mass_casualty_unit.e4p";
+const char DUMMY_LIGHTS[] 			= "DummyLights";
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+
+int DummyGroup = 27;
+
+object VcmdFloodLightsOn : CommandScript
+{
+ 	VcmdFloodLightsOn()
+ 	{
+ 		SetIcon("floodlightson");
+ 		SetCursor("lighton");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(100);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+			Vehicle v(Caller);
+			if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02))
+				return false;
+
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		Vehicle v(Caller);
+  		if (StrCompare(v.GetPrototypeFileName(), PROTO_HAZMAT) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_USAR) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_MCU) == 0)
+		{
+			v.SetCommandable(false);
+			if (StrCompare(v.GetPrototypeFileName(), PROTO_MCU) == 0 && v.HasCommand(CMD_MCU_DEINSTALL))
+				v.SetAnimation("Light_onI");
+			else
+				v.SetAnimation("Light_on");
+			v.PushActionWait(ACTION_NEWLIST, 2.5f);
+			v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_LIGHTS, Caller, 1, false);
+		} else
+		{
+			v.EnableSpecialLights(true);
+		}
+		v.AssignCommand(CMD_FLOODLIGHTS_OFF); 
+		v.RemoveCommand(CMD_FLOODLIGHTS_ON);
+ 	}	
+};
+
+object VcmdFloodLightsOff : CommandScript
+{
+ 	VcmdFloodLightsOff()
+ 	{
+ 		SetIcon("floodlightsoff");
+ 		SetCursor("lightoff");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(100);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		Vehicle v(Caller);
+  		if (StrCompare(v.GetPrototypeFileName(), PROTO_HAZMAT) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_USAR) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_MCU) == 0)
+		{
+			v.PushActionWait(ACTION_NEWLIST, 1.0f);
+			v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_LIGHTS, Caller, 2, false);
+		}
+		v.EnableSpecialLights(false);
+		v.AssignCommand(CMD_FLOODLIGHTS_ON); 
+		v.RemoveCommand(CMD_FLOODLIGHTS_OFF);
+ 	}	
+};
+
+object DummyLights : CommandScript
+{
+	DummyLights()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (childID == 1)
+		{
+			v.SetCommandable(true);
+			v.EnableSpecialLights(true);
+		}
+		if (childID == 2)
+		{
+			if (StrCompare(v.GetPrototypeFileName(), PROTO_MCU) == 0 && v.HasCommand(CMD_MCU_DEINSTALL))
+				v.SetAnimation("Light_offI");
+			else
+				v.SetAnimation("Light_off");
+		}
+	}	
+};

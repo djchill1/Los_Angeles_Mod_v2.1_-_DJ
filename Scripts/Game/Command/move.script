@@ -1,0 +1,172 @@
+//******************************************************************************************
+// #Version 1.6#
+//
+// 		Changes: - Activates sirens if vehicle has AutoSirenOn.
+//			   - Disables sirens after arriving on targetpoint.
+//			   - Disables warninglights and/or directional lights.
+//			   - ObjectPath will be removed if vehicle has one.
+//
+//******************************************************************************************
+
+const char CMD_SIREN[]				= "VcmdSiren";
+const char CMD_AUTOSIREN_OFF[]			= "VcmdAutoSirenOff";
+const char CMD_WARNINGLIGHTS_OFF[] 		= "VcmdWarningLightsOff";
+const char CMD_WARNINGLIGHTS_ON[] 		= "VcmdWarningLightsOn";
+const char CMD_STANDBY_ON[]			= "VcmdStandbyOn";
+const char CMD_STANDBY_OFF[]			= "VcmdStandbyOff";
+const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
+const char DUMMY_DISABLE[] 			= "DummyDisableSiren";
+const char DUMMY_PATROL[] 			= "DummyPatrol";
+const char DUMMY_HOSESON[] 			= "DummyHosesAreOn";
+const char OBJ_CRANE_REVERSED[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_rescue_crane_rev.e4p";
+const char DUMMY_TILLERGOHOME[]		= "DummyTillerGoHome";
+
+object MoveTo : CommandScript
+{
+	MoveResult mr;
+	
+	MoveTo()
+	{
+		SetValidTargets(ACTOR_FLOOR | ACTOR_OBJECT | ACTOR_VIRTUAL | ACTOR_HOUSE | ACTOR_OPEN_HOUSE);
+		SetHighlightingEnabled(false);
+		SetDeselectCaller(false);
+		//SetActivationByLeftClick(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (Caller->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+       		if (v.HasCommand(DUMMY_HOSESON))
+				return false;
+		}
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		mr = Commands::CheckMoveConditions(Caller, Target, childID);
+		if (mr.Mode == MOVE_ABORT)
+			return false;
+
+           	if (Caller->HasCommand(DUMMY_HOSESON))
+			return false;
+		
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (mr.Mode == MOVE_ABORT)
+			return;
+
+		switch(mr.Mode)
+		{
+			case MOVE_TO_POSITION:
+			{
+				if (Caller->GetFirehoseID() > 0)
+				{
+					Caller->PushActionMoveWithHose(ACTION_NEWLIST, mr.Target);
+					return;
+				}
+				Caller->PushActionMove(ACTION_NEWLIST, mr.Target, true);
+				break;
+			}
+			
+			case MOVE_INTO_HOUSE:
+			{
+				Caller->PushActionMove(ACTION_NEWLIST, mr.Intermediate1, true);
+				Caller->PushActionEnterHouse(ACTION_APPEND, &mr.EnterHouse);
+				Caller->PushActionMove(ACTION_APPEND, mr.Target, true);
+				break;
+			}
+			
+			case MOVE_HOUSE_TO_HOUSE:
+			{
+				Caller->PushActionMove(ACTION_NEWLIST, mr.Intermediate1, true);
+				Caller->PushActionLeaveHouse(ACTION_APPEND, &mr.LeaveHouse);
+				Caller->PushActionMove(ACTION_APPEND, mr.Intermediate2, true);
+				Caller->PushActionEnterHouse(ACTION_APPEND, &mr.EnterHouse);
+				Caller->PushActionMove(ACTION_APPEND, mr.Target, true);
+				break;
+			}
+			
+			case MOVE_HOUSE_TO_POSITION:
+			{
+				Caller->PushActionMove(ACTION_NEWLIST, mr.Intermediate1, true);
+				Caller->PushActionLeaveHouse(ACTION_APPEND, &mr.LeaveHouse);
+				Caller->PushActionMove(ACTION_APPEND, mr.Target, true);
+				break;
+			}
+		}
+
+		if (Caller->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			if (v.IsLightOn())
+				v.PushActionLightOn(ACTION_INSERT, false);
+				
+			if(StrCompare(Caller->GetPrototypeFileName(), "mod:Prototypes/Vehicles/02 LA Fire Department/swr_boat.e4p") == 0)
+				Caller->PushActionExecuteCommand(ACTION_INSERT, "DummyMotorboat", Caller, 3, false);					
+				
+			if (StrCompare(v.GetPrototypeFileName(), OBJ_CRANE_REVERSED) == 0)
+			{
+				v.SetCommandable(false);
+				v.PushActionWait(ACTION_NEWLIST, 0.1f);
+				if (mr.UnInstall)
+				{
+					v.PushActionDeinstall(ACTION_APPEND);
+					v.PushActionWait(ACTION_APPEND, 1.0f);
+				}
+				v.PushActionExecuteCommand(ACTION_APPEND, "DummyCrane", Target, 2, false);
+				return;
+			}
+			if (v.HasCommand("DummyFollow"))
+				v.RemoveCommand("DummyFollow");
+			if (v.HasCommand(DUMMY_TILLERGOHOME))
+				v.RemoveCommand(DUMMY_TILLERGOHOME);
+			if (!v.HasCommand(DUMMY_HASSIREN) && v.HasCommand(CMD_AUTOSIREN_OFF) && !Input::LShiftPressed() && !Input::RShiftPressed())
+				Game::ExecuteCommand(CMD_SIREN, &v, &v);
+			else if (v.IsBlueLightEnabled() && (Input::LShiftPressed() || Input::RShiftPressed()))
+				v.EnableBlueLights(false); 
+			if (v.HasObjectPath(NULL))
+				Game::ExecuteCommand(DUMMY_PATROL, &v, &v);
+			if (v.HasCommand(CMD_STANDBY_OFF))
+			{
+				v.RemoveCommand(CMD_STANDBY_OFF);
+				v.AssignCommand(CMD_STANDBY_ON);
+			}
+			if (v.HasCommand(CMD_WARNINGLIGHTS_OFF))
+			{
+				v.EnableBlinker(BLT_NONE);
+				v.RemoveCommand(CMD_WARNINGLIGHTS_OFF);
+				v.AssignCommand(CMD_WARNINGLIGHTS_ON);
+			}
+		}
+
+		// Special code for fgrr (Bergefahrzeug). Deinstalls itself automatically
+		if (mr.UnInstall) 
+		{
+			Vehicle v(Caller);
+			if (v.GetVehicleType() == VT_THW_FGRR_BKF)
+			{
+				//System::Print("FGRR: Mode 1 - DeInstall");
+				Caller->PushActionDeinstall(ACTION_INSERT);
+			}
+
+			else if (v.GetVehicleType() == VT_FIREFIGHTERS_DLK)
+			{
+				if (mr.BasketDown && mr.UnInstall)
+				{
+					Caller->PushActionDeinstall(ACTION_INSERT);
+					Caller->PushActionBasketDown(ACTION_INSERT, Vector(0.f, 0.f, 0.f));
+				}
+				else if (mr.BasketDown)
+				     	Caller->PushActionBasketDown(ACTION_INSERT, Vector(0.f, 0.f, 0.f));
+				else if (mr.UnInstall)
+				     	Caller->PushActionDeinstall(ACTION_INSERT);
+			}
+		}
+	}
+};

@@ -1,0 +1,2393 @@
+//******************************************************************************************
+// #Version 1.5#
+//
+// 		Includes: All command for the fire station.
+//
+//	- VcmdAlarm
+//	- VcmdRoof
+//	- VcmdGarageDoorsUp
+//	- VcmdGarageDoorsDown
+//	- VcmdCallEMT
+//	- VcmdCallEMTSCBA
+//	- VcmdCallEMTStretcher
+//	- VcmdCallPM
+//	- VcmdCallPMSCBA
+//	- VcmdCallPMStretcher
+//	- VcmdCallDiver
+//	- VcmdCallHazmat
+//	- VcmdCallUSARFF
+//	- VcmdEmptyFireStation
+//	- DummyDisableAlarm
+//	- DummyCallCrew
+//	- DummyGates
+//	- VcmdAutoStaffOn
+//	- VcmdAutoStaffOff
+//	- VcmdRepairVehicles
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char NAME_FIRESTATION[]			= "fire_station";
+const char NAME_FIRESTATION_ROOF[]		= "fire_station_roof";
+const char NAME_FIRESTATION2[]			= "fire_station2";
+const char NAME_FIRESTATION2_ROOF[]		= "fire_station2_roof";
+const char NAME_CONTROLPANEL[]			= "fire_station_controlpanel";
+const char NAME_CONTROLPANEL2[]			= "fire_station_controlpanel2";
+
+const char OBJ_BATTALION[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/battalion_chief_vehicle.e4p";
+const char OBJ_AMBULANCE01[]		= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance01.e4p";
+const char OBJ_AMBULANCE02[]		= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance02.e4p";
+const char OBJ_USAR[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/usar_squad.e4p";
+const char OBJ_LADDER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/aerial_ladder.e4p";
+const char OBJ_TILLER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
+const char OBJ_ENGINE01[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine1.e4p";
+const char OBJ_ENGINE02[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine2.e4p";
+const char OBJ_HAZMATSQUAD[]		= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_equipment_squad.e4p";
+
+const char OBJ_CHIEF[]				= "mod:Prototypes/Persons/02 LA Fire Department/battalion_chief.e4p";
+const char OBJ_EMT[]				= "mod:Prototypes/Persons/02 LA Fire Department/ff_emt.e4p";
+const char OBJ_EMT_SCBA[]			= "mod:Prototypes/Persons/02 LA Fire Department/ff_emt_scba.e4p";
+const char OBJ_EMT_STRETCHER[]		= "mod:Prototypes/Persons/02 LA Fire Department/ff_emt_stretcher.e4p";
+
+const char OBJ_PM[]					= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic.e4p";
+const char OBJ_PM_SCBA[]			= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic_scba.e4p";
+const char OBJ_PM_STRETCHER[]		= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic_stretcher.e4p";
+
+const char OBJ_HAZMAT[]				= "mod:Prototypes/Persons/02 LA Fire Department/ff_hazmat.e4p";
+const char OBJ_USARFF[]				= "mod:Prototypes/Persons/02 LA Fire Department/usar_ff.e4p";
+const char OBJ_DIVER[]				= "mod:Prototypes/Persons/02 LA Fire Department/ff_diver.e4p";
+const char OBJ_ENGINEER[]			= "mod:Prototypes/Persons/04 LA Tec/engineer.e4p";
+
+const char NAME_GATE01A[]			= "fs_gate01a";
+const char NAME_GATE02A[]			= "fs_gate02a";
+const char NAME_GATE03A[]			= "fs_gate03a";
+const char NAME_GATE04A[]			= "fs_gate04a";
+const char NAME_GATE05A[]			= "fs_gate05a";
+const char NAME_GATE06A[]			= "fs_gate06a";
+const char NAME_GATE07A[]			= "fs_gate07a";
+const char NAME_GATE08A[]			= "fs_gate08a";
+const char NAME_GATE01B[]			= "fs_gate01b";
+const char NAME_GATE02B[]			= "fs_gate02b";
+const char NAME_GATE03B[]			= "fs_gate03b";
+const char NAME_GATE04B[]			= "fs_gate04b";
+const char NAME_GATE05B[]			= "fs_gate05b";
+const char NAME_GATE06B[]			= "fs_gate06b";
+const char NAME_GATE07B[]			= "fs_gate07b";
+const char NAME_GATE08B[]			= "fs_gate08b";
+const char VO_GATE01A[]				= "fs_vogate01a";
+const char VO_GATE02A[]				= "fs_vogate02a";
+const char VO_GATE03A[]				= "fs_vogate03a";
+const char VO_GATE04A[]				= "fs_vogate04a";
+const char VO_GATE05A[]				= "fs_vogate05a";
+const char VO_GATE06A[]				= "fs_vogate06a";
+const char VO_GATE07A[]				= "fs_vogate07a";
+const char VO_GATE08A[]				= "fs_vogate08a";
+const char VO_GATE01B[]				= "fs_vogate01b";
+const char VO_GATE02B[]				= "fs_vogate02b";
+const char VO_GATE03B[]				= "fs_vogate03b";
+const char VO_GATE04B[]				= "fs_vogate04b";
+const char VO_GATE05B[]				= "fs_vogate05b";
+const char VO_GATE06B[]				= "fs_vogate06b";
+const char VO_GATE07B[]				= "fs_vogate07b";
+const char VO_GATE08B[]				= "fs_vogate08b";
+
+const char DUMMY_GATES[]			= "DummyGates";
+const char DUMMY_ALARM[]			= "DummyDisableAlarm";
+const char DUMMY_CALLCREW[]			= "DummyCallCrew";
+const char DUMMY_VCALLED[]			= "DummyVehicleCalled";
+
+const char VO_BATTALION[]			= "fs_battalion";
+const char VO_AMBULANCE01[]			= "fs_ambulance01";
+const char VO_AMBULANCE02[]			= "fs_ambulance02";
+const char VO_AMBULANCE03[]			= "fs_ambulance03";
+const char VO_AMBULANCE04[]			= "fs_ambulance04";
+const char VO_USAR[]				= "fs_usar";
+const char VO_LADDER[]				= "fs_ladder";
+const char VO_ENGINE01[]			= "fs_engine01";
+const char VO_ENGINE02[]			= "fs_engine02";
+const char VO_ENGINE03[]			= "fs_engine03";
+const char VO_ENGINE04[]			= "fs_engine04";
+const char VO_ENGINE05[]			= "fs_engine05";
+const char VO_HAZMAT[]				= "fs_hazmat";
+
+const char VO_SPAWN01[]				= "fs_spawn01";
+const char VO_SPAWN02[]				= "fs_spawn02";
+const char VO_SPAWN03[]				= "fs_spawn03";
+
+const char VO_MOVETO01[]			= "fs_moveto01";
+const char VO_MOVETO02[]			= "fs_moveto02";
+
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+
+const char SND_ALARM[]				= "mod:Audio/FX/Misc/fire_alarm.wav";
+const char SND_GATE[]				= "mod:Audio/FX/Misc/fire_gate.wav";
+
+const char ANI_CLOSE[]				= "close";
+const char ANI_OPEN[]				= "open";
+const char VOSET_ROAD[]				= "Freely Accessible";
+const char VOSET_BARRICADE[]		= "Barricade";
+
+const char UNNAMED[]				= "Unnamed";
+
+const char HINT_NO_REPAIR[] 		= "There are no vehicles to repair!";
+const char HINT_REPAIRED[] 			= "All vehicles repaired!";
+int PRICE_REPAIR 					= 1000;
+
+int DummyGroup = 20;
+
+object VcmdAlarm : CommandScript
+{
+	VcmdAlarm()
+	{
+		SetCursor("alarm");
+		SetIcon("alarm");
+		SetPriority(200);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			Caller->AssignCommand(DUMMY_ALARM);
+			Caller->PushActionWait(ACTION_NEWLIST, 1.5f);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 1, false);
+			Caller->PushActionWait(ACTION_APPEND, 13.0f);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION);
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				GameObject *obj = l1.GetObject(i);
+				if (!obj->IsSpecialLightEnabled())
+				{
+					obj->EnableSpecialLights(true);
+					Vector AlarmSnd = obj->GetPosition();
+					int soundID = Audio::PlaySample3D(SND_ALARM, AlarmSnd, true);
+					obj->SetUserData(soundID);
+					obj->AttachSound(soundID);
+				}
+			}
+			GameObjectList l2;
+ 			Game::CollectObstaclesOnVirtualObject(VO_BATTALION, l2, ACTOR_VEHICLE);
+			if(l2.GetNumObjects() > 0)
+			{
+				Vehicle m = l2.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 4, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+				}
+			}
+			GameObjectList l3;
+ 			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE01, l3, ACTOR_VEHICLE);
+			if(l3.GetNumObjects() > 0)
+			{
+				Vehicle m = l3.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_AMBULANCE01) == 0)
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 7, false);
+						//m.PushActionWait(ACTION_APPEND, 0.5f);
+						//m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+
+					} else
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
+					}
+				}
+			}
+			GameObjectList l4;
+ 			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE02, l4, ACTOR_VEHICLE);
+			if(l4.GetNumObjects() > 0)
+			{
+				Vehicle m = l4.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_AMBULANCE01) == 0)
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 7, false);
+						//m.PushActionWait(ACTION_APPEND, 0.5f);
+						//m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
+					}
+				}
+			}
+			GameObjectList l5;
+ 			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE03, l5, ACTOR_VEHICLE);
+			if(l5.GetNumObjects() > 0)
+			{
+				Vehicle m = l5.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_AMBULANCE01) == 0)
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 7, false);
+						//m.PushActionWait(ACTION_APPEND, 0.5f);
+						//m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
+					}
+				}
+			}
+			GameObjectList l6;
+ 			Game::CollectObstaclesOnVirtualObject(VO_LADDER, l6, ACTOR_VEHICLE);
+			if(l6.GetNumObjects() > 0)
+			{
+				Vehicle m = l6.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					m.PushActionWait(ACTION_NEWLIST, 1.4f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+				}
+			}
+			GameObjectList l7;
+ 			Game::CollectObstaclesOnVirtualObject(VO_USAR, l7, ACTOR_VEHICLE);
+			if(l7.GetNumObjects() > 0)
+			{
+				Vehicle m = l7.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 6, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 6, false);
+				}
+			}
+			GameObjectList l8;
+ 			Game::CollectObstaclesOnVirtualObject(VO_ENGINE01, l8, ACTOR_VEHICLE);
+			if(l8.GetNumObjects() > 0)
+			{
+				Vehicle m = l8.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					}
+				}
+			}
+			GameObjectList l9;
+ 			Game::CollectObstaclesOnVirtualObject(VO_ENGINE02, l9, ACTOR_VEHICLE);
+			if(l9.GetNumObjects() > 0)
+			{
+				Vehicle m = l9.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					}
+				}
+			}
+			GameObjectList l10;
+ 			Game::CollectObstaclesOnVirtualObject(VO_ENGINE03, l10, ACTOR_VEHICLE);
+			if(l10.GetNumObjects() > 0)
+			{
+				Vehicle m = l10.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					}
+				}
+			}
+			GameObjectList l11;
+ 			Game::CollectObstaclesOnVirtualObject(VO_ENGINE04, l11, ACTOR_VEHICLE);
+			if(l11.GetNumObjects() > 0)
+			{
+				Vehicle m = l11.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionWait(ACTION_NEWLIST, 2.0f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					}
+				}
+			}
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			Caller->AssignCommand(DUMMY_ALARM);
+			Caller->PushActionWait(ACTION_NEWLIST, 1.5f);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 3, false);
+			Caller->PushActionWait(ACTION_APPEND, 14.0f);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION2);
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				GameObject *obj = l1.GetObject(i);
+				if (!obj->IsSpecialLightEnabled())
+				{
+					obj->EnableSpecialLights(true);
+					Vector AlarmSnd = obj->GetPosition();
+					int soundID = Audio::PlaySample3D(SND_ALARM, AlarmSnd, true);
+					obj->SetUserData(soundID);
+					obj->AttachSound(soundID);
+				}
+			}
+			GameObjectList l2;
+ 			Game::CollectObstaclesOnVirtualObject(VO_AMBULANCE04, l2, ACTOR_VEHICLE);
+			if(l2.GetNumObjects() > 0)
+			{
+				Vehicle m = l2.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					if(StrCompare(m.GetPrototypeFileName(), OBJ_AMBULANCE01) == 0)
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 7, false);
+						//m.PushActionWait(ACTION_APPEND, 0.5f);
+						//m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					} else
+					{
+						m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
+						m.PushActionWait(ACTION_APPEND, 0.5f);
+						m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
+					}
+				}
+			}
+			GameObjectList l3;
+ 			Game::CollectObstaclesOnVirtualObject(VO_ENGINE05, l3, ACTOR_VEHICLE);
+			if(l3.GetNumObjects() > 0)
+			{
+				Vehicle m = l3.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					m.PushActionWait(ACTION_NEWLIST, 2.0f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 3, false);
+				}
+			}
+			GameObjectList l4;
+ 			Game::CollectObstaclesOnVirtualObject(VO_HAZMAT, l4, ACTOR_VEHICLE);
+			if(l4.GetNumObjects() > 0)
+			{
+				Vehicle m = l4.GetObject(0);
+				PersonList passengers = m.GetPassengers();
+				if (passengers.GetNumPersons() == 0)
+				{
+					m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
+					m.PushActionWait(ACTION_APPEND, 0.5f);
+					m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 1, false);
+									}
+			}
+		}
+	}
+};
+
+object VcmdRoof : CommandScript
+{
+	VcmdRoof()
+	{
+		SetCursor("roof");
+		SetIcon("roof");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION_ROOF);
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				GameObject *obj = l1.GetObject(i);
+				if(obj->GetUserData() == 0)
+				{
+					obj->Hide(); 
+					obj->SetUserData(1);
+				} else
+				{
+					obj->Show(); 
+					obj->SetUserData(0);
+				} 
+			}
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION2_ROOF);
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				GameObject *obj = l1.GetObject(i);
+				if(obj->GetUserData() == 0)
+				{
+					obj->Hide(); 
+					obj->SetUserData(1);
+				} else
+				{
+					obj->Show(); 
+					obj->SetUserData(0);
+				} 
+			}
+		}
+	}
+};
+
+object VcmdGarageDoorsUp : CommandScript
+{
+	VcmdGarageDoorsUp()
+	{
+		SetCursor("garagedoorup");
+		SetIcon("garagedoorup");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 1, false);
+		else if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 3, false);
+	}
+};
+
+object VcmdGarageDoorsDown : CommandScript
+{
+	VcmdGarageDoorsDown()
+	{
+		SetCursor("garagedoordown");
+		SetIcon("garagedoordown");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 2, false);
+		else if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 4, false);
+	}
+};
+
+object VcmdCallEMT : CommandScript
+{
+	VcmdCallEMT()
+	{
+		SetCursor("alarm");
+		SetIcon("callemt");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+		
+		Person p = Game::CreatePerson(OBJ_EMT, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallEMTSCBA : CommandScript
+{
+	VcmdCallEMTSCBA()
+	{
+		SetCursor("alarm");
+		SetIcon("callemtscba");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+		
+		Person p = Game::CreatePerson(OBJ_EMT_SCBA, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallEMTStretcher : CommandScript
+{
+	VcmdCallEMTStretcher()
+	{
+		SetCursor("alarm");
+		SetIcon("callemtstretcher");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+		
+		Person p = Game::CreatePerson(OBJ_EMT_STRETCHER, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			//p.SetAutoHealDistance(0.1f);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallPM : CommandScript
+{
+	VcmdCallPM()
+	{
+		SetCursor("alarm");
+		SetIcon("callpm");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+		
+		Person p = Game::CreatePerson(OBJ_PM, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			p.SetEquipment(EQUIP_EMERGENCY_CASE);
+			//p.SetAutoHealDistance(1000.f);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallPMSCBA : CommandScript
+{
+	VcmdCallPMSCBA()
+	{
+		SetCursor("alarm");
+		SetIcon("callpmscba");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+		
+		Person p = Game::CreatePerson(OBJ_PM_SCBA, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			//p.SetEquipment(EQUIP_EMERGENCY_CASE);
+			//p.SetAutoHealDistance(0.1f);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallPMStretcher : CommandScript
+{
+	VcmdCallPMStretcher()
+	{
+		SetCursor("alarm");
+		SetIcon("callpmstretcher");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+				
+		Person p = Game::CreatePerson(OBJ_PM_STRETCHER, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			//p.SetAutoHealDistance(0.1f);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallDiver : CommandScript
+{
+	VcmdCallDiver()
+	{
+		SetCursor("alarm");
+		SetIcon("calldiver");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+				
+		Person p = Game::CreatePerson(OBJ_DIVER, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			Game::FindFreePosition(&p, Spawn);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallHazmat : CommandScript
+{
+	VcmdCallHazmat()
+	{
+		SetCursor("alarm");
+		SetIcon("callhazmat");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+				
+		Person p = Game::CreatePerson(OBJ_HAZMAT, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdCallUSARFF : CommandScript
+{
+	VcmdCallUSARFF()
+	{
+		SetCursor("alarm");
+		SetIcon("callusar");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			ActorList l2 = Game::GetActors(VO_MOVETO01);
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			ActorList l2 = Game::GetActors(VO_MOVETO02);
+		}
+		if(l1.GetNumActors() > 0)
+			Vector Spawn = l1.GetActor(0)->GetPosition();
+
+		if(l2.GetNumActors() > 0)
+			Vector MoveTo = l2.GetActor(0)->GetPosition();
+				
+		Person p = Game::CreatePerson(OBJ_USARFF, UNNAMED);
+		if (Game::FindFreePosition(&p, Spawn))
+		{
+			p.SetUpgradeLevel(3);
+			p.SetPosition(Spawn);
+			p.PushActionMove(ACTION_NEWLIST, MoveTo);
+		}
+	}
+};
+
+object VcmdEmptyFireStation : CommandScript
+{
+	VcmdEmptyFireStation()
+	{
+		SetIcon("enterhouse");
+		SetCursor("enterhouse");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay())
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(Caller->HasName(NAME_CONTROLPANEL)) //= fire station 1
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			if(l1.GetNumActors() > 0)
+				Vector Spawn = l1.GetActor(0)->GetPosition();
+
+			GameObjectList l2;
+			Game::CollectObstaclesOnVirtualObject(VO_SQUAD01, l2, ACTOR_PERSON);
+			for(int i = 0; i < l2.GetNumObjects(); i++)
+			{
+				GameObject *obj = l2.GetObject(i);
+				if (obj->GetType() == ACTOR_PERSON)
+				{
+					Person p(obj);
+					p.PushActionMove(ACTION_NEWLIST, Spawn);
+					p.PushActionDeleteOwner(ACTION_APPEND);
+				}
+			}
+		}
+		if(Caller->HasName(NAME_CONTROLPANEL2)) //= fire station 2
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			if(l1.GetNumActors() > 0)
+				Vector Spawn = l1.GetActor(0)->GetPosition();
+
+			GameObjectList l2;
+			Game::CollectObstaclesOnVirtualObject(VO_SQUAD02, l2, ACTOR_PERSON);
+			for(int i = 0; i < l2.GetNumObjects(); i++)
+			{
+				GameObject *obj = l2.GetObject(i);
+				if (obj->GetType() == ACTOR_PERSON)
+				{
+					Person p(obj);
+					p.PushActionMove(ACTION_NEWLIST, Spawn);
+					p.PushActionDeleteOwner(ACTION_APPEND);
+				}
+			}
+		}
+	}
+};
+
+object DummyDisableAlarm : CommandScript
+{
+	DummyDisableAlarm()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			v.RemoveCommand(DUMMY_ALARM);
+
+		if(Caller->HasName(NAME_CONTROLPANEL) || Caller->HasName(NAME_FIRESTATION)) //= fire station 1
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION);
+		else if(Caller->HasName(NAME_CONTROLPANEL2) || Caller->HasName(NAME_FIRESTATION2)) //= fire station 2
+			GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION2);
+
+		for(int i=0; i < l1.GetNumObjects(); i++)
+		{
+			GameObject *obj = l1.GetObject(i);
+			obj->EnableSpecialLights(false);
+			int ref = obj->GetUserData();
+			obj->UnattachSound(ref);
+			Audio::StopSample(ref);
+		}
+	}
+};
+
+object DummyCallCrew : CommandScript
+{
+	DummyCallCrew()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Caller);
+		if(v.IsCollidingWithVirtualObject(VO_SQUAD01))
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN01);
+			if(l1.GetNumActors() > 0)
+				Vector Spawn = l1.GetActor(0)->GetPosition();
+
+			GameObjectList l2 = Game::GetGameObjects(NAME_FIRESTATION);
+			for(int i=0; i < l2.GetNumObjects(); i++)
+			{
+				GameObject *obj = l2.GetObject(i);
+				if (!obj->IsSpecialLightEnabled())
+				{
+					obj->EnableSpecialLights(true);
+					obj->PushActionWait(ACTION_NEWLIST, 16.0f);
+					obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+					Vector AlarmSnd = obj->GetPosition();
+					int soundID = Audio::PlaySample3D(SND_ALARM, AlarmSnd, true);
+					obj->SetUserData(soundID);
+					obj->AttachSound(soundID);
+				}
+			}
+		}
+		else if(v.IsCollidingWithVirtualObject(VO_SQUAD02))
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+			if(l1.GetNumActors() > 0)
+				Vector Spawn = l1.GetActor(0)->GetPosition();
+
+			GameObjectList l2 = Game::GetGameObjects(NAME_FIRESTATION2);
+			for(int i=0; i < l2.GetNumObjects(); i++)
+			{
+				GameObject *obj = l2.GetObject(i);
+				if (!obj->IsSpecialLightEnabled())
+				{
+					obj->EnableSpecialLights(true);
+					obj->PushActionWait(ACTION_NEWLIST, 16.0f);
+					obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+					Vector AlarmSnd = obj->GetPosition();
+					int soundID = Audio::PlaySample3D(SND_ALARM, AlarmSnd, true);
+					obj->SetUserData(soundID);
+					obj->AttachSound(soundID);
+				}
+			}
+		} 
+		else
+		{
+			ActorList l1 = Game::GetActors(VO_SPAWN02);
+			if(l1.GetNumActors() > 0)
+				Vector Spawn = l1.GetActor(0)->GetPosition();
+		}
+
+		PersonList passengers = v.GetPassengers();
+		if (ChildID == 1)
+		{
+			Person p = Game::CreatePerson(OBJ_PM, UNNAMED);
+			p.SetEquipment(EQUIP_EMERGENCY_CASE);
+		}
+		else if (ChildID == 2)
+			Person p = Game::CreatePerson(OBJ_PM_STRETCHER, UNNAMED);
+		else if (ChildID == 3)
+			Person p = Game::CreatePerson(OBJ_EMT, UNNAMED);
+		else if (ChildID == 4)
+			Person p = Game::CreatePerson(OBJ_CHIEF, UNNAMED);
+		else if (ChildID == 5)
+			Person p = Game::CreatePerson(OBJ_HAZMAT, UNNAMED);
+		else if (ChildID == 6)
+			Person p = Game::CreatePerson(OBJ_USARFF, UNNAMED);
+		else if (ChildID == 7)
+			Person p = Game::CreatePerson(OBJ_EMT_STRETCHER, UNNAMED);
+		else
+			return;
+
+		p.SetUpgradeLevel(3);
+		Game::FindFreePosition(&p, Spawn, 250);
+		p.SetPosition(Spawn);
+		p.PushActionMove(ACTION_NEWLIST, &v, TARGET_ANY);
+		p.PushActionTurnTo(ACTION_APPEND, &v);
+		p.PushActionEnterCar(ACTION_APPEND, &v);
+	}
+};
+
+object DummyGates : CommandScript
+{
+	DummyGates()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		GameObjectList gate01a = Game::GetGameObjects(NAME_GATE01A);
+		GameObjectList gate02a = Game::GetGameObjects(NAME_GATE02A);
+		GameObjectList gate03a = Game::GetGameObjects(NAME_GATE03A);
+		GameObjectList gate04a = Game::GetGameObjects(NAME_GATE04A);
+		GameObjectList gate05a = Game::GetGameObjects(NAME_GATE05A);
+		GameObjectList gate06a = Game::GetGameObjects(NAME_GATE06A);
+		GameObjectList gate07a = Game::GetGameObjects(NAME_GATE07A);
+		GameObjectList gate08a = Game::GetGameObjects(NAME_GATE08A);
+		GameObjectList gate01b = Game::GetGameObjects(NAME_GATE01B);
+		GameObjectList gate02b = Game::GetGameObjects(NAME_GATE02B);
+		GameObjectList gate03b = Game::GetGameObjects(NAME_GATE03B);
+		GameObjectList gate04b = Game::GetGameObjects(NAME_GATE04B);
+		GameObjectList gate05b = Game::GetGameObjects(NAME_GATE05B); 
+		GameObjectList gate06b = Game::GetGameObjects(NAME_GATE06B);
+		GameObjectList gate07b = Game::GetGameObjects(NAME_GATE07B);
+		GameObjectList gate08b = Game::GetGameObjects(NAME_GATE08B); 
+		ActorList vogate01a = Game::GetActors(VO_GATE01A); 
+		ActorList vogate02a = Game::GetActors(VO_GATE02A);
+		ActorList vogate03a = Game::GetActors(VO_GATE03A); 
+		ActorList vogate04a = Game::GetActors(VO_GATE04A);
+		ActorList vogate05a = Game::GetActors(VO_GATE05A); 
+		ActorList vogate06a = Game::GetActors(VO_GATE06A); 
+		ActorList vogate07a = Game::GetActors(VO_GATE07A);
+		ActorList vogate08a = Game::GetActors(VO_GATE08A); 
+ 		ActorList vogate01b = Game::GetActors(VO_GATE01B);
+		ActorList vogate02b = Game::GetActors(VO_GATE02B);
+		ActorList vogate03b = Game::GetActors(VO_GATE03B);
+		ActorList vogate04b = Game::GetActors(VO_GATE04B);
+		ActorList vogate05b = Game::GetActors(VO_GATE05B);
+		ActorList vogate06b = Game::GetActors(VO_GATE06B);
+		ActorList vogate07b = Game::GetActors(VO_GATE07B);
+		ActorList vogate08b = Game::GetActors(VO_GATE08B);
+
+		if(ChildID == 1) //= Open front gates fire station 1
+		{
+			for(int i=0; i < gate01a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate01a.GetObject(i);
+				Actor *vogate = vogate01a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+			for(int i=0; i < gate02a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate02a.GetObject(i);
+				Actor *vogate = vogate02a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+			for(int i=0; i < gate03a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate03a.GetObject(i);
+				Actor *vogate = vogate03a.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+			for(int i=0; i < gate04a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate04a.GetObject(i);
+				Actor *vogate = vogate04a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+			for(int i=0; i < gate05a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate05a.GetObject(i);
+				Actor *vogate = vogate05a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+		}
+		if(ChildID == 2) //= Close all opened gates fire station 1
+		{
+			for(int i=0; i < gate01a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate01a.GetObject(i);
+				Actor *vogate = vogate01a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate02a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate02a.GetObject(i);
+				Actor *vogate = vogate02a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate03a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate03a.GetObject(i);
+				Actor *vogate = vogate03a.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+			for(int i=0; i < gate04a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate04a.GetObject(i);
+				Actor *vogate = vogate04a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate05a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate05a.GetObject(i);
+				Actor *vogate = vogate05a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate01b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate01b.GetObject(i);
+				Actor *vogate = vogate01b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate02b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate02b.GetObject(i);
+				Actor *vogate = vogate02b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate03b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate03b.GetObject(i);
+				Actor *vogate = vogate03b.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+			for(int i=0; i < gate04b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate04b.GetObject(i);
+				Actor *vogate = vogate04b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate05b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate05b.GetObject(i);
+				Actor *vogate = vogate05b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+		}
+		if(ChildID == 3) //= Open front gates fire station 2
+		{
+			for(int i=0; i < gate06a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate06a.GetObject(i);
+				Actor *vogate = vogate06a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+			for(int i=0; i < gate07a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate07a.GetObject(i);
+				Actor *vogate = vogate07a.GetActor(i);
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+				}
+			}
+			for(int i=0; i < gate08a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate08a.GetObject(i);
+				Actor *vogate = vogate08a.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 0)
+				{ 
+					gate->SetUserData(1);
+					gate->SetAnimation(ANI_OPEN);
+					vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+		}
+		if(ChildID == 4) //= Close all opened gates fire station 2
+		{
+			for(int i=0; i < gate06a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate06a.GetObject(i);
+				Actor *vogate = vogate06a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate07a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate07a.GetObject(i);
+				Actor *vogate = vogate07a.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate08a.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate08a.GetObject(i);
+				Actor *vogate = vogate08a.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+			for(int i=0; i < gate06b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate06b.GetObject(i);
+				Actor *vogate = vogate06b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate07b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate07b.GetObject(i);
+				Actor *vogate = vogate07b.GetActor(i);
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+				}
+			}
+			for(int i=0; i < gate08b.GetNumObjects(); i++)
+			{
+				GameObject *gate = gate08b.GetObject(i);
+				Actor *vogate = vogate08b.GetActor(i);
+				Vector GateSnd = gate->GetPosition();
+				if (gate->GetUserData() == 1)
+				{ 
+					gate->SetUserData(0);
+					gate->SetAnimation(ANI_CLOSE);
+					vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+					Audio::PlaySample3D(SND_GATE, GateSnd);
+				}
+			}
+		}
+		if(ChildID == 5) //= Battalion chief 'calls vehicle cmds' for opening/closing front gates fire station 1
+		{
+			Vehicle v(Caller);
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate01a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate01a.GetObject(i);
+					Actor *vogate = vogate01a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0)
+			{
+				for(int i=0; i < gate02a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate02a.GetObject(i);
+					Actor *vogate = vogate02a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_LADDER) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0)
+			{
+				for(int i=0; i < gate03a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate03a.GetObject(i);
+					Actor *vogate = vogate03a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+			{
+				for(int i=0; i < gate04a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate04a.GetObject(i);
+					Actor *vogate = vogate04a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}	
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate05a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate05a.GetObject(i);
+					Actor *vogate = vogate05a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+		}
+		if(ChildID == 6) //= Battalion chief 'calls vehicle cmds' for opening/closing front gates fire station 2
+		{
+			Vehicle v(Caller);
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_HAZMATSQUAD) == 0)
+			{
+				for(int i=0; i < gate06a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate06a.GetObject(i);
+					Actor *vogate = vogate06a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate07a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate07a.GetObject(i);
+					Actor *vogate = vogate07a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}	
+			}
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate08a.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate08a.GetObject(i);
+					Actor *vogate = vogate08a.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					} else
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+
+		}
+		if(ChildID == 7) //To fire station cmd to open rear gates fire station 1
+		{
+			Vehicle v(Caller);
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate01b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate01b.GetObject(i);
+					Actor *vogate = vogate01b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0)
+			{
+				for(int i=0; i < gate02b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate02b.GetObject(i);
+					Actor *vogate = vogate02b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_LADDER) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0)
+			{
+				for(int i=0; i < gate03b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate03b.GetObject(i);
+					Actor *vogate = vogate03b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+			{
+				for(int i=0; i < gate04b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate04b.GetObject(i);
+					Actor *vogate = vogate04b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}	
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate05b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate05b.GetObject(i);
+					Actor *vogate = vogate05b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+		}
+		if(ChildID == 8) //To fire station cmd to open rear gates fire station 2
+		{
+			Vehicle v(Caller);
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_HAZMATSQUAD) == 0)
+			{
+				for(int i=0; i < gate06b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate06b.GetObject(i);
+					Actor *vogate = vogate06b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate07b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate07b.GetObject(i);
+					Actor *vogate = vogate07b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}	
+			}
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate08b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate08b.GetObject(i);
+					Actor *vogate = vogate08b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 0)
+					{
+						gate->SetUserData(1);
+						gate->SetAnimation(ANI_OPEN);
+						vogate->SetVirtualObjectTerrain(VOSET_ROAD);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+		}
+		if(ChildID == 9) //To fire station cmd to close rear gates fire station 1
+		{
+			Vehicle v(Caller);
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate01b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate01b.GetObject(i);
+					Actor *vogate = vogate01b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0)
+			{
+				for(int i=0; i < gate02b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate02b.GetObject(i);
+					Actor *vogate = vogate02b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_LADDER) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0)
+			{
+				for(int i=0; i < gate03b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate03b.GetObject(i);
+					Actor *vogate = vogate03b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0)
+			{
+				for(int i=0; i < gate04b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate04b.GetObject(i);
+					Actor *vogate = vogate04b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate05b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate05b.GetObject(i);
+					Actor *vogate = vogate05b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+		}
+		if(ChildID == 10) //To fire station cmd to close rear gates fire station 2
+		{
+			Vehicle v(Caller);
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_HAZMATSQUAD) == 0)
+			{
+				for(int i=0; i < gate06b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate06b.GetObject(i);
+					Actor *vogate = vogate06b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if(StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_ENGINE02) == 0)
+			{
+				for(int i=0; i < gate07b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate07b.GetObject(i);
+					Actor *vogate = vogate07b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+			if (v.GetVehicleType() == VT_AMBULANCE_RTW) 
+			{
+				for(int i=0; i < gate08b.GetNumObjects(); i++)
+				{
+					GameObject *gate = gate08b.GetObject(i);
+					Actor *vogate = vogate08b.GetActor(i);
+					Vector GateSnd = gate->GetPosition();
+					if (gate->GetUserData() == 1)
+					{
+						gate->SetUserData(0);
+						gate->SetAnimation(ANI_CLOSE);
+						vogate->SetVirtualObjectTerrain(VOSET_BARRICADE);
+						Audio::PlaySample3D(SND_GATE, GateSnd);
+					}
+				}
+			}
+		}
+	}
+};
+
+object VcmdAutoStaffOn : CommandScript
+{
+	VcmdAutoStaffOn()
+	{
+		SetIcon("autostaffon");
+		SetCursor("autostaffon");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || !Game::IsFreeplay())
+			return false;
+			
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->RemoveCommand("VcmdAutoStaffOn");
+		Caller->AssignCommand("VcmdAutoStaffOff");
+	}
+};
+
+object VcmdAutoStaffOff : CommandScript
+{
+	VcmdAutoStaffOff()
+	{
+		SetIcon("autostaffoff");
+		SetCursor("autostaffoff");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || !Game::IsFreeplay())
+			return false;
+			
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->RemoveCommand("VcmdAutoStaffOff");
+		Caller->AssignCommand("VcmdAutoStaffOn");
+	}
+};
+
+object VcmdRepairVehicles : CommandScript
+{
+	VcmdRepairVehicles()
+	{
+		SetCursor("repair");
+		SetIcon("repair");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (!Game::IsFreeplay() && !Game::IsMultiplayer())
+			return false;
+			
+		int Money = Mission::GetMoneyLeft();
+		if (Money < PRICE_REPAIR)
+			return false;			
+			
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_ALARM))
+			return false;	
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid())
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if (ChildID == 0)
+		{
+			Vehicle cp(Caller);
+			GameObjectList l1;
+			ActorList l2, l3;
+			if(Caller->HasName(NAME_CONTROLPANEL))
+			{
+				Game::CollectObstaclesOnVirtualObject(VO_SQUAD01, l1, ACTOR_VEHICLE);
+				l2 = Game::GetActors(VO_SPAWN01);
+				l3 = Game::GetActors(VO_MOVETO01);
+			}
+			else if(Caller->HasName(NAME_CONTROLPANEL2))
+			{
+				Game::CollectObstaclesOnVirtualObject(VO_SQUAD02, l1, ACTOR_VEHICLE);
+				l2 = Game::GetActors(VO_SPAWN02);
+				l3 = Game::GetActors(VO_MOVETO02);
+			}
+			
+			Vector Spawn = l2.GetActor(0)->GetPosition();
+			Vector MoveTo = l3.GetActor(0)->GetPosition();
+			bool repair = false;
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				if (!repair)
+				{
+					Vehicle obj = l1.GetObject(i);
+					if (!obj.HasCommand(DUMMY_VCALLED) && obj.GetEnergy() < obj.GetMaxEnergy())
+						repair = true;
+				}
+			}
+			if (repair)
+			{
+				int Money = Mission::GetMoneyLeft();
+				if (Money >= PRICE_REPAIR)
+				{
+					int NewMoney = Money - PRICE_REPAIR;
+					Mission::SetMoney(NewMoney);			
+				}			
+				Person p = Game::CreatePerson(OBJ_ENGINEER, UNNAMED);
+				if (Game::FindFreePosition(&p, Spawn))
+				{
+					p.SetUpgradeLevel(3);
+					p.SetEquipment(EQUIP_THW_CASE);
+					Game::FindFreePosition(&p, Spawn);
+					p.SetPosition(Spawn);
+					p.PushActionMove(ACTION_NEWLIST, MoveTo);
+					p.PushActionExecuteCommand(ACTION_APPEND, "VcmdRepairVehicles", &cp, 1, false);
+				}
+			} else
+				Mission::PlayHint(HINT_NO_REPAIR);
+		}
+		if (ChildID == 1)
+		{
+			Person p(Caller);
+			Vehicle cp(Target);
+			GameObjectList l1;
+			ActorList l2;
+			bool repair = false;			
+			if(cp.HasName(NAME_CONTROLPANEL))
+			{
+				Game::CollectObstaclesOnVirtualObject(VO_SQUAD01, l1, ACTOR_VEHICLE);
+				l2 = Game::GetActors(VO_SPAWN01);
+			}	
+			if(cp.HasName(NAME_CONTROLPANEL2))
+			{
+				Game::CollectObstaclesOnVirtualObject(VO_SQUAD02, l1, ACTOR_VEHICLE);
+				l2 = Game::GetActors(VO_SPAWN02);
+			}
+			
+			Vector Delete = l2.GetActor(0)->GetPosition();			
+			for(int i=0; i < l1.GetNumObjects(); i++)
+			{
+				if (!repair)
+				{
+					Vehicle obj = l1.GetObject(i);
+					if (!obj.HasCommand(DUMMY_VCALLED) && obj.GetEnergy() < obj.GetMaxEnergy())
+						repair = true;
+				}
+			}
+			if (repair)
+			{
+				p.PushActionMove(ACTION_NEWLIST, &obj, TARGET_ANY);
+				p.PushActionTurnTo(ACTION_APPEND, &obj);
+				p.PushActionRepair(ACTION_APPEND, &obj);
+				p.PushActionExecuteCommand(ACTION_APPEND, "VcmdRepairVehicles", &cp, 1, false);
+			} else
+			{
+				Mission::PlayHint(HINT_REPAIRED);
+				p.PushActionMove(ACTION_NEWLIST, Delete);
+				p.PushActionDeleteOwner(ACTION_APPEND);
+			}			
+		}
+	}
+};

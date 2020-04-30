@@ -1,0 +1,602 @@
+//******************************************************************************************
+// #Version 1.5#
+//
+// 		Includes: All Barricade commands
+//
+//	- PcmdBarricadeGet
+//	- PcmdBarricadeRemove
+//	- PcmdBarricadePlace
+//	- DummyBarricade
+//	- VcmdRotateBarricadeClockwise
+//	- VcmdRotateBarricadeCounterClockwise
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_GETBARRICADE[]			= "PcmdBarricadeGet";
+const char CMD_REMOVEBARRICADE[]		= "PcmdBarricadeRemove";
+const char CMD_PLACEBARRICADE[]			= "PcmdBarricadePlace";
+const char CMD_GETCONE[]			= "PcmdTrafficConeGet";
+const char CMD_ROTATECW[]			= "VcmdRotateBarricadeClockwise";
+const char CMD_ROTATECCW[]			= "VcmdRotateBarricadeCounterClockwise";
+const char CMD_DOORS[]				= "OpenCloseDoor";
+const char OBJ_BARRICADEGROUND[]		= "mod:Prototypes/Vehicles/06 Objects/police_barricade.e4p";
+const char NAME_BARRICADE[]			= "Barricade";
+const char OBJ_BARRICADE[]			= "01 LA Equipment/police_barricade.V3O";
+const char DUMMY_BARRICADE[]			= "DummyPoliceBarricade";
+const char NAME_HALT[]				= "pHalt";
+const char OBJ_HALT[]				= "mod:Prototypes/Objects/01 LA Equipment/invisible.e4p";
+int DummyGroup = 17;
+
+object PcmdBarricadeGet : CommandScript
+{
+	
+	PcmdBarricadeGet()
+	{
+    		SetIcon("policebarricade");
+    		SetCursor("policebarricade");
+		SetPriority(180);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if (p.IsCarryingPerson()||p.IsLinkedWithPerson()|| p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+			if ((v.HasCommand("FlyTo") || v.HasCommand("VcmdDeInstallRope")) && !v.IsOnGround())
+				return false;
+
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/hummerh2_lasd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck01_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck02_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_armoured_vehicle.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_truck.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 US Army/hmmwv.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/us_army_truck.e4p") == 0)
+				return true;
+
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_BARRICADE, Target, 1, false);
+	}
+};
+
+object PcmdBarricadeRemove : CommandScript
+{
+	
+	PcmdBarricadeRemove()
+	{
+    		SetIcon("policebarricaderemove");
+    		SetCursor("policebarricaderemove");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASROADBLOCK);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_ROADBLOCK);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson()||p.IsLinkedWithPerson()|| p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_ROADBLOCK))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/hummerh2_lasd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck01_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck02_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_armoured_vehicle.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_truck.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/hmmwv.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/us_army_truck.e4p") == 0)
+				return true;
+
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_BARRICADE, Target, 2, false);
+	}
+};
+
+object PcmdBarricadePlace : CommandScript
+{
+	
+	PcmdBarricadePlace()
+	{
+    		SetIcon("policebarricadeplace");
+    		SetCursor("policebarricadeplace");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_PERSON)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_PERSON)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Caller->PushActionWait(ACTION_NEWLIST, 0.1f);
+		Vector Pos = Caller->GetPosition();
+			float r[9];
+			float childr[9];
+		Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+		if (Game::FindFreePosition(Caller, Pos, 35.f))
+		{
+			Vehicle v = Game::CreateVehicle(OBJ_BARRICADEGROUND, NAME_BARRICADE);
+			if (v.IsValid())
+			{
+				float dx = 40.f, dy = 0.f, dz = 0.f;
+				Math::RotateVector(dx, dy, dz, r);
+				Math::EulerToMatrix(90.0f, 0.f, 0.f, childr);
+				Math::MultiplyMatrices(childr, r);
+				Pos = Pos + Vector(dx, dy, 0);
+				v.SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+				v.SetPosition(Pos);
+				v.UpdatePlacement();
+				v.AssignCommand(CMD_ROTATECW);
+				v.AssignCommand(CMD_ROTATECCW);
+			}
+
+			GameObject pHalt = Game::CreateObject(OBJ_HALT, NAME_HALT);
+			if (pHalt.IsValid())
+			{
+				float dx = 60.f, dy = 0.f, dz = 0.f;
+				Math::RotateVector(dx, dy, dz, r);
+				Math::EulerToMatrix(0.0f, 0.f, 0.f, childr);
+				Math::MultiplyMatrices(childr, r);
+				Pos = Pos + Vector(dx, dy, 0);
+				pHalt.SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+				pHalt.SetPosition(Pos);
+				pHalt.UpdatePlacement();
+			}
+			pHalt.PushActionHalt(ACTION_NEWLIST, 250, HALT_PERSONS); 
+			pHalt.SetSelectable(false);
+
+			int UnitID = p.GetID();
+			v.SetUserData(UnitID);
+			int PersonID = v.GetID();
+			pHalt.SetUserData(PersonID);
+
+			int PlayerID = p.GetPlayerMP();
+			v.SetPlayerMP(PlayerID);
+			pHalt.SetPlayerMP(PlayerID);
+		}
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_BARRICADE, Target, 2, false);
+	}
+};
+
+object DummyPoliceBarricade : CommandScript
+{
+	DummyPoliceBarricade()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		return false;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(childID == 1)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_BARRICADE);
+			p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_BARRICADE, Caller, 4, false);
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+		if(childID == 2)
+		{
+			Person p(Caller);
+			p.RemoveObjectInRightHand();
+			p.PushActionSwitchAnim(ACTION_APPEND, "idle");
+			p.RemoveCommand(CMD_REMOVEBARRICADE);
+			p.RemoveCommand(CMD_PLACEBARRICADE);
+			p.AssignCommand(CMD_GETBARRICADE); 
+			p.AssignCommand(CMD_GETCONE);
+			p.AssignCommand("PcmdFlareGet");
+			p.AssignCommand("EnterCar");
+			p.AssignCommand("EnterHouse");
+			p.AssignCommand("GetRoadBlock");
+			p.AssignCommand("Arrest");
+			p.AssignCommand("ReleaseArrested");
+			p.AssignCommand("DrawWeapon");
+			p.AssignCommand("PutInCar");
+			p.AssignCommand("AskPerson");
+			p.AssignCommand("Halt");
+			p.AssignCommand("PickUp");
+			p.AssignCommand("GetExtinguisher");
+			p.AssignCommand("Lift");
+			p.AssignCommand("UnloadPerson");
+			p.AssignCommand("Redirect");
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_f.e4p") == 0 ||
+			StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p") == 0)
+			{
+				p.AssignCommand("SendPeople");
+				p.AssignCommand("HaltVehicle");
+				p.AssignCommand("Stop");
+				p.AssignCommand("PcmdCallPatrolCar");
+				p.AssignCommand("PcmdCallAmbulance");
+				p.AssignCommand("PcmdCallPoliceHelicopter"); 
+				if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p") == 0) 
+				{
+					p.AssignCommand("PcmdGetTrafficVest");	
+				}
+				if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p") == 0) 
+				{
+					p.AssignCommand("PcmdRemoveTrafficVest");
+				}
+			}
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_motorcycle_officer.e4p") == 0)
+			{
+				p.AssignCommand("PcmdMotorcycleEnter");
+				p.AssignCommand("SendPeople");
+				p.AssignCommand("HaltVehicle");
+				p.AssignCommand("Stop");
+				p.AssignCommand("PcmdCallPatrolCar");
+				p.AssignCommand("PcmdCallAmbulance");
+				p.AssignCommand("PcmdCallPoliceHelicopter"); 
+			}
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_swat.e4p") == 0)
+			{
+				p.AssignCommand("HaltVehicle");
+				p.AssignCommand("PcmdMP5Get");
+				p.AssignCommand("PcmdBallisticShieldGet");
+				p.AssignCommand("GetFlashgrenade");
+				p.AssignCommand("PcmdCallPatrolCar");
+				p.AssignCommand("PcmdCallAmbulance");
+				p.AssignCommand("PcmdCallPoliceHelicopter"); 
+			}
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/05 US Army/us_army_soldier.e4p") == 0)
+			{
+				p.AssignCommand("PcmdM4Get");
+				p.AssignCommand("PcmdStabilize");
+				p.AssignCommand("GetFlashgrenade");
+				p.AssignCommand("GetAxe");
+				p.AssignCommand("GetShears");
+				p.AssignCommand("GetChainsaw");
+				p.AssignCommand("Pull");
+				p.AssignCommand("StopPull");
+				p.AssignCommand("SendPeople");
+				//p.AssignCommand("DriveAwayPerson");
+ 				p.AssignCommand("Stop");
+			}
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+		if(childID == 3)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_BARRICADE);
+			p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_BARRICADE, Caller, 4, false);
+
+ 			Vehicle v(Target);
+			int PersonID = v.GetID();
+			GameObjectList list = Game::GetGameObjects(NAME_HALT);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject *obj = list.GetObject(i);
+				if (obj->GetUserData() == PersonID)
+				{
+					obj->PushActionDeleteOwner(ACTION_NEWLIST);
+				}
+			}
+
+ 			Vehicle v(Target);
+			v.PushActionWait(ACTION_NEWLIST, 0.1f);
+			v.PushActionDeleteOwner(ACTION_APPEND);
+		}
+		if(childID == 4)
+		{
+			Person p(Caller);
+			p.AssignCommand(CMD_REMOVEBARRICADE);
+			p.AssignCommand(CMD_PLACEBARRICADE);
+			p.RemoveCommand(CMD_GETBARRICADE);
+			p.RemoveCommand(CMD_GETCONE);
+			p.RemoveCommand("PcmdFlareGet");
+			p.RemoveCommand("EnterCar");
+			p.RemoveCommand("EnterHouse");
+			p.RemoveCommand("GetRoadBlock");
+			p.RemoveCommand("Arrest");
+			p.RemoveCommand("ReleaseArrested");
+			p.RemoveCommand("DrawWeapon");
+			p.RemoveCommand("PutInCar");
+			p.RemoveCommand("AskPerson");
+			p.RemoveCommand("Halt");
+			p.RemoveCommand("PickUp");
+			p.RemoveCommand("GetExtinguisher");
+			p.RemoveCommand("Lift");
+			p.RemoveCommand("UnloadPerson");
+			p.RemoveCommand("Redirect");
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_f.e4p") == 0 ||
+			StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p") == 0)
+			{
+				p.RemoveCommand("SendPeople");
+				p.RemoveCommand("HaltVehicle");
+				p.RemoveCommand("Stop");
+				if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p") == 0) 
+				{
+					p.RemoveCommand("PcmdGetTrafficVest");	
+				}
+				if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_m.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_traffic_officer_f.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p") == 0 || StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p") == 0) 
+				{
+					p.RemoveCommand("PcmdRemoveTrafficVest");
+				}
+			}
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_motorcycle_officer.e4p") == 0)
+			{
+				p.RemoveCommand("PcmdMotorcycleEnter");
+				p.RemoveCommand("SendPeople");
+				p.RemoveCommand("HaltVehicle");
+				p.RemoveCommand("Stop"); 
+            		}
+            		if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_swat.e4p") == 0)
+            		{
+				p.RemoveCommand("HaltVehicle");
+				p.RemoveCommand("PcmdMP5Get");
+				p.RemoveCommand("PcmdBallisticShieldGet");
+				p.RemoveCommand("GetFlashgrenade");
+			}
+			if(StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/05 US Army/us_army_soldier.e4p") == 0)
+			{
+				p.RemoveCommand("PcmdM4Get");
+				p.RemoveCommand("PcmdStabilize");
+				p.RemoveCommand("GetFlashgrenade");
+				p.RemoveCommand("Extinguish");
+				p.RemoveCommand("Cool");
+				p.RemoveCommand("GetExtinguisher");
+				p.RemoveCommand("GetAxe");
+				p.RemoveCommand("GetShears");
+				p.RemoveCommand("GetChainsaw");
+				p.RemoveCommand("Pull");
+				p.RemoveCommand("StopPull");
+				p.RemoveCommand("Lift");
+				p.RemoveCommand("UnloadPerson");
+				p.RemoveCommand("SendPeople");
+				//p.RemoveCommand("DriveAwayPerson");
+				p.RemoveCommand("Stop");
+			}
+			if (p.HasCommand("PcmdCallPatrolCar"))
+				p.RemoveCommand("PcmdCallPatrolCar");
+			if (p.HasCommand("PcmdCallAmbulance"))
+				p.RemoveCommand("PcmdCallAmbulance");
+			if (p.HasCommand("PcmdCallPoliceHelicopter"))
+				p.RemoveCommand("PcmdCallPoliceHelicopter");
+		}
+	}
+};
+
+object VcmdRotateBarricadeClockwise : CommandScript
+{
+	VcmdRotateBarricadeClockwise()
+	{
+    		SetIcon("rotate_cw");
+    		SetCursor("rotate_cw");
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(120);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID) 
+	{ 
+		if(!Caller->IsValid() || !Target->IsValid() || (Target->GetID() != Caller->GetID())) 
+			return false; 
+
+		if(Caller->GetType() == ACTOR_VEHICLE) 
+			return true; 
+
+		return false; 
+	} 
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		float r[9];
+		float childr[9];
+		Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+		Math::EulerToMatrix(-25.0f, 0.f, 0.f, childr);
+		Math::MultiplyMatrices(childr, r);
+
+		Caller->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+
+		Vehicle v(Caller);
+		int PersonID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_HALT);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == PersonID)
+			{
+				obj->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+			}
+		}
+	}
+};
+
+object VcmdRotateBarricadeCounterClockwise : CommandScript
+{
+	VcmdRotateBarricadeCounterClockwise()
+	{
+    		SetIcon("rotate_ccw");
+    		SetCursor("rotate_ccw");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(120);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID) 
+	{ 
+		if(!Caller->IsValid() || !Target->IsValid() || (Target->GetID() != Caller->GetID())) 
+			return false; 
+
+		if(Caller->GetType() == ACTOR_VEHICLE) 
+			return true; 
+
+		return false; 
+	} 
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		float r[9];
+		float childr[9];
+		Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+		Math::EulerToMatrix(25.0f, 0.f, 0.f, childr);
+		Math::MultiplyMatrices(childr, r);
+
+		Caller->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+
+		/*Vehicle v(Caller);
+		int PersonID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_HALT);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == PersonID)
+			{
+				obj->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+			}
+		}*/
+	}
+};

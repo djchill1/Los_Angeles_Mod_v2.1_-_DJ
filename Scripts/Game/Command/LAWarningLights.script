@@ -1,0 +1,141 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Includes: All Warninglights commands
+//
+//	- VcmdWarningLightsOn
+//	- DummyHasWarningLights
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char DUMMY_WARNINGLIGHTS[]		= "DummyHasWarningLights";
+const char OBJ_TILLER[]					= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
+const char DUMMY_ISTRAILED[] 			= "DummyIsTrailed";
+
+int DummyGroup = 25;
+ 
+object VcmdWarningLightsOn : CommandScript
+{
+	VcmdWarningLightsOn()
+ 	{
+ 		SetIcon("warningon");
+ 		SetCursor("warningon");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_WARNINGLIGHTS))
+			SetIcon("warningoff");
+		else
+			SetIcon("warningon");
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		Vehicle v(Caller);
+		if (StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0 && v.HasCommand(DUMMY_ISTRAILED))
+		{
+			int VecID = v.GetID();
+			if (v.HasCommand(DUMMY_WARNINGLIGHTS))
+			{
+				v.EnableBlinker(BLT_NONE);
+				v.RemoveCommand(DUMMY_WARNINGLIGHTS); 
+				VehicleList list(VT_FIREFIGHTERS_DLK, VT_FIREFIGHTERS_RW);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					Vehicle *c = list.GetVehicle(i);
+					if(c->GetUserData() == VecID)
+					{
+						System::Log("Vehicle flashinglights found");
+						if (c->HasCommand(DUMMY_WARNINGLIGHTS))
+						{
+							c->EnableBlinker(BLT_NONE);
+							c->RemoveCommand(DUMMY_WARNINGLIGHTS); 
+						}
+					}
+				}
+			} else
+			{
+				v.EnableBlinker(BLT_BOTH);
+				v.AssignCommand(DUMMY_WARNINGLIGHTS);
+				VehicleList list(VT_FIREFIGHTERS_DLK, VT_FIREFIGHTERS_RW);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					Vehicle *c = list.GetVehicle(i);
+					if(c->GetUserData() == VecID)
+					{
+						System::Log("Vehicle flashinglights found");
+						if (!c->HasCommand(DUMMY_WARNINGLIGHTS))
+						{
+							c->EnableBlinker(BLT_BOTH);
+							c->AssignCommand(DUMMY_WARNINGLIGHTS); 
+						}
+					}
+				}			
+			}
+		} 
+		else if (v.HasCommand(DUMMY_WARNINGLIGHTS))
+		{
+			v.EnableBlinker(BLT_NONE);
+			v.RemoveCommand(DUMMY_WARNINGLIGHTS); 
+		} else
+		{
+			v.EnableBlinker(BLT_BOTH);
+			v.AssignCommand(DUMMY_WARNINGLIGHTS);
+		}
+	}	
+};
+
+object DummyHasWarningLights : CommandScript
+{
+	DummyHasWarningLights()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		return false;
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return false;
+	}
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return false;
+	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+	}
+};

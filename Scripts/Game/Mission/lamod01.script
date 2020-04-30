@@ -1,0 +1,582 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 6;
+const int MAX_DEATHS = 2;
+const int MAX_INJURIES = 6;
+
+const char MISSION01_EXT[]			= "MISSION01_EXT";
+const char MISSION01_TRANSPORT[]		= "MISSION01_TRANSPORT";
+const char MISSION01_TRANSPORT_VEHICLES[]	= "MISSION01_TRANSPORT_VEHICLES";
+
+const char TIMER_CS1[] 				= "StartCutscene";
+const float TIME_CS1				= 4.0f;
+const char TIMER_CS2[] 				= "Cs2";
+const float TIME_CS2				= 3.0f;
+const char TIMER_CS3[] 				= "Cs4";
+const float TIME_CS3				= 5.0f;
+const char TIMER_CS4[] 				= "EndCutscene";
+const float TIME_CS4				= 2.0f;
+const char TIMER_INTERVAL[] 			= "Intervaltimer";
+const float TIME_INTERVAL			= 1.0f;
+const char HINT_PREPARE[] 			= "MISSION01_HINT01";
+const char HINT_EXPLOSION[] 			= "MISSION01_HINT02";
+const char HINT_EXTINGUISHED[] 		= "MISSION01_HINT03";
+const char HINT_TRANSPORTED[] 		= "MISSION01_HINT04";
+const char HINT_BUSTRANSPORTED[] 		= "MISSION01_HINT05";
+const char NAME_CS1_TRANSITION[]		= "cs1";
+const char NAME_BUS[]				= "m01_bus";
+const char NAME_WRECK[]				= "m01_wreck";
+const char PATH_BUS[]				= "m01_bus";
+const char NAME_PARTICLE_FIRE[]		= "m01_fire";
+const char NAME_DEBRIS[]			= "bus_debris";
+const char NAME_CIVIL01[]			= "m01_civil01";
+const char NAME_CIVIL02[]			= "m01_civil02";
+const char NAME_CIVIL03[]			= "m01_civil03";
+const char NAME_CIVIL04[]			= "m01_civil04";
+const char NAME_CIVIL05[]			= "m01_civil05";
+const char NAME_CIVIL06[]			= "m01_civil06";
+const char NAME_CIVIL07[]			= "m01_civil07";
+const char NAME_CIVIL08[]			= "m01_civil08";
+const char PATH_CIVIL01[]			= "m01_path01";
+const char PATH_CIVIL02[]			= "m01_path02";
+const char PATH_CIVIL03[]			= "m01_path03";
+const char PATH_CIVIL04[]			= "m01_path04";
+const char SND_FIRE[]				= "mod:Audio/Fx/misc/fire.wav";
+const char CMD_SIREN[]				= "VcmdSiren";
+
+object Mission01 : MissionScript
+{
+	int mHintCounter[MAX_HINTS];
+	bool mStartCutScene, mBusExtinguished, mExplosion, mTooManyVictims;
+	Vehicle mBus;
+	Person mCivil01, mCivil02, mCivil03, mCivil04, mCivil05, mCivil06, mCivil07, mCivil08;
+	GameObject mWreck;
+	GameObjectList mDebris;
+	GameObjectList mFireVictims;
+	int mSoundFire;
+	int mExtinguishLevel;
+	int mNumWrecksTow;
+
+	Mission01()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mStartCutScene = false;
+		mExplosion = false;
+		mBusExtinguished = false;
+		mTooManyVictims = false;
+		mExtinguishLevel = 0;
+		mNumWrecksTow = 1;
+	}
+	
+	~Mission01()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+
+			if (obj->HasName(NAME_BUS))
+			{
+				mBus = Vehicle(obj);
+			}
+			if (obj->HasName(NAME_WRECK))
+			{
+				mWreck = Vehicle(obj);
+				mWreck.Hide();
+			}
+			if (obj->HasName(NAME_CIVIL01))
+			{
+				mCivil01 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL02))
+			{
+				mCivil02 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL03))
+			{
+				mCivil03 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL04))
+			{
+				mCivil04 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL05))
+			{
+				mCivil05 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL06))
+			{
+				mCivil06 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL07))
+			{
+				mCivil07 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL08))
+			{
+				mCivil08 = Person(obj);
+			}
+		}
+		mDebris = Game::GetGameObjects(NAME_DEBRIS);
+		for(int i = 0; i < mDebris.GetNumObjects(); i++)
+		{
+			mDebris.GetObject(i)->Hide();
+		}
+		Audio::PlaySoundtrack("26", 0.0f);
+		ShowHint(0);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+		if (!mStartCutScene)
+		{
+			mStartCutScene = true;
+			mBus.SetObjectPath(PATH_BUS, 6.3f);
+			Mission::StartSingleTimer(TIMER_CS1, TIME_CS1);
+			System::Log("M01: Start cutscene timer");
+		}
+	}
+
+	void OnTimer(const char* Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_CS1 :
+			{
+				Mission::StartCutScene();
+				Mission::ShowBlackBars();
+				Mission::StartSingleTimer(TIMER_CS2, TIME_CS2);
+				Camera::StartTransition(NAME_CS1_TRANSITION, TIME_CS2);
+				Audio::SetMusicLevel(0.3f);
+			}
+			break;
+
+			case TIMER_CS2 :
+			{
+				Vector pos;
+				Camera::FollowTarget(&mBus, pos, true);
+				Camera::LookAtTarget(&mBus, true, 0.0f, 1.0f);
+				Camera::Rotate(10000, 0, 0, 7);
+			}
+			break;
+
+			case TIMER_CS3 :
+			{
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				Audio::SetMusicLevel(0.4f);
+				Mission::AddObjective(MISSION01_EXT); 
+				Mission::AddObjective(MISSION01_TRANSPORT);
+				Mission::AddObjective(MISSION01_TRANSPORT_VEHICLES);
+				SoundNewObjective();
+				Mission::StartSingleTimer(TIMER_CS4, TIME_CS4);
+				if (mHintCounter[1] == 0)
+					ShowHint(1);
+			}
+			break;
+
+			case TIMER_CS4 :
+			{
+                	 	mWreck.SetPosition(&mBus);
+                		mWreck.SetRotation(&mBus);
+				mWreck.Show();
+   				mSoundFire = Audio::PlaySample3D(SND_FIRE, mBus.GetPosition(), true);
+				System::Log("M01: Sound fire id: %d", mSoundFire);
+				if (!mWreck.IsBurning())
+				{
+					System::Log("M01: Start burning wreck with %d fire children", mWreck.GetNumFireChilds());
+					for (int i = 0; i < mWreck.GetNumFireChilds(); i++)
+					{
+						mWreck.GetFireChild(i).Burn();
+						mWreck.GetFireChild(i).SetTemperature(mWreck.GetFireChild(i).GetMaxMaterialTemperature());
+					}
+				}
+ 				mBus.PushActionDeleteOwner(ACTION_NEWLIST);
+				Mission::StartIntervalTimer(TIMER_INTERVAL, TIME_INTERVAL);
+				mExplosion = true;
+			}
+			break;
+
+			case TIMER_INTERVAL :
+			{
+				if (mExtinguishLevel >= 1)
+				{
+					System::Log("M01: Bus extinguished!");
+					Audio::StopSample(mSoundFire);
+					Mission::StopTimer(TIMER_INTERVAL);
+					mBusExtinguished = true;
+				}
+
+				if (!mBusExtinguished && !mWreck.IsBurning())
+				{
+					System::Log("M01: Stop fire sound.");
+					Audio::StopSample(mSoundFire);
+				}
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_BUS :
+			{
+				mBus.Explode();
+				for(int i = 0; i < mDebris.GetNumObjects(); i++)
+				{
+					mDebris.GetObject(i)->Show();
+				}
+				mCivil01.Injure(INJUREREASON_FIRE, true);
+				mCivil01.SetHealth(0.0f);
+				mCivil01.SetLife(0.0f);
+				mCivil01.SetInjuredLifeDrain(5.0f);
+				mCivil01.SetMedicalLifeGain(3.0f);
+				mCivil01.SetBloodPuddle(true);
+				mCivil02.Injure(INJUREREASON_FIRE, true);
+				mCivil02.SetHealth(0.0f);
+				mCivil02.SetLife(440.0f);
+				mCivil02.SetInjuredLifeDrain(3.0f);
+				mCivil02.SetMedicalLifeGain(6.0f);
+				mCivil02.SetBloodPuddle(true);
+				mCivil03.Injure(INJUREREASON_FIRE, true);
+				mCivil03.SetHealth(0.0f);
+				mCivil03.SetLife(600.0f);
+				mCivil03.SetInjuredLifeDrain(2.0f);
+				mCivil03.SetMedicalLifeGain(6.0f);
+				mCivil03.SetBloodPuddle(true);
+				mCivil04.Injure(INJUREREASON_FIRE, true);
+				mCivil04.SetHealth(0.0f);
+				mCivil04.SetLife(750.0f);
+				mCivil04.SetInjuredLifeDrain(2.0f);
+				mCivil04.SetMedicalLifeGain(6.0f);
+				mCivil04.SetBloodPuddle(true);
+				mCivil05.SetEscapePath(PATH_CIVIL01);
+				mCivil05.SetFleeing(true);
+				mCivil06.SetEscapePath(PATH_CIVIL02);
+				mCivil06.SetFleeing(true);
+				mCivil07.SetEscapePath(PATH_CIVIL03);
+				mCivil07.SetFleeing(true);
+				mCivil08.SetEscapePath(PATH_CIVIL04);
+				mCivil08.SetFleeing(true);
+				Mission::StartSingleTimer(TIMER_CS3, TIME_CS3);
+
+				return PATH_STOP;
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasName(NAME_WRECK))
+		{
+			mNumWrecksTow--;
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void SoundNewObjective()
+	{
+		Audio::PlaySample("mod:Audio/FX/misc/newobjective.wav");
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionExtinguish" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Extinguish bus");
+				}
+			}			
+			break;
+
+			case "EActionCool" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Extinguish bus");
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionExtinguish" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Increase extinguish level");
+					++mExtinguishLevel;
+				}	
+			}	
+			break;
+
+			case "EActionCool" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Increase extinguish level");
+					++mExtinguishLevel;
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnAbortAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionExtinguish" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Decrease extinguish level");
+					--mExtinguishLevel;
+				}
+			}			
+			break;
+
+			case "EActionCool" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck.GetID())
+				{
+					System::Log("M01: Decrease extinguish level");
+					--mExtinguishLevel;
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M01: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_PREPARE);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_EXPLOSION);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_EXTINGUISHED);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_TRANSPORTED);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_BUSTRANSPORTED);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (mExplosion && Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION01_EXT))
+			{
+				Mission::SetObjectiveAccomplished(MISSION01_EXT, true);
+				if (mHintCounter[2] == 0)
+					ShowHint(2);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION01_EXT))
+			{
+				Mission::SetObjectiveAccomplished(MISSION01_EXT, false);
+			}
+		}
+
+      	if (mExplosion && Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION01_TRANSPORT))
+			{
+             		Mission::SetObjectiveAccomplished(MISSION01_TRANSPORT, true);
+				if (mHintCounter[3] == 0)
+					ShowHint(3);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION01_TRANSPORT))
+			{
+				Mission::SetObjectiveAccomplished(MISSION01_TRANSPORT, false);
+			}
+		}
+
+		if (mNumWrecksTow == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION01_TRANSPORT_VEHICLES))
+			{
+				Mission::SetObjectiveAccomplished(MISSION01_TRANSPORT_VEHICLES, true);
+				if (mHintCounter[4] == 0)
+					ShowHint(4);
+			}
+		}
+
+		if (mExplosion && Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.6f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.7f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.7f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.7f)
+			return "SUPERV_MISSION01_01";
+		if (scoring->Efficiency < 0.7f)
+			return "SUPERV_MISSION01_02";
+		if (Mission::GetCounter("Burnt Objects") >= 10)
+			return "SUPERV_MISSION01_03";
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mBus);
+		Serializer->Write(mWreck);
+		Serializer->Write(mExplosion);
+		Serializer->Write(mStartCutScene);
+		Serializer->Write(mBusExtinguished);
+		Serializer->Write(mSoundFire);
+		Serializer->Write(mDebris);
+		Serializer->Write(mCivil01);
+		Serializer->Write(mCivil02);
+		Serializer->Write(mCivil03);
+		Serializer->Write(mCivil04);
+		Serializer->Write(mCivil05);
+		Serializer->Write(mCivil06);
+		Serializer->Write(mCivil07);
+		Serializer->Write(mCivil08);
+		Serializer->Write(mExtinguishLevel);		
+		Serializer->Write(mFireVictims);		
+		Serializer->Write(mTooManyVictims);		
+		Serializer->Write(mNumWrecksTow);		
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mBus);
+		Serializer->Read(mWreck);
+		Serializer->Read(mExplosion);
+		Serializer->Read(mStartCutScene);
+		Serializer->Read(mBusExtinguished);
+		Serializer->Read(mSoundFire);
+		Serializer->Read(mDebris);
+		Serializer->Read(mCivil01);
+		Serializer->Read(mCivil02);
+		Serializer->Read(mCivil03);
+		Serializer->Read(mCivil04);
+		Serializer->Read(mCivil05);
+		Serializer->Read(mCivil06);
+		Serializer->Read(mCivil07);
+		Serializer->Read(mCivil08);
+		Serializer->Read(mExtinguishLevel);		
+		Serializer->Read(mFireVictims);		
+		Serializer->Read(mTooManyVictims);		
+		Serializer->Read(mNumWrecksTow);		
+
+		return true;
+	}
+};

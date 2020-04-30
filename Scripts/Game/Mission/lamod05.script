@@ -1,0 +1,769 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 3;
+const int MAX_DEATHS = 2;
+const int MAX_SPARK_OBJECTS = 6;
+
+const char HINT_START[]				= "MISSION05_HINT01";
+const char HINT_FIRE[]				= "MISSION05_HINT02";
+const char HINT_CAUTION[]			= "MISSION05_HINT03";
+const char TRIGGER_BARN[]			= "m05_barn";
+const char TRIGGER_01[]				= "m05_trigger01";
+const char NAME_HOUSE01[]			= "m05_house01";
+const char NAME_HOUSE02[]			= "m05_house02";
+const char NAME_SMOKE[]				= "m05_smoke";
+const char NAME_ROOF[]				= "m05_roof";
+const char NAME_OWNER[]				= "m05_owner";
+const char NAME_WIFE[]				= "m05_wife";
+const char NAME_ACCOMPLICE01[]		= "m05_accomplice01";
+const char NAME_ACCOMPLICE02[]		= "m05_accomplice02";
+const char NAME_ACCOMPLICE03[]		= "m05_accomplice03";
+const char NAME_ACCOMPLICE04[]		= "m05_accomplice04";
+const char NAME_ACCOMPLICE05[]		= "m05_accomplice05";
+const char PATH_TERROR01[]			= "m05_terror01";
+const char PATH_TERROR02[]			= "m05_terror02";
+const char PATH_TERROR03[]			= "m05_terror03";
+const char PATH_TERROR04[]			= "m05_terror04";
+const char PATH_TERROR05[]			= "m05_terror05";
+const char PATH_TERROR06[]			= "m05_terror06";
+const char PATH_TERROR07[]			= "m05_terror07";
+const char OBJ_BOX[]				= "Equipment/packet01.V3O";
+const char NAME_SPARK_OBJECT01[]		= "m05_spark_object01";
+const char NAME_SPARK_OBJECT02[]		= "m05_spark_object02";
+const char NAME_SPARK_OBJECT03[]		= "m05_spark_object03";
+const char NAME_SPARK_OBJECT04[]		= "m05_spark_object05";
+const char NAME_SPARK_OBJECT05[]		= "m05_spark_object06";
+const char NAME_SPARK_OBJECT06[]		= "m05_spark_object07";
+const char NAME_SPARK_EMIT01[]		= "m05_spark_emit01";
+const char NAME_SPARK_EMIT02[]		= "m05_spark_emit02";
+const char NAME_SPARK_EMIT03[]		= "m05_spark_emit03";
+const char NAME_SPARK_EMIT04[]		= "m05_spark_emit04";
+const char NAME_SPARK_EMIT05[]		= "m05_spark_emit05";
+const char NAME_SPARK_EMIT06[]		= "m05_spark_emit06";
+const char NAME_SPARK_DEST01[]		= "m05_spark_dest01";
+const char NAME_SPARK_DEST02[]		= "m05_spark_dest02";
+const char NAME_SPARK_DEST03[]		= "m05_spark_dest03";
+const char NAME_SPARK_DEST04[]		= "m05_spark_dest04";
+const char NAME_SPARK_DEST05[]		= "m05_spark_dest05";
+const char NAME_SPARK_DEST06[]		= "m05_spark_dest06";
+const char TIMER_SPARK_1[] 			= "spark_timer01";
+const char TIMER_SPARK_2[] 			= "spark_timer02";
+const char TIMER_SPARK_3[] 			= "spark_timer03";
+const char TIMER_SPARK_4[] 			= "spark_timer04";
+const char TIMER_SPARK_5[] 			= "spark_timer05";
+const char TIMER_SPARK_6[] 			= "spark_timer06";
+const char NAME_NOBURN[]			= "noburn";
+const float TIME_SPARK 				= 30.0f;
+const char MISSION05_EXT[]			= "MISSION05_EXT";
+const char MISSION05_ACCOMPLICES[]		= "MISSION05_ACCOMPLICES";
+const char MISSION05_TRANSPORT[]		= "MISSION05_TRANSPORT";
+const char TIMER_UPDATE[] 			= "update";
+const float TIME_UPDATE				= 1.0f;
+const char VO_BARN[]				= "m05_barn";
+const char NAME_SOUND_FIREOBJECT[]		= "m05_soundfireobject";
+const char SND_FIRE[]				= "mod:Audio/Fx/misc/fire.wav";
+
+object Mission05 : MissionScript
+{
+	int mNumAccomplices, mSoundFire, mHintCounter[MAX_HINTS];
+	bool mTooManyVictims, mSquadTriggered, mBarnExtinguished, mHouse01Entered, mHouse02Entered, mFireOutOfControl;
+	Person mOwner, mWife, mAccomplice01, mAccomplice02, mAccomplice03, mAccomplice04, mAccomplice05;
+	GameObjectList mSmokelist, mRooflist;
+	GameObject mSparkObj[MAX_SPARK_OBJECTS];
+	GameObject mSparkEmit[MAX_SPARK_OBJECTS];
+	GameObjectList mSparkDestList[MAX_SPARK_OBJECTS];
+	GameObject mHouse01, mHouse02, mSoundFireObject;
+	Actor mVoBarn;
+	float mSmokeLevel;
+
+	Mission05()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mTooManyVictims = false;
+		mSquadTriggered = false;
+		mBarnExtinguished = false;
+		mHouse01Entered = false;
+		mHouse02Entered = false;
+		mFireOutOfControl = false;
+		mNumAccomplices = 7;
+		mSmokeLevel = 1.0f;
+	}
+	
+	~Mission05()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList l1 = Game::GetGameObjects();
+		for(int i = 0; i < l1.GetNumObjects(); i++)
+		{
+			GameObject *obj = l1.GetObject(i);
+			if (obj->HasName(NAME_OWNER))
+			{
+				mOwner = Person(obj);
+			}
+			else if (obj->HasName(NAME_WIFE))
+			{
+				mWife = Person(obj);
+			}
+			else if (obj->HasName(NAME_ACCOMPLICE01))
+			{
+				mAccomplice01 = Person(obj);
+			}
+			else if (obj->HasName(NAME_ACCOMPLICE02))
+			{
+				mAccomplice02 = Person(obj);
+			}
+			else if (obj->HasName(NAME_ACCOMPLICE03))
+			{
+				mAccomplice03 = Person(obj);
+				mAccomplice03.SetFleeing(true);
+				mAccomplice03.PlaceObjectInRightHand(OBJ_BOX);
+				mAccomplice03.PushActionUsePath(ACTION_NEWLIST, PATH_TERROR01, 3.2f);
+			}
+			else if (obj->HasName(NAME_ACCOMPLICE04))
+			{
+				mAccomplice04 = Person(obj);
+			}
+			else if (obj->HasName(NAME_ACCOMPLICE05))
+			{
+				mAccomplice05 = Person(obj);
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT01))
+				mSparkObj[0] = obj;
+			else if (obj->HasName(NAME_SPARK_OBJECT02))
+				mSparkObj[1] = obj;
+			else if (obj->HasName(NAME_SPARK_OBJECT03))
+				mSparkObj[2] = obj;
+			else if (obj->HasName(NAME_SPARK_OBJECT04))
+				mSparkObj[3] = obj;
+			else if (obj->HasName(NAME_SPARK_OBJECT05))
+				mSparkObj[4] = obj;
+			else if (obj->HasName(NAME_SPARK_OBJECT06))
+				mSparkObj[5] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT01))
+			{
+				mSparkEmit[0] = obj;
+				mSparkEmit[0].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_EMIT02))
+			{
+				mSparkEmit[1] = obj;
+				mSparkEmit[1].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_EMIT03))
+			{
+				mSparkEmit[2] = obj;
+				mSparkEmit[2].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_EMIT04))
+			{
+				mSparkEmit[3] = obj;
+				mSparkEmit[3].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_EMIT05))
+			{
+				mSparkEmit[4] = obj;
+				mSparkEmit[4].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_EMIT06))
+			{
+				mSparkEmit[5] = obj;
+				mSparkEmit[5].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SOUND_FIREOBJECT))
+				mSoundFireObject = obj;
+			else if (obj->HasName(NAME_HOUSE01))
+			{
+				mHouse01 = obj;
+			}
+			else if (obj->HasName(NAME_HOUSE02))
+			{
+				mHouse02 = obj;
+			}
+		}
+		ActorList actors = Game::GetActors(VO_BARN);
+		if (actors.GetNumActors())
+		{
+			mVoBarn = *actors.GetActor(0);
+			mVoBarn.SetVirtualObjectTerrain("Freely accessible");
+		}
+		mSparkDestList[0] = Game::GetGameObjects(NAME_SPARK_DEST01);
+		mSparkDestList[1] = Game::GetGameObjects(NAME_SPARK_DEST02);
+		mSparkDestList[2] = Game::GetGameObjects(NAME_SPARK_DEST03);
+		mSparkDestList[3] = Game::GetGameObjects(NAME_SPARK_DEST04);
+		mSparkDestList[4] = Game::GetGameObjects(NAME_SPARK_DEST05);
+		mSparkDestList[5] = Game::GetGameObjects(NAME_SPARK_DEST06);
+		mRooflist = Game::GetGameObjects(NAME_ROOF);
+		mSmokelist = Game::GetGameObjects(NAME_SMOKE);
+		for(int i = 0; i < mSmokelist.GetNumObjects(); i++)
+		{
+			mSmokelist.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+		}
+		Mission::AddObjective(MISSION05_EXT);
+		Mission::AddObjective(MISSION05_TRANSPORT);
+		Mission::AddObjective(MISSION05_ACCOMPLICES);
+		Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);
+   		mSoundFire = Audio::PlaySample3D(SND_FIRE, mSoundFireObject.GetPosition(), true);
+		Audio::PlaySoundtrack("30", 0.0f);
+		ShowHint(0);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_TERROR01 :
+			{
+				mAccomplice03.RemoveObjectInRightHand();
+				mAccomplice03.PushActionWait(ACTION_APPEND, 2.0f);
+				mAccomplice03.PushActionUsePath(ACTION_APPEND, PATH_TERROR02, 3.2f);
+			}
+			break;
+
+			case PATH_TERROR02 :
+			{
+				mAccomplice03.PlaceObjectInRightHand(OBJ_BOX);
+				mAccomplice03.PushActionWait(ACTION_APPEND, 3.5f);
+				mAccomplice03.PushActionUsePath(ACTION_APPEND, PATH_TERROR01, 3.2f);
+			}
+			break;
+
+			case PATH_TERROR03 :
+			{
+				mAccomplice03.SetAnimation("hostage_kneel");
+			}
+			break;
+
+			case PATH_TERROR07 :
+			{
+				mWife.SetAnimation("hostage_kneel");
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	void Update()
+	{
+		if (mBarnExtinguished && AreSquadsInBarn())
+		{
+			for (int i = 0; i < mRooflist.GetNumObjects(); i++)
+			{
+				mRooflist.GetObject(i)->Hide();
+			}
+		}
+		else
+		{
+			for (int i = 0; i < mRooflist.GetNumObjects(); i++)
+			{
+				mRooflist.GetObject(i)->Show();
+			}
+		}
+	}
+
+	bool AreSquadsInBarn()
+	{
+		return Game::IsSquadInTrigger(TRIGGER_BARN);
+	}
+
+	bool OnStartBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid())
+		{
+			if (burningObject->HasName(NAME_NOBURN))
+			{
+				mFireOutOfControl = true;
+			}
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StartParticleEffect();
+					if (i == 0)
+						Mission::StartSingleTimer(TIMER_SPARK_1, TIME_SPARK);
+					if (i == 1)
+						Mission::StartSingleTimer(TIMER_SPARK_2, TIME_SPARK);
+					if (i == 2)
+						Mission::StartSingleTimer(TIMER_SPARK_3, TIME_SPARK);
+					if (i == 3)
+						Mission::StartSingleTimer(TIMER_SPARK_4, TIME_SPARK);
+					if (i == 4)
+						Mission::StartSingleTimer(TIMER_SPARK_5, TIME_SPARK);
+					if (i == 5)
+						Mission::StartSingleTimer(TIMER_SPARK_6, TIME_SPARK);
+				}
+			}
+		}
+		return true;
+	}
+
+	bool OnStopBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid())
+		{
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StopParticleEffect();
+					if (i == 0)
+						Mission::StopTimer(TIMER_SPARK_1);
+					if (i == 1)
+						Mission::StopTimer(TIMER_SPARK_2);
+					if (i == 2)
+						Mission::StopTimer(TIMER_SPARK_3);
+					if (i == 3)
+						Mission::StopTimer(TIMER_SPARK_4);
+					if (i == 4)
+						Mission::StopTimer(TIMER_SPARK_5);
+					if (i == 5)
+						Mission::StopTimer(TIMER_SPARK_6);
+				}
+			}
+		}
+		return true;
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_01 :
+			{
+				if (!mSquadTriggered)
+				{
+					Game::DeactivateTrigger(TRIGGER_01);
+					mSquadTriggered = true;
+					DefendScene();
+					ShowHint(2);
+				}
+			}
+			break;
+		}
+	}
+
+	bool DefendScene()
+	{
+		System::Log("M05: Defending started!");
+		mAccomplice01.SetRole(ROLE_GANGSTER);
+		mAccomplice01.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+		mAccomplice01.SetEquipment(EQUIP_PISTOL);
+		mAccomplice01.SetAnimation("idlegun");
+		mAccomplice01.SetResistance(INJUREREASON_SHOT, 100.0f);
+		mAccomplice01.SetShootPower(180.0f);
+		mAccomplice01.SetShootRange(20.0f);
+
+		mAccomplice02.SetRole(ROLE_GANGSTER);
+		mAccomplice02.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+		mAccomplice02.SetFleeing(true);
+		mAccomplice02.PushActionUsePath(ACTION_NEWLIST, PATH_TERROR06, 3.8f);
+		mAccomplice02.SetResistance(INJUREREASON_SHOT, 100.0f);
+		mAccomplice02.SetShootPower(110.0f);
+		mAccomplice02.SetShootRange(25.0f);
+
+		mAccomplice03.RemoveObjectPath();
+		mAccomplice03.RemoveObjectInRightHand();
+		mAccomplice03.SetRole(ROLE_GANGSTER);
+		mAccomplice03.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+		mAccomplice03.SetFleeing(true);
+		mAccomplice03.PushActionUsePath(ACTION_NEWLIST, PATH_TERROR03, 3.8f);
+		mAccomplice03.SetResistance(INJUREREASON_SHOT, 100.0f);
+
+		mAccomplice04.SetFleeing(true);
+		mAccomplice04.SetRole(ROLE_GANGSTER);
+		mAccomplice04.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+		mAccomplice04.PushActionUsePath(ACTION_NEWLIST, PATH_TERROR04, 3.8f);
+		mAccomplice04.SetResistance(INJUREREASON_SHOT, 100.0f);
+		mAccomplice04.SetShootPower(180.0f);
+		mAccomplice04.SetShootRange(20.0f);
+
+		mAccomplice05.SetFleeing(true);
+		mAccomplice05.SetRole(ROLE_GANGSTER);
+		mAccomplice05.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+		mAccomplice05.PushActionUsePath(ACTION_NEWLIST, PATH_TERROR05, 3.8f);
+		mAccomplice05.SetResistance(INJUREREASON_SHOT, 100.0f);
+		mAccomplice05.SetShootPower(180.0f);
+		mAccomplice05.SetShootRange(20.0f);
+
+		mOwner.SetRole(ROLE_GANGSTER);
+		mOwner.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+		mOwner.SetResistance(INJUREREASON_SHOT, 120.0f);
+		mOwner.SetEquipment(EQUIP_PISTOL);
+		mOwner.SetShootPower(200.0f);
+		mOwner.SetShootRange(20.0f);
+		mWife.SetRole(ROLE_GANGSTER);
+		mWife.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+	}
+
+	void OnTimer(const char *Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_SPARK_1 :
+			{
+				if (mHintCounter[1] == 0)
+					ShowHint(1);
+				for (int i = 0; i < mSparkDestList[0].GetNumObjects(); i++)
+					mSparkDestList[0].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_SPARK_2 :
+			{
+				if (mHintCounter[1] == 0)
+					ShowHint(1);
+				for (int i = 0; i < mSparkDestList[1].GetNumObjects(); i++)
+					mSparkDestList[1].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_SPARK_3 :
+			{
+				if (mHintCounter[1] == 0)
+					ShowHint(1);
+				for (int i = 0; i < mSparkDestList[2].GetNumObjects(); i++)
+					mSparkDestList[2].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_SPARK_4 :
+			{
+				for (int i = 0; i < mSparkDestList[3].GetNumObjects(); i++)
+					mSparkDestList[3].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_SPARK_5 :
+			{
+				for (int i = 0; i < mSparkDestList[4].GetNumObjects(); i++)
+					mSparkDestList[4].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_SPARK_6 :
+			{
+				for (int i = 0; i < mSparkDestList[5].GetNumObjects(); i++)
+					mSparkDestList[5].GetObject(i)->Burn();
+			}
+			break;
+
+			case TIMER_UPDATE :
+			{
+				GameObjectList list;
+				Game::CollectObstaclesOnVirtualObject(VO_BARN, list, ACTOR_OBJECT);
+				if (list.GetNumBurningObjects() >= 15)
+				{
+					mSmokeLevel = 1.0f;
+					for (int i = 0; i < mSmokelist.GetNumObjects(); i++)
+					{
+						mSmokelist.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+					}
+					break;
+				}
+				else if (list.GetNumBurningObjects() >= 10)
+				{
+					mSmokeLevel = 0.8f;
+					for (int i = 0; i < mSmokelist.GetNumObjects(); i++)
+					{
+						mSmokelist.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+					}
+					break;
+				}
+				else if (list.GetNumBurningObjects() > 0)
+				{
+					mSmokeLevel = 0.5f;
+					for (int i = 0; i < mSmokelist.GetNumObjects(); i++)
+					{
+						mSmokelist.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+					}
+					break;
+				}
+				else if (list.GetNumBurningObjects() == 0 && !mBarnExtinguished)
+				{
+					mSmokeLevel = 0.0f;
+					mBarnExtinguished = true;
+					Audio::StopSample(mSoundFire);
+					Mission::StopTimer(TIMER_UPDATE);
+					System::Log("M05: Barn extinguished!");
+					for (int i = 0; i < mSmokelist.GetNumObjects(); i++)
+					{
+						mSmokelist.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionEnterHouse":
+			{
+				if (Data_->Parameters[0].iValue == mHouse01.GetID())
+				{
+					if (!mHouse01Entered)
+					{
+						mHouse01Entered = true;
+						mOwner.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+						mWife.SetFleeing(true);
+						mWife.PushActionWait(ACTION_NEWLIST, 2.5f);
+						mWife.PushActionUsePath(ACTION_APPEND, PATH_TERROR07, 3.6f);
+					}
+				}
+				break;
+				else if (Data_->Parameters[0].iValue == mHouse02.GetID())
+				{
+					if (!mHouse02Entered)
+					{
+						mHouse02Entered = true;
+						mAccomplice03.SetAnimation("hostage_kneel");
+					}
+				}
+				break;
+			}
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->GetID() == mOwner.GetID() || Obj->GetID() == mWife.GetID() || Obj->GetID() == mAccomplice01.GetID() || Obj->GetID() == mAccomplice02.GetID() || Obj->GetID() == mAccomplice03.GetID() || Obj->GetID() == mAccomplice04.GetID() || Obj->GetID() == mAccomplice05.GetID())
+		{
+			mNumAccomplices--;
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M05: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_START);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_FIRE);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_CAUTION);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION05_EXT))
+			{
+				if (Mission::HasObjective(MISSION05_EXT))
+					Mission::SetObjectiveAccomplished(MISSION05_EXT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION05_EXT))
+			{
+				if (Mission::HasObjective(MISSION05_EXT))
+					Mission::SetObjectiveAccomplished(MISSION05_EXT, false);
+			}
+		}
+
+      	if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION05_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION05_TRANSPORT))
+             			Mission::SetObjectiveAccomplished(MISSION05_TRANSPORT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION05_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION05_TRANSPORT))
+					Mission::SetObjectiveAccomplished(MISSION05_TRANSPORT, false);
+			}
+		}
+
+		if (mNumAccomplices == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION05_ACCOMPLICES))
+				Mission::SetObjectiveAccomplished(MISSION05_ACCOMPLICES, true);
+		}
+
+		if (mFireOutOfControl)
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if(Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.6f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		if (mFireOutOfControl)
+			return "M05_FIRE_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		if (mFireOutOfControl)
+			return "M05_FIRE_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION05_01";
+		else if (scoring->Efficiency < 0.8f && scoring->Efficiency >= 0.5f)
+			return "SUPERV_MISSION05_02";
+		else if (scoring->Efficiency < 0.5f)
+			return "SUPERV_MISSION05_03";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mSquadTriggered);
+		Serializer->Write(mBarnExtinguished);
+		Serializer->Write(mHouse01Entered);
+		Serializer->Write(mHouse02Entered);
+		Serializer->Write(mFireOutOfControl);
+		Serializer->Write(mHouse01);
+		Serializer->Write(mHouse02);
+		Serializer->Write(mOwner);
+		Serializer->Write(mWife);
+		Serializer->Write(mAccomplice01);
+		Serializer->Write(mAccomplice02);
+		Serializer->Write(mAccomplice03);
+		Serializer->Write(mAccomplice04);
+		Serializer->Write(mAccomplice05);
+		Serializer->Write(mSmokelist);
+		Serializer->Write(mRooflist);
+		Serializer->Write(mVoBarn);
+		Serializer->Write(mSmokeLevel);
+		Serializer->Write(mSoundFire);
+		Serializer->Write(mSoundFireObject);
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Write(mSparkObj[i]);
+			Serializer->Write(mSparkEmit[i]);
+			Serializer->Write(mSparkDestList[i]);
+		}
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mTooManyVictims);
+		Serializer->Read(mSquadTriggered);
+		Serializer->Read(mBarnExtinguished);
+		Serializer->Read(mHouse01Entered);
+		Serializer->Read(mHouse02Entered);
+		Serializer->Read(mFireOutOfControl);
+		Serializer->Read(mHouse01);
+		Serializer->Read(mHouse02);
+		Serializer->Read(mOwner);
+		Serializer->Read(mWife);
+		Serializer->Read(mAccomplice01);
+		Serializer->Read(mAccomplice02);
+		Serializer->Read(mAccomplice03);
+		Serializer->Read(mAccomplice04);
+		Serializer->Read(mAccomplice05);
+		Serializer->Read(mSmokelist);
+		Serializer->Read(mRooflist);
+		Serializer->Read(mVoBarn);
+		Serializer->Read(mSmokeLevel);
+		Serializer->Read(mSoundFire);
+		Serializer->Read(mSoundFireObject);
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Read(mSparkObj[i]);
+			Serializer->Read(mSparkEmit[i]);
+			Serializer->Read(mSparkDestList[i]);
+		}
+		return true;
+	}
+};
+

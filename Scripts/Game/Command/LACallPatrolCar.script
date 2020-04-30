@@ -1,0 +1,272 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+// 		Includes: Backup command for police units.
+//
+//	- PcmdCallPatrolCar
+//
+//		Script by Hoppah
+//		Thanks to Bass-Ti for his help
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_SIREN[]				= "VcmdSiren";
+const char CMD_AUTOSIREN_OFF[]			= "VcmdAutoSirenOff";
+const char CMD_WARNINGLIGHTS_OFF[] 		= "VcmdWarningLightsOff";
+const char CMD_WARNINGLIGHTS_ON[] 		= "VcmdWarningLightsOn";
+const char CMD_FLOODLIGHTS_OFF[] 		= "VcmdFloodLightsOff";
+const char CMD_FLOODLIGHTS_ON[] 		= "VcmdFloodLightsOn";
+const char CMD_STANDBY_ON[]			= "VcmdStandbyOn";
+const char CMD_STANDBY_OFF[]			= "VcmdStandbyOff";
+const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
+const char DUMMY_PATROL[] 			= "DummyPatrol";
+const char HINT_NOPATROLCAR[] 			= "No patrol car available!";
+const char HINT_BACKUP[] 			= "Backup is on its way!";
+const char HINT_PATROLCARBOUGHT[] 		= "Patrol car bought for $1000 and dispatched!";
+const char VO_PARK01[] 				= "policestation_park01";
+const char VO_PARK02[] 				= "policestation_park02";
+const char VO_PARK03[] 				= "policestation_park03";
+const char SND_BATBACKUP[]			= "mod:Audio/FX/radio/bat_pd.wav";
+const char SND_EMSBACKUP[]			= "mod:Audio/FX/radio/ems_pd.wav";
+const char SND_PDBACKUP[]			= "mod:Audio/FX/radio/pd_backup.wav";
+const char VO_SPAWN_ALL[] 			= "spawn_all";
+const char VO_SPAWN_POLICE01[] 			= "spawn_police1";
+const char VO_SPAWN_POLICE02[] 			= "spawn_police2";
+const char VO_SPAWN_ALLR[] 			= "spawn_allr";
+const char VO_SPAWN_POLICE01R[] 		= "spawn_police1r";
+const char VO_SPAWN_POLICE02R[] 		= "spawn_police2r";
+const char OBJ_OFFICER_M[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p";
+const char OBJ_OFFICER_LASD[]			= "mod:Prototypes/Persons/03 LA Police/lasd_officer.e4p";
+const char OBJ_OFFICER_CHP[]			= "mod:Prototypes/Persons/03 LA Police/chp_officer.e4p";
+const char OBJ_TRAFFIC_OFFICER_LASD[]		= "mod:Prototypes/Persons/03 LA Police/lasd_traffic_officer.e4p";
+const char OBJ_TRAFFIC_OFFICER_CHP[]		= "mod:Prototypes/Persons/03 LA Police/chp_traffic_officer.e4p";
+const char OBJ_BATTALION_CHIEF[]		= "mod:Prototypes/Persons/02 LA Fire Department/battalion_chief.e4p";
+const char OBJ_EMS_CAPTAIN[]			= "mod:Prototypes/Persons/01 LA Ambulance/ems_paramedic_captain.e4p";
+const char PROTO_CV_LAPD[] 			= "mod:Prototypes/Vehicles/03 LA Police/cv_lapd.e4p";
+const char PROTO_CV_CHP[] 			= "mod:Prototypes/Vehicles/03 LA Police/cv_chp.e4p";
+const char PROTO_CV_LASD[] 			= "mod:Prototypes/Vehicles/03 LA Police/cv_lasd.e4p";
+const char PROTO_CHARGER_LAPD[] 		= "mod:Prototypes/Vehicles/03 LA Police/dodge_charger_lapd.e4p";
+const char UNNAMED[] 				= "Unnamed";
+
+object PcmdCallPatrolCar : CommandScript
+{
+	PcmdCallPatrolCar()
+	{
+		SetIcon("callpatrolcar");
+		SetCursor("callassistance");
+		SetValidTargets(ACTOR_FLOOR | ACTOR_VIRTUAL);
+		SetDeselectCaller(false);
+		SetSelfClickActivation(true);
+		SetHighlightingEnabled(false);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+ 		SetGroupLeader(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		GameObjectList SelectPer = Game::GetSelectedGameObjects();
+		if (SelectPer.GetNumObjects() != 1)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->GetID() == Target->GetID())
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vector CmdPos = Game::GetCommandPos();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, "talkmike");
+		Caller->PushActionWait(ACTION_APPEND, 3.5f);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, "idle");
+
+		if(StrCompare(Caller->GetPrototypeFileName(), OBJ_BATTALION_CHIEF) == 0)
+			Audio::PlaySample3D(SND_BATBACKUP, Caller->GetPosition());
+		else if(StrCompare(Caller->GetPrototypeFileName(), OBJ_EMS_CAPTAIN) == 0)
+			Audio::PlaySample3D(SND_EMSBACKUP, Caller->GetPosition());
+		else
+			Audio::PlaySample3D(SND_PDBACKUP, Caller->GetPosition());
+
+		Vehicle *theCar = NULL;
+		float bestCar = 0.;
+		VehicleList patrolCars(VT_POLICE_MTW, VT_POLICE_STW);
+		for (int i = 0; i < patrolCars.GetNumVehicles(); i++) 
+		{
+			Vehicle *aCar = patrolCars.GetVehicle(i);
+			if (aCar->GetPlayerMP() == Caller->GetPlayerMP() && !aCar->IsCurrentAnimation("Getoff") && (aCar->HasCommand(CMD_STANDBY_OFF) || aCar->HasCommand(DUMMY_PATROL) ||  aCar->IsCollidingWithVirtualObject(VO_PARK01) || aCar->IsCollidingWithVirtualObject(VO_PARK02) || aCar->IsCollidingWithVirtualObject(VO_PARK03)))
+			{
+				float distCurrCar = Math::dist(CmdPos.x, CmdPos.y, aCar->GetPosition().x, aCar->GetPosition().y);
+				if (distCurrCar < bestCar || bestCar == 0.) 
+				{
+					theCar = aCar;
+					bestCar = distCurrCar;
+				}
+			}
+		}
+		if (theCar)
+		{
+			Mission::PlayHint(HINT_BACKUP);
+			if (!theCar->HasCommand(DUMMY_HASSIREN) && theCar->HasCommand(CMD_AUTOSIREN_OFF) && !Input::LShiftPressed() && !Input::RShiftPressed())
+				Game::ExecuteCommand(CMD_SIREN, theCar, theCar);
+			theCar->PushActionWait(ACTION_NEWLIST, 0.3f);
+			if (theCar->HasCommand(DUMMY_PATROL))
+				theCar->PushActionExecuteCommand(ACTION_APPEND, DUMMY_PATROL, theCar, 1, false);
+			theCar->PushActionMove(ACTION_APPEND, CmdPos);
+			if (theCar->HasCommand(CMD_STANDBY_OFF))
+			{
+				theCar->RemoveCommand(CMD_STANDBY_OFF);
+				theCar->AssignCommand(CMD_STANDBY_ON);
+			}
+			if (theCar->HasCommand(CMD_WARNINGLIGHTS_OFF)) 
+			{
+				theCar->EnableBlinker(BLT_NONE);
+				theCar->RemoveCommand(CMD_WARNINGLIGHTS_OFF);
+				theCar->AssignCommand(CMD_WARNINGLIGHTS_ON);
+			}
+			if (theCar->HasCommand(CMD_FLOODLIGHTS_OFF))
+			{
+				theCar->EnableSpecialLights(false);
+				theCar->RemoveCommand(CMD_FLOODLIGHTS_OFF);
+				theCar->AssignCommand(CMD_FLOODLIGHTS_ON);
+			}
+		} else
+		{
+			Vector Spawn;
+			Vector Rotate;
+			ActorList l1 = Game::GetActors(VO_SPAWN_ALL);
+			ActorList l2 = Game::GetActors(VO_SPAWN_POLICE01);
+			ActorList l3 = Game::GetActors(VO_SPAWN_POLICE02);
+			ActorList l4 = Game::GetActors(VO_SPAWN_ALLR);
+			ActorList l5 = Game::GetActors(VO_SPAWN_POLICE01R);
+			ActorList l6 = Game::GetActors(VO_SPAWN_POLICE02R);
+			if(l1.GetNumActors() == 0 && l2.GetNumActors() == 0 && l3.GetNumActors() == 0)
+			{
+				Mission::PlayHint(HINT_NOPATROLCAR);
+				return;
+			}
+			if(l1.GetNumActors() > 0)
+			{
+				Spawn = l1.GetActor(0)->GetPosition();
+				Rotate = l4.GetActor(0)->GetPosition();
+			}
+			System::Log("Buy patrol car");
+			int Money = Mission::GetMoneyLeft();
+			if (Money <= 1000)
+			{
+				Mission::PlayHint(HINT_NOPATROLCAR);
+				return;
+			}
+
+			int NewMoney = Money - 1000;
+			Mission::SetMoney(NewMoney);
+			Vehicle n;
+			Person p1;
+			Person p2;
+			Person p(Caller);
+			if(StrCompare(p.GetPrototypeFileName(), OBJ_BATTALION_CHIEF) == 0)
+			{
+				if(l1.GetNumActors() == 0 && l2.GetNumActors() > 0)
+				{
+					Spawn = l3.GetActor(0)->GetPosition();
+					Rotate = l6.GetActor(0)->GetPosition();
+				}
+           			n = Game::CreateVehicle(PROTO_CHARGER_LAPD, UNNAMED);
+				n.SetSpeed(14.0f);
+				p1 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+				p2 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+			} 
+			else if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_LASD) == 0 || StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_LASD) == 0)
+			{
+				if(l1.GetNumActors() == 0 && l3.GetNumActors() > 0)
+				{
+					Spawn = l3.GetActor(0)->GetPosition();
+					Rotate = l6.GetActor(0)->GetPosition();
+				}
+        			n = Game::CreateVehicle(PROTO_CV_LASD, UNNAMED);
+				n.SetSpeed(12.0f);
+				p1 = Game::CreatePerson(OBJ_OFFICER_LASD, UNNAMED);
+				p2 = Game::CreatePerson(OBJ_OFFICER_LASD, UNNAMED);
+			}
+			else if(StrCompare(p.GetPrototypeFileName(), OBJ_OFFICER_CHP) == 0 || StrCompare(p.GetPrototypeFileName(), OBJ_TRAFFIC_OFFICER_CHP) == 0)
+			{
+				if(l1.GetNumActors() == 0 && l3.GetNumActors() > 0)
+				{
+					Spawn = l3.GetActor(0)->GetPosition();
+					Rotate = l6.GetActor(0)->GetPosition();
+				}
+        			n = Game::CreateVehicle(PROTO_CV_CHP, UNNAMED);
+				n.SetSpeed(12.0f);
+				p1 = Game::CreatePerson(OBJ_OFFICER_CHP, UNNAMED);
+				p2 = Game::CreatePerson(OBJ_OFFICER_CHP, UNNAMED);
+			}
+			else
+			{
+				if(l1.GetNumActors() == 0 && l2.GetNumActors() > 0)
+				{
+					Spawn = l2.GetActor(0)->GetPosition();
+					Rotate = l5.GetActor(0)->GetPosition();
+				}
+           			n = Game::CreateVehicle(PROTO_CV_LAPD, UNNAMED);
+				n.SetSpeed(12.0f);
+				p1 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+				p2 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+			}
+			n.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetPlayerMP(Caller->GetPlayerMP());
+			p2.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetUpgradeLevel(3);
+			p2.SetUpgradeLevel(3);
+			n.SetMaxPassengers(2);
+			n.SetMaxTransports(2);
+			n.AddPassenger(&p1);
+			n.AddPassenger(&p2);
+			Game::FindFreePosition(&n, Spawn);
+             	  	n.SetPosition(Spawn);
+             	  	n.UpdatePlacement();
+			n.Hide();
+			n.PushActionTurnTo(ACTION_NEWLIST, Rotate);
+			n.PushActionWait(ACTION_APPEND, 2.5f);
+			n.PushActionShowHide(ACTION_APPEND, false);
+			n.PushActionMove(ACTION_APPEND, CmdPos);
+			if (Game::IsMission())
+			{
+				n.RemoveCommand("VcmdToPoliceStation");
+				n.RemoveCommand("VcmdPatrol");
+			}
+
+			if (!n.HasCommand(DUMMY_HASSIREN) && n.HasCommand(CMD_AUTOSIREN_OFF) && !Input::LShiftPressed() && !Input::RShiftPressed())
+				Game::ExecuteCommand(CMD_SIREN, &n, &n);
+	
+			Mission::PlayHint(HINT_PATROLCARBOUGHT);
+		}
+	}
+};

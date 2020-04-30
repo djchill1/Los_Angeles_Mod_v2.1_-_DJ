@@ -1,0 +1,43 @@
+object M08EmptyCar : CommandScript
+{
+	M08EmptyCar()
+	{
+		SetCursor("EmptyCar");
+		SetIcon("EmptyCar");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return v.GetNumPassengers() > 0;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid())
+			return false;
+		
+		if(Caller->GetType()==ACTOR_VEHICLE && Target->GetType()==ACTOR_VEHICLE && Caller->GetID()==Target->GetID())
+		{
+			Vehicle v(Caller);
+			if (!v.IsValid() ||  v.IsDestroyed())
+			        return false;
+			if(v.GetNumPassengers() > 0)
+				return true;
+		}
+				
+		return false;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Caller);
+		PersonList l = v.GetPassengers();
+		for(int i=0; i<l.GetNumPersons(); i++)
+			l.GetPerson(i)->PushActionLeaveCar(ACTION_NEWLIST, Target);
+	}
+};

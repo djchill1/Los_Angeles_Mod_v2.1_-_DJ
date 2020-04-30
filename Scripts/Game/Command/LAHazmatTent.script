@@ -1,0 +1,174 @@
+//******************************************************************************************
+// #Version 1.2#										
+//												
+// 		Includes: All Hazmat Tent commands								
+//												
+//	- VcmdHazmatInstall										
+//	- VcmdHazmatDeinstall									
+//	- DummyHazmat	
+//						
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_INSTALL_HAZMAT[]			= "VcmdHazmatInstall";
+const char CMD_DEINSTALL_HAZMAT[]		= "VcmdHazmatDeinstall";
+const char SND_INSTALL[]			= "mod:Audio/FX/Misc/Tools01.wav";
+const char HINT_INSTALL_HAZMAT[] 		= "No space to build decontamination tent!";
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+
+int DummyGroup = 29;
+int DummyGroup2 = 30;
+
+object VcmdHazmatInstall : CommandScript
+{
+	VcmdHazmatInstall()
+	{
+      		SetIcon("hazmat_install");
+      		SetCursor("hazmat_install");
+		SetValidTargets(ACTOR_VEHICLE);
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+			Vehicle v(Caller);
+			if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02))
+				return false;
+
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+        	Vehicle v(Caller);
+		Caller->PushActionWait(ACTION_NEWLIST, 0.1f);
+		Vector CarPos = Caller->GetPosition();
+			float r[9];
+			float childr[9];
+		Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+		if (Game::FindFreePosition(Caller, CarPos))
+		{
+                	Vehicle m = Game::CreateVehicle("mod:Prototypes/Vehicles/02 LA Fire Department/decontamination_tent.e4p", Caller->GetName());
+			if (v.IsValid())
+			{
+				float dx = -440.f, dy = 0.f, dz = 0.f;
+				Math::RotateVector(dx, dy, dz, r);
+				Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+				Math::MultiplyMatrices(childr, r);
+				CarPos = CarPos + Vector(dx, dy, 0);
+				m.SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+				m.SetPosition(CarPos);
+				m.UpdatePlacement();
+			}
+                	m.SetMaxPassengers(0);
+                	m.SetMaxTransports(8);
+     			v.RemoveCommand(CMD_INSTALL_HAZMAT);
+			int PlayerID = v.GetPlayerMP();
+			m.SetPlayerMP(PlayerID);
+			Vector Pos = Caller->GetPosition();
+			Audio::PlaySample3D(SND_INSTALL, Pos);
+		} else
+		{
+		 	Mission::PlayHint(HINT_INSTALL_HAZMAT);
+        		Vehicle v(Caller);
+     			v.AssignCommand(CMD_INSTALL_HAZMAT);
+		}
+	}	
+};
+
+object VcmdHazmatDeinstall : CommandScript
+{
+	Vector TargetPos;
+
+	VcmdHazmatDeinstall()
+	{
+      		SetIcon("hazmat_deinstall");
+      		SetCursor("hazmat_deinstall");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetPossibleCallers(ACTOR_VEHICLE);
+ 		SetGroupID(DummyGroup2);
+ 		SetGroupLeader(true);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || (Caller->GetID()==Target->GetID()))
+			return false;
+
+		if (Target->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Target);
+			if(StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/02 LA Fire Department/decontamination_tent.e4p") == 0)
+			{
+				if(v.GetNumPassengers() == 0 && v.GetNumTransported() == 0)
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (childID == 0)
+		{
+			Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+			v.PushActionMove(ACTION_NEWLIST, TargetPos);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEINSTALL_HAZMAT, Target, 1, false);
+		}
+		if (childID == 1)
+		{
+			Vector Pos = Caller->GetPosition();
+			Audio::PlaySample3D(SND_INSTALL, Pos);
+
+ 			Vehicle m(Target);
+			m.PushActionDeleteOwner(ACTION_NEWLIST);
+
+			Vehicle v(Caller);
+			if (!v.HasCommand(CMD_INSTALL_HAZMAT))
+				v.AssignCommand(CMD_INSTALL_HAZMAT);
+		}
+	} 
+};

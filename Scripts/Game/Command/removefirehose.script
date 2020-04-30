@@ -1,0 +1,64 @@
+const char DUMMY_HOSESON[] 			= "DummyHosesAreOn";
+
+object RemoveFirehose : CommandScript
+{
+	RemoveFirehose()
+	{
+		SetValidTargets(ACTOR_PERSON|ACTOR_VEHICLE|ACTOR_OBJECT);
+		SetGroupID(CGROUP_FIREHOSE);
+		SetRestrictions2(RESTRICT2_ISHYDRANTORSELF);
+		SetPriority(1000);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		return Caller->GetFirehoseID() != 0;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid())
+			return false;
+				
+		if (Caller->GetEquipment()==EQUIP_FIREHOSE && Caller->GetType() == ACTOR_PERSON && Caller->GetFirehoseID() != 0)
+		{
+			if (Caller->GetID()==Target->GetID())
+				return true;
+			GameObject obj(Target);
+			if (obj.GetType() == ACTOR_OBJECT && obj.IsHydrant() && obj.IsHydrantInUse() && (Caller->GetFirehoseID() == obj.GetFirehoseID()))
+				return true;
+			else if (obj.GetType() == ACTOR_VEHICLE)
+			{
+				Vehicle v(Target);
+				if (v.IsUsingConnector(Caller))
+					return true;
+			}
+			return false;
+		}
+		
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		GameObject hydrant = Caller->GetHydrant();
+		if (!hydrant.IsValid())
+			return;
+		Vector TargetPos;	
+		if (hydrant.GetType() == ACTOR_OBJECT)
+			TargetPos = hydrant.GetTargetPoint(Caller, TARGET_FIREHOSE_HOOKUP);
+		else if (hydrant.GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(&hydrant);
+			if (!v.GetUsedConnectorPosition(Caller, TargetPos))
+				return;
+		}
+		
+		Caller->PushActionMoveWithHose(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionUseEquipment(ACTION_APPEND, &hydrant, childID, 10.0f);
+		if (hydrant.GetType() == ACTOR_VEHICLE && hydrant.HasCommand(DUMMY_HOSESON))
+			Caller->PushActionExecuteCommand(ACTION_APPEND, "AttachFireHose", &hydrant, 3, false);
+	}
+};

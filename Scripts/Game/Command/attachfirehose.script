@@ -1,0 +1,254 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+// 		Changes: - Modified to combine hose connections with water cannon.
+//				 - Watercannon will be disabled.
+//
+//******************************************************************************************
+
+const char DUMMY_EQUIPMENT[] 			= "DummyEquipmentCommands";
+const char DUMMY_HOSESON[] 			= "DummyHosesAreOn";
+const char VO_SQUAD[]				= "fire_station_squad";
+const char PROTO_ENGINE01[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine1.e4p";
+const char PROTO_ENGINE02[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine2.e4p";
+const char PROTO_WATERTENDER[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/water_tender.e4p";
+const char OBJ_ENGINE_CONN[] 			= "mod:Prototypes/Vehicles/06 Objects/fire_engine_hose_connections.e4p";
+const char OBJ_WATERTENDER_CONN[] 		= "mod:Prototypes/Vehicles/06 Objects/water_tender_hose_connections.e4p";
+const char NAME_CONNECTORS[] 			= "PumpConnector";
+const char HINT_NOTVALID[] 			= "This vehicle doesn't support hose connections!";
+const char CMD_AUTOSIREN_OFF[]			= "VcmdAutoSirenOff";
+const char CMD_STANDBY_ON[]			= "VcmdStandbyOn";
+const char CMD_STANDBY_OFF[]			= "VcmdStandbyOff";
+const char CMD_WATER_OFF[]		= "VcmdWaterOff";
+const char DUMMY_DISABLE[] 			= "DummyDisableSiren";
+const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
+
+int DummyGroup = 29;
+
+object AttachFireHose : CommandScript
+{
+	AttachFireHose()
+	{
+		SetValidTargets(ACTOR_OBJECT | ACTOR_VEHICLE);
+		SetGroupID(CGROUP_FIREHOSE);
+		SetGroupLeader(true);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPossibleEquipment(EQUIP_FIREHOSE);
+		SetPriority(220);
+	}
+
+	//bool CheckPossible(GameObject *Caller)
+	//{
+	//	if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+	//		return false;
+		//if(Target->GetType() == ACTOR_OBJECT)
+		//{
+		//	SetPossibleExists(CPE_FREE_HOSE_CONNECTION);
+		//	SetNeedsConnectedHose(CFN_FAIL);
+		//	SetRestrictions2(RESTRICT2_ISHYDRANT);
+		//}
+		//if(Target->GetType() == ACTOR_VEHICLE)
+		//{
+		//}
+		//return true;
+	//	return Caller->GetFirehoseID() == 0 && Caller->GetEquipment()==EQUIP_FIREHOSE && Game::ExistsFreeHoseConnection();
+	//}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return Caller->GetFirehoseID() == 0;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || (Caller->GetID()==Target->GetID()))
+			return false;
+			
+		if(Caller->GetFirehoseID())
+			return false;
+			
+		if(Caller->GetType()!=ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.GetEnteredCarID() != -1)
+			return false;
+			
+		if(Caller->GetEquipment()==EQUIP_FIREHOSE && Target->GetType() == ACTOR_VEHICLE)
+		{
+ 			Vehicle v(Target);
+			if((StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE02) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_WATERTENDER) == 0 || v.GetVehicleType() == VT_FIREFIGHTERS_GTF) && v.GetEnergy() > 0.1f * v.GetMaxEnergy())
+				return true;
+
+			if((StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE02) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_WATERTENDER) == 0) && v.HasCommand(DUMMY_HOSESON))
+			{
+				int UnitID = v.GetID();
+				VehicleList list(NAME_CONNECTORS);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					Vehicle *obj = list.GetVehicle(i);
+					if (obj->GetUserData() == UnitID)
+					{
+						if (!obj->IsConnectorFree())
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+		else if(Caller->GetEquipment()==EQUIP_FIREHOSE && Target->GetType() == ACTOR_OBJECT)
+		{
+			GameObject obj(Target);
+			if(obj.IsHydrant() && !obj.IsHydrantInUse())
+				return true;
+			return false;
+		}
+
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Vehicle v(Target);
+		if (v.HasCommand(DUMMY_HASSIREN) && v.HasCommand(CMD_AUTOSIREN_OFF))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		if (childID == 0) //Initiate command
+		{
+			if (Target->GetType() == ACTOR_OBJECT)
+			{
+				p.PushActionMove(ACTION_NEWLIST, Target, TARGET_FREE_CONNECTOR);
+				p.PushActionUseEquipment(ACTION_APPEND, Target, childID, 1.0f);
+			}
+			else if (v.GetVehicleType() == VT_FIREFIGHTERS_GTF && (v.HasCommand("EmptyCar") || v.HasName("wye")))
+			{
+				p.PushActionMove(ACTION_NEWLIST, Target, TARGET_FREE_CONNECTOR);
+				p.PushActionCheckFreeConnector(ACTION_APPEND, Target);
+				p.PushActionUseEquipment(ACTION_APPEND, Target, childID, 1.0f);
+			}
+			else if (v.GetVehicleType() != VT_FIREFIGHTERS_GTF && !v.HasCommand(DUMMY_HOSESON))
+			{
+				Vector TargetPos = v.GetChildPosition("pump1");
+				v.PushActionWait(ACTION_NEWLIST, 0.1f);
+				p.PushActionMove(ACTION_NEWLIST, TargetPos);
+				p.PushActionExecuteCommand(ACTION_APPEND, "AttachFireHose", Target, 1, false);
+			}
+			else if (v.GetVehicleType() != VT_FIREFIGHTERS_GTF && v.HasCommand(DUMMY_HOSESON))
+			{
+				p.PushActionExecuteCommand(ACTION_NEWLIST, "AttachFireHose", Target, 2, false);
+			}
+		}
+		if (childID == 1) //Install hose connections
+		{
+			if (!v.HasCommand(DUMMY_HOSESON))
+			{
+				v.PushActionWait(ACTION_NEWLIST, 0.1f);
+				Vector CarPos = v.GetPosition();
+
+       					float r[9];
+        			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+				if (StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE02) == 0)
+                			Vehicle o = Game::CreateVehicle(OBJ_ENGINE_CONN, NAME_CONNECTORS);
+				else if (StrCompare(v.GetPrototypeFileName(), PROTO_WATERTENDER) == 0)
+                			Vehicle o = Game::CreateVehicle(OBJ_WATERTENDER_CONN, NAME_CONNECTORS);
+				else
+				{
+					Mission::PlayHint(HINT_NOTVALID);
+					return;
+				}
+				if (o.IsValid())
+				{
+					o.SetPosition(CarPos);
+					o.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+					o.UpdatePlacement();
+					o.SetSelectable(false);
+
+					o.SetUserData(v.GetID());
+					v.SetUserData(v.GetID());
+					o.SetPlayerMP(v.GetPlayerMP());
+
+					o.AssignCommand(DUMMY_HOSESON);
+					v.AssignCommand(DUMMY_HOSESON);
+					v.SetChildEnabled("pump1", false);
+					v.SetChildEnabled("pump2", false);
+					v.SetChildEnabled("pump3", false);
+					v.SetChildEnabled("pump4", false);
+					if (v.HasCommand(CMD_STANDBY_OFF))
+					{
+						v.RemoveCommand(CMD_STANDBY_OFF);
+						v.AssignCommand(CMD_STANDBY_ON);
+					}
+					p.PushActionMove(ACTION_NEWLIST, &o, TARGET_FREE_CONNECTOR);
+					//p.PushActionCheckFreeConnector(ACTION_APPEND, &o);
+					p.PushActionUseEquipment(ACTION_APPEND, &o, childID, 1.0f);
+					
+					//if (v.HasCommand("Extinguish") && v.HasCommand("Cool") && v.HasCommand(CMD_WATER_OFF))
+					//	v.PushActionExecuteCommand(ACTION_APPEND, CMD_WATER_OFF, Caller, 0, false);					
+				}
+			} else
+				p.PushActionExecuteCommand(ACTION_NEWLIST, "AttachFireHose", Target, 2, false);
+		}
+		if (childID == 2) //Attach hose to installed hose conncetions
+		{
+			v.PushActionWait(ACTION_NEWLIST, 0.1f);
+			int UnitID = Target->GetID();
+			VehicleList list(NAME_CONNECTORS);
+			for(int i = 0; i < list.GetNumVehicles(); i++)
+			{
+				if (list.GetVehicle(i)->GetUserData() == UnitID)
+				{
+					Vehicle c = list.GetVehicle(i);
+					p.PushActionMove(ACTION_NEWLIST, &c, TARGET_FREE_CONNECTOR);
+					//p.PushActionCheckFreeConnector(ACTION_APPEND, &c);
+					p.PushActionUseEquipment(ACTION_APPEND, &c, childID, 1.0f);
+				}
+			}
+		}
+		if (childID == 3) //A check if the hose connections are being used.
+		{
+			if(!v.IsInstalled())
+			{
+				int UnitID = v.GetUserData();
+				VehicleList list(VT_FIREFIGHTERS_RW, VT_FIREFIGHTERS_TLF);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					if (list.GetVehicle(i)->GetUserData() == UnitID)
+					{
+						list.GetVehicle(i)->RemoveCommand(DUMMY_HOSESON);
+						list.GetVehicle(i)->SetChildEnabled("pump1", true);
+						list.GetVehicle(i)->SetChildEnabled("pump2", true);
+						list.GetVehicle(i)->SetChildEnabled("pump3", true);
+						list.GetVehicle(i)->SetChildEnabled("pump4", true);
+					}
+				}
+				v.PushActionWait(ACTION_NEWLIST, 0.1f);
+				v.PushActionDeleteOwner(ACTION_APPEND);
+			
+			} else
+				return;
+		}
+
+
+	}
+};
+
+object DummyHosesAreOn : CommandScript
+{
+	DummyHosesAreOn()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return false;
+	}
+
+  	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+	}
+};

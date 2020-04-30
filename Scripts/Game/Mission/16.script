@@ -1,0 +1,1085 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Changes: - Los Angeles mod fix
+//
+//******************************************************************************************
+
+// mission 16 script "rock festival"
+
+const int MAX_DEAD_CIVILIANS_HINT = 5;
+const int MAX_DEAD_PERSONS = 12;
+const int MAX_DEAD_CIVILS = 7;
+const int MAX_INJURED = 40;
+const int MAX_ROWDIES = 20;
+const int MAX_SPARK_OBJECTS = 10;
+
+const float TIME_CHECK_MISSION_STATE_INTERVAL = 1.0f;
+const int TIME_ROWDY_CALMDOWN = 60;
+const float TIME_PYLONMAN_FALL = 660.0f;
+const float TIME_HINT_PYLONMAN_FALL = TIME_PYLONMAN_FALL - 180.0f;
+const float TIME_SPARK_1 = 30.0f;
+const float TIME_SPARK_2 = 30.0f;
+const float TIME_SPARK_3 = 30.0f;
+const float TIME_SPARK_4 = 30.0f;
+const float TIME_SPARK_5 = 30.0f;
+const float TIME_SPARK_6 = 30.0f;
+const float TIME_SPARK_7 = 30.0f;
+const float TIME_SPARK_8 = 30.0f;
+const float TIME_SPARK_9 = 30.0f;
+const float TIME_SPARK_10 = 30.0f;
+
+const float MANONPYLON_LIFEDRAIN_AFTERFALL = 2.0f;
+
+const char NAME_TRANSITION_CAREXPLODE[] = "CutsceneExplode";
+const float TIME_TRANSITION_ENDCUTSCENE = 3.0f;
+const float TIME_TRANSITION_CAREXPLODE = 3.0f;
+const float TIME_CUTSCENE_CAREXPLODE = 3.5f;
+const char NAME_TRANSITION_PYLONMAN[] = "CutscenePylonMan";
+const float TIME_TRANSITION_PYLONMAN = 3.0f;
+const float TIME_CUTSCENE_PYLONMAN = 6.0f;
+const char NAME_ROWDY[] = "rowdy";
+const char NAME_PYLON_MAN[] = "pylonman";
+const char NAME_GAPERFOREST[] = "gaperforest";
+const char NAME_GAPERCAMP[] = "gapercamp";
+const char NAME_CRITICALTREE[] = "criticaltree";
+const char NAME_CRITICALTREECAMP[] = "criticalcamptree";
+const char NAME_CRITICALOBJECTCAMP[] = "criticalcampobject";
+const char NAME_TRIGGERPYLON[] = "triggerpylon";
+const char NAME_TRIGGERFRONTGATE[] = "triggerfrontgate";
+const char NAME_VIRTUAL_HOUSE[] = "virtualhouse";
+const char NAME_DRUMMER[] = "drummer";
+const char NAME_SLICEABLEOBJECT[] = "sliceable_object";
+const char NAME_BANNERRIGHT[] = "banner_right";
+const char NAME_TOURTRUCK[] = "tourtruck";
+const char NAME_SPARK_OBJECT1[] = "spark_object1";
+const char NAME_SPARK_EMIT1[] = "spark_emit1";
+const char NAME_SPARK_DEST1[] = "spark_dest1";
+const char NAME_SPARK_OBJECT2[] = "spark_object2";
+const char NAME_SPARK_EMIT2[] = "spark_emit2";
+const char NAME_SPARK_DEST2[] = "spark_dest2";
+const char NAME_SPARK_OBJECT3[] = "spark_object3";
+const char NAME_SPARK_EMIT3[] = "spark_emit3";
+const char NAME_SPARK_DEST3[] = "spark_dest3";
+const char NAME_SPARK_OBJECT4[] = "spark_object4";
+const char NAME_SPARK_EMIT4[] = "spark_emit4";
+const char NAME_SPARK_DEST4[] = "spark_dest4";
+const char NAME_SPARK_OBJECT5[] = "spark_object5";
+const char NAME_SPARK_EMIT5[] = "spark_emit5";
+const char NAME_SPARK_DEST5[] = "spark_dest5";
+const char NAME_SPARK_OBJECT6[] = "spark_object6";
+const char NAME_SPARK_EMIT6[] = "spark_emit6";
+const char NAME_SPARK_DEST6[] = "spark_dest6";
+const char NAME_SPARK_OBJECT7[] = "spark_object7";
+const char NAME_SPARK_EMIT7[] = "spark_emit7";
+const char NAME_SPARK_DEST7[] = "spark_dest7";
+const char NAME_SPARK_OBJECT8[] = "spark_object8";
+const char NAME_SPARK_EMIT8[] = "spark_emit8";
+const char NAME_SPARK_DEST8[] = "spark_dest8";
+const char NAME_SPARK_OBJECT9[] = "spark_object9";
+const char NAME_SPARK_EMIT9[] = "spark_emit9";
+const char NAME_SPARK_DEST9[] = "spark_dest9";
+const char NAME_SPARK_OBJECT10[] = "spark_object10";
+const char NAME_SPARK_EMIT10[] = "spark_emit10";
+const char NAME_SPARK_DEST10[] = "spark_dest10";
+
+enum
+{
+	TRANSITION_NONE,
+	TRANSITION_CAREXPLODE,
+	TRANSITION_PYLONMANFALL,
+};
+
+enum
+{
+	STATE_ROWDY_QUIET,
+	STATE_ROWDY_CALMEDDOWN,
+	STATE_ROWDY_ANGRY
+};
+
+object Mission16 : MissionScript
+{
+	PersonList mRowdyList;
+	PersonList mGaperForestList;
+	PersonList mGaperCampList;
+	Person mManOnPylon;
+	Person mDrummer;
+	GameObject mSliceableObject1, mSliceableObject2;
+	GameObject mBanner;
+	OpenHouse mVirtualHouse;
+	GameObjectList mHintTreeList;
+	GameObjectList mHintCampTreeList;
+	GameObjectList mHintCampObjectList;
+	GameObject mExplodingVehicle;
+	GameObject mSparkObj[MAX_SPARK_OBJECTS];
+	GameObject mSparkEmit[MAX_SPARK_OBJECTS];
+	GameObjectList mSparkDestList[MAX_SPARK_OBJECTS];
+
+	bool mHintFrontGate, mHintPylon, mHintFirstCarExplode;
+	bool mHintTreeBurns, mHintCampTreeBurns, mHintCampObjectBurns;
+	bool mHintDeadPersons;
+	bool mRowdiesAggressive;
+	bool mManOnPylonSaved;
+	bool mAlreadyFiresExt;
+	bool mAlreadyInjuredSaved;
+	bool mFailedTooManyDeadCivils;
+	bool mFailedTooManyInjuredPersons;
+	bool mFailedCityBuildingBurns;
+	bool mSliceableObject1Pulled, mSliceableObject2Pulled;
+	float mTimePylonManFall;
+	int mCurrentTransition;
+	int mRowdyStates[MAX_ROWDIES];
+	int mRowdyTimers[MAX_ROWDIES];
+
+	Mission16()
+	{
+	}
+	
+	~Mission16()
+	{
+	}
+	
+	void Start()
+	{
+		PersonList list(NAME_ROWDY);
+		mRowdyList = list;
+		if (list.GetNumPersons() > MAX_ROWDIES)
+			System::Error("M16: Too many rowdies!");
+		if (list.GetNumPersons() == 0)
+			System::Error("M16: Rowdies not found!");
+
+		PersonList list2(NAME_GAPERFOREST);
+		mGaperForestList = list2;
+		if (list2.GetNumPersons() == 0)
+			System::Error("M16: Gapers in forest not found!");
+
+		PersonList list3(NAME_GAPERCAMP);
+		mGaperCampList = list3;
+		if (list3.GetNumPersons() == 0)
+			System::Error("M16: Gapers in camp not found!");
+
+		GameObjectList list4(NAME_CRITICALTREE);
+		mHintTreeList = list4;
+		if (list4.GetNumObjects() == 0)
+			System::Error("M16: Critical trees for hint not found!");
+
+		GameObjectList list5(NAME_CRITICALTREECAMP);
+		mHintCampTreeList = list5;
+		if (list5.GetNumObjects() == 0)
+			System::Error("M16: Camp trees for hint not found!");
+
+		GameObjectList list6(NAME_CRITICALOBJECTCAMP);
+		mHintCampObjectList = list6;
+		if (list6.GetNumObjects() == 0)
+			System::Error("M16: Camp object for hint not found!");
+
+		GameObjectList list7(NAME_SLICEABLEOBJECT);
+		if (list7.GetNumObjects() < 2)
+			System::Error("M16: Too few sliceable objects");
+		mSliceableObject1 = list7.GetObject(0);
+		mSliceableObject2 = list7.GetObject(1);
+
+		mSparkDestList[0] = Game::GetGameObjects(NAME_SPARK_DEST1);
+		mSparkDestList[1] = Game::GetGameObjects(NAME_SPARK_DEST2);
+		mSparkDestList[2] = Game::GetGameObjects(NAME_SPARK_DEST3);
+		mSparkDestList[3] = Game::GetGameObjects(NAME_SPARK_DEST4);
+		mSparkDestList[4] = Game::GetGameObjects(NAME_SPARK_DEST5);
+		mSparkDestList[5] = Game::GetGameObjects(NAME_SPARK_DEST6);
+		mSparkDestList[6] = Game::GetGameObjects(NAME_SPARK_DEST7);
+		mSparkDestList[7] = Game::GetGameObjects(NAME_SPARK_DEST8);
+		mSparkDestList[8] = Game::GetGameObjects(NAME_SPARK_DEST9);
+		mSparkDestList[9] = Game::GetGameObjects(NAME_SPARK_DEST10);
+
+		GameObjectList listAll = Game::GetGameObjects();
+		for(int i = 0; i < listAll.GetNumObjects(); i++)
+		{
+			GameObject *obj = listAll.GetObject(i);
+			if (obj->HasName(NAME_PYLON_MAN))
+			{
+				mManOnPylon = Person(obj);
+				mManOnPylon.SetResistance(INJUREREASON_UNKNOWN, 10000000.0f);
+			}
+			else if (obj->HasName(NAME_DRUMMER))
+				mDrummer = Person(obj);
+			else if (obj->HasName(NAME_VIRTUAL_HOUSE))
+				mVirtualHouse = OpenHouse(obj);
+			else if (obj->HasName(NAME_BANNERRIGHT))
+				mBanner = GameObject(obj);
+			else if (obj->HasName(NAME_SPARK_OBJECT1))
+				mSparkObj[0] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT1))
+			{
+				mSparkEmit[0] = obj;
+				mSparkEmit[0].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT2))
+				mSparkObj[1] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT2))
+			{
+				mSparkEmit[1] = obj;
+				mSparkEmit[1].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT3))
+				mSparkObj[2] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT3))
+			{
+				mSparkEmit[2] = obj;
+				mSparkEmit[2].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT4))
+				mSparkObj[3] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT4))
+			{
+				mSparkEmit[3] = obj;
+				mSparkEmit[3].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT5))
+				mSparkObj[4] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT5))
+			{
+				mSparkEmit[4] = obj;
+				mSparkEmit[4].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT6))
+				mSparkObj[5] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT6))
+			{
+				mSparkEmit[5] = obj;
+				mSparkEmit[5].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT7))
+				mSparkObj[6] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT7))
+			{
+				mSparkEmit[6] = obj;
+				mSparkEmit[6].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT8))
+				mSparkObj[7] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT8))
+			{
+				mSparkEmit[7] = obj;
+				mSparkEmit[7].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT9))
+				mSparkObj[8] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT9))
+			{
+				mSparkEmit[8] = obj;
+				mSparkEmit[8].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT10))
+				mSparkObj[9] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT10))
+			{
+				mSparkEmit[9] = obj;
+				mSparkEmit[9].StopParticleEffect();
+			}
+		}
+		if (!mManOnPylon.IsValid())
+			System::Error("M16: Man on pylon not found!");
+		if (!mDrummer.IsValid())
+			System::Error("M16: Drummer not found!");
+		if (!mVirtualHouse.IsValid())
+			System::Error("M16: Virtual house not found!");
+		if (!mBanner.IsValid())
+			System::Error("M16: Banner not found!");
+
+		for (int i = 0; i < mRowdyList.GetNumPersons(); i++)
+		{
+			mRowdyStates[i] = STATE_ROWDY_QUIET;
+			mRowdyTimers[i] = 0;
+		}
+
+		mManOnPylon.SetEnteredHouseID(mVirtualHouse.GetID());
+
+		mHintFrontGate = false;
+		mHintPylon = false;
+		mHintFirstCarExplode = false;
+		mHintTreeBurns = false;
+		mHintCampTreeBurns = false;
+		mHintCampObjectBurns = false;
+		mRowdiesAggressive = false;
+		mManOnPylonSaved = false;
+		mFailedTooManyDeadCivils = false;
+		mFailedTooManyInjuredPersons = false;
+		mFailedCityBuildingBurns = false;
+		mSliceableObject1Pulled = false;
+		mSliceableObject2Pulled = false;
+		mHintDeadPersons = false;
+		mCurrentTransition = TRANSITION_NONE;
+		mTimePylonManFall = TIME_TRANSITION_PYLONMAN;
+
+		Mission::AddObjective("EXTINGUISH_FIRES");
+		Mission::SetObjectiveAccomplished("EXTINGUISH_FIRES", false);
+		Mission::AddObjective("TRANSPORT_INJURED");
+		Mission::SetObjectiveAccomplished("TRANSPORT_INJURED", false);
+
+		Mission::StartIntervalTimer("CheckMissionState", TIME_CHECK_MISSION_STATE_INTERVAL);
+		Mission::StartSingleTimer("PylonManFall", TIME_PYLONMAN_FALL);
+		Mission::StartSingleTimer("HintPylonManFall", TIME_HINT_PYLONMAN_FALL);
+
+		Audio::PlaySoundtrack("16", 0.0f);
+	}
+
+	void MakeRowdyAggressive(int nr)
+	{
+		System::Log("Make rowdy nr. %d aggressive", nr);
+		mRowdyStates[nr] = STATE_ROWDY_ANGRY;
+		mRowdyList.GetPerson(nr)->SetRole(ROLE_GANGSTER);
+		mRowdyList.GetPerson(nr)->SetBehaviour(BEHAVIOUR_GANGSTER_FISTFIGHT);
+		mRowdyList.GetPerson(nr)->SetCivilsFleeRange(0.f);
+	}
+
+
+	void LetRowdiesBeAggressive()
+	{
+		for(int i = 0; i < mRowdyList.GetNumPersons(); i++)
+		{
+			MakeRowdyAggressive(i);
+		}
+		mRowdiesAggressive = true;
+		Mission::AddObjective("M16_ROWDIES");
+		Mission::SetObjectiveAccomplished("M16_ROWDIES", false);
+		Mission::PlayHint("HINT_M16_ROWDIES");
+		Mission::PlayComment("SUPERV_M16_OBJ05");
+	}
+
+	void OnPhysicsEvent(GameObject *obj)
+	{
+	}
+
+	void RunCutscene()
+	{
+		//Camera::StartTransition("Cutscene1", 4.0f);		
+	}
+
+	void OnCameraTransitionFinished()
+	{
+		switch (mCurrentTransition)
+		{
+			case TRANSITION_CAREXPLODE:
+				if (mExplodingVehicle.IsValid())
+				{
+					//mExplodingVehicle.Explode();					
+				}
+				break;
+			case TRANSITION_PYLONMANFALL:				
+				mManOnPylon.EnablePhysicsSimulation();
+				mManOnPylon.Kill();
+				mVirtualHouse.Hide();
+				mManOnPylon.SetEnteredHouseID(-1);
+				//mManOnPylon.SetInjuredLifeDrain(MANONPYLON_LIFEDRAIN_AFTERFALL);
+				break;
+		}
+		mCurrentTransition = TRANSITION_NONE;
+	}
+
+	bool OnStartBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid())
+		{
+			for (int i = 0; i < mHintTreeList.GetNumObjects(); i++)
+				if (!mHintTreeBurns && burningObject->GetID() == mHintTreeList.GetObject(i)->GetID())
+				{
+					Mission::PlayHint("HINT_M16_TREEBURNING");
+					mHintTreeBurns = true;
+				}
+			for (int i = 0; i < mHintCampTreeList.GetNumObjects(); i++)
+				if (!mHintCampTreeBurns && burningObject->GetID() == mHintCampTreeList.GetObject(i)->GetID())
+				{
+					Mission::PlayHint("HINT_M16_CAMPTREEBURNING");
+					mHintCampTreeBurns = true;
+				}
+			for (int i = 0; i < mHintCampObjectList.GetNumObjects(); i++)
+				if (!mHintCampObjectBurns && burningObject->GetID() == mHintCampObjectList.GetObject(i)->GetID())
+				{
+					Mission::PlayHint("HINT_M16_CAMPOBJECTBURNING");
+					mHintCampObjectBurns = true;
+					Audio::SetMusicLevel(0.4f);
+				}
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StartParticleEffect();
+					if (i == 0)
+						Mission::StartSingleTimer("spark_timer1", TIME_SPARK_1);
+					else if (i == 1)
+						Mission::StartSingleTimer("spark_timer2", TIME_SPARK_2);
+					else if (i == 2)
+						Mission::StartSingleTimer("spark_timer3", TIME_SPARK_3);
+					else if (i == 3)
+						Mission::StartSingleTimer("spark_timer4", TIME_SPARK_4);
+					else if (i == 4)
+						Mission::StartSingleTimer("spark_timer5", TIME_SPARK_5);
+					else if (i == 5)
+						Mission::StartSingleTimer("spark_timer6", TIME_SPARK_6);
+					else if (i == 6)
+						Mission::StartSingleTimer("spark_timer7", TIME_SPARK_7);
+					else if (i == 7)
+						Mission::StartSingleTimer("spark_timer8", TIME_SPARK_8);
+					else if (i == 8)
+						Mission::StartSingleTimer("spark_timer9", TIME_SPARK_9);
+					else if (i == 9)
+						Mission::StartSingleTimer("spark_timer10", TIME_SPARK_10);
+				}
+			}
+		}
+		return true;
+	}
+
+	bool OnStopBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid())
+		{
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StopParticleEffect();
+					if (i == 0)
+						Mission::StopTimer("spark_timer1");
+					else if (i == 1)
+						Mission::StopTimer("spark_timer2");
+					else if (i == 2)
+						Mission::StopTimer("spark_timer3");
+					else if (i == 3)
+						Mission::StopTimer("spark_timer4");
+					else if (i == 4)
+						Mission::StopTimer("spark_timer5");
+					else if (i == 5)
+						Mission::StopTimer("spark_timer6");
+					else if (i == 6)
+						Mission::StopTimer("spark_timer7");
+					else if (i == 7)
+						Mission::StopTimer("spark_timer8");
+					else if (i == 8)
+						Mission::StopTimer("spark_timer9");
+					else if (i == 9)
+						Mission::StopTimer("spark_timer10");
+				}
+			}
+		}
+		return true;
+	}
+
+	void OnSquadArrived(Person *squad_)
+	{
+		if (squad_->HasCommand("GetShears"))
+		{
+			System::Log("M16: Assigned command M16UseShears.");
+			squad_->AssignCommand("M16UseShears");
+		}
+	}
+	
+	void OnTimer(const char *Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case "spark_timer1":
+				for (int i = 0; i < mSparkDestList[0].GetNumObjects(); i++)
+					mSparkDestList[0].GetObject(i)->Burn();
+				break;
+			case "spark_timer2":
+				for (int i = 0; i < mSparkDestList[1].GetNumObjects(); i++)
+					mSparkDestList[1].GetObject(i)->Burn();
+				break;
+			case "spark_timer3":
+				for (int i = 0; i < mSparkDestList[2].GetNumObjects(); i++)
+					mSparkDestList[2].GetObject(i)->Burn();
+				break;
+			case "spark_timer4":
+				for (int i = 0; i < mSparkDestList[3].GetNumObjects(); i++)
+					mSparkDestList[3].GetObject(i)->Burn();
+				break;
+			case "spark_timer5":
+				for (int i = 0; i < mSparkDestList[4].GetNumObjects(); i++)
+					mSparkDestList[4].GetObject(i)->Burn();
+				break;
+			case "spark_timer6":
+				for (int i = 0; i < mSparkDestList[5].GetNumObjects(); i++)
+					mSparkDestList[5].GetObject(i)->Burn();
+				break;
+			case "spark_timer7":
+				for (int i = 0; i < mSparkDestList[6].GetNumObjects(); i++)
+					mSparkDestList[6].GetObject(i)->Burn();
+				break;
+			case "spark_timer8":
+				for (int i = 0; i < mSparkDestList[7].GetNumObjects(); i++)
+					mSparkDestList[7].GetObject(i)->Burn();
+				break;
+			case "spark_timer9":
+				for (int i = 0; i < mSparkDestList[8].GetNumObjects(); i++)
+					mSparkDestList[8].GetObject(i)->Burn();
+				break;
+			case "spark_timer10":
+				for (int i = 0; i < mSparkDestList[9].GetNumObjects(); i++)
+					mSparkDestList[9].GetObject(i)->Burn();
+				break;
+			case "endcutscene":
+				Mission::HideBlackBars();
+				Mission::EndCutScene(true, TIME_TRANSITION_ENDCUTSCENE);
+				break;
+			case "CheckMissionState":
+				if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0)
+				{
+					if (!Mission::IsObjectiveAccomplished("EXTINGUISH_FIRES"))
+					{
+						Mission::SetObjectiveAccomplished("EXTINGUISH_FIRES", true);
+						Mission::PlayComment("SUPERV_OBJ_EXTINGUISHED2");
+						mAlreadyFiresExt = true;
+						Audio::SetMusicLevel(0.0f);
+					}
+				}
+				else
+				{
+					if (Mission::IsObjectiveAccomplished("EXTINGUISH_FIRES"))
+					{
+						Mission::RemoveObjective("EXTINGUISH_FIRES");
+						Mission::AddObjective("EXTINGUISH_FIRES");
+						if (mAlreadyFiresExt)
+						{
+							Mission::PlayComment("SUPERV_OBJ_FIRESAGAIN");
+						}
+					}
+				}
+				if (Mission::GetCounter("Injured Persons") == 0)
+					//|| (Mission::GetCounter("Injured Persons") == 1 && !mManOnPylonSaved))
+				{
+					if (!Mission::IsObjectiveAccomplished("TRANSPORT_INJURED"))
+					{
+						Mission::SetObjectiveAccomplished("TRANSPORT_INJURED", true);
+						Mission::PlayComment("SUPERV_OBJ_VICTIMS_TRANSPORTED2");
+						mAlreadyInjuredSaved = true;
+					}
+				}
+				else
+				{
+					if (Mission::IsObjectiveAccomplished("TRANSPORT_INJURED"))
+					{
+						Mission::SetObjectiveAccomplished("TRANSPORT_INJURED", false);
+						if (mAlreadyInjuredSaved)
+						{
+							Mission::PlayComment("SUPERV_OBJ_VICTIMS");
+						}
+					}
+				}
+				if (mRowdiesAggressive)
+				{
+					System::Log("Check for rowdies");
+					bool rowdyInMap = false;
+					for (int i = 0; i < mRowdyList.GetNumPersons(); i++)
+					{
+						if (mRowdyList.GetPerson(i)->IsInsideMap())
+						{
+							rowdyInMap = true;
+						}
+						if (mRowdyStates[i] == STATE_ROWDY_CALMEDDOWN)
+						{
+							mRowdyTimers[i]--;
+							if (mRowdyTimers[i] <= 0)
+							{
+								System::Log("Rowdy %d got angry again", i);
+								MakeRowdyAggressive(i);
+							}
+						}
+					}
+					if (!rowdyInMap)
+					{
+						Mission::SetObjectiveAccomplished("M16_ROWDIES", true);
+						Mission::PlayComment("SUPERV_M16_OBJ06");
+					}
+				}
+				break;
+			case "PylonManFallSecondTry":
+			case "PylonManFall":
+				if (!mManOnPylonSaved)
+				{
+					if (Mission::IsCutSceneRunning())
+					{
+						Mission::StartSingleTimer("PylonManFallSecondTry", 20.0f);
+						break;
+					}
+					Camera::StartTransition(NAME_TRANSITION_PYLONMAN, mTimePylonManFall);
+					mCurrentTransition = TRANSITION_PYLONMANFALL;
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Mission::StartSingleTimer("endcutscene", TIME_CUTSCENE_PYLONMAN);
+					Audio::SetMusicLevel(0.7f);
+				}
+				break;
+			case "HintPylonManFall":
+				if (!mManOnPylonSaved)
+					Mission::PlayHint("HINT_M16_MANONPYLON");
+				break;
+		}
+	}
+	
+	bool OnExplode(GameObject *obj)
+	{
+		bool tourtruck = false;
+		if (obj->HasName(NAME_TOURTRUCK))
+			tourtruck = true;
+		if (obj->GetType() == ACTOR_VEHICLE || tourtruck)
+		{
+			if (!tourtruck)
+				Vehicle vc = (Vehicle*)obj;
+			if (!mHintFirstCarExplode && (tourtruck || vc.GetVehicleType() == VT_NOSQUAD))
+			{
+				if (!Mission::IsCutSceneRunning())
+				{
+					mHintFirstCarExplode = true;
+					Vector pos, dir;
+					float yaw, pitch, roll;
+					Camera::GetTransition(NAME_TRANSITION_CAREXPLODE, pos, yaw, pitch, roll);
+					Camera::StartTransition(obj->GetPosition(), pos.z, yaw, pitch, roll, TIME_TRANSITION_CAREXPLODE);
+					mCurrentTransition = TRANSITION_CAREXPLODE;
+					mExplodingVehicle = obj;
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Mission::StartSingleTimer("endcutscene", TIME_CUTSCENE_CAREXPLODE);
+					Audio::SetMusicLevel(0.1f);
+				}
+			}
+		}
+		if (mCurrentTransition == TRANSITION_CAREXPLODE)
+			return false;
+		return true;
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		bool squad = false;
+		Vehicle vc;
+		Person ps;
+		if (Collider->GetType() == ACTOR_VEHICLE)
+		{
+			vc = Vehicle(Collider);
+			if (vc.GetVehicleType() != VT_NOSQUAD)
+				squad = true;
+		}
+		else if (Collider->GetType() == ACTOR_PERSON)
+		{
+			ps = Person(Collider);
+			if (ps.GetRole() == ROLE_SQUAD)
+				squad = true;
+		}
+
+		if (squad)
+		{
+			switch(Trigger)
+			{
+				case NAME_TRIGGERFRONTGATE:
+					Mission::PlayHint("HINT_M16_INJUREDATGATE");
+					Game::DeactivateTrigger(NAME_TRIGGERFRONTGATE);
+					break;
+				case NAME_TRIGGERPYLON:
+					//if (vc.IsValid() && vc.GetVehicleType != VT_FIREFIGHTERS_DLK)
+					//{
+					//	Mission::PlayHint("HINT_M16_MANONPYLON");						
+					//}
+					//Game::DeactivateTrigger(NAME_TRIGGERPYLON);
+					break;
+			}
+		}
+	}
+	
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data)
+	{
+		switch(Action)
+		{
+			case "EActionBasketUp":
+				{
+					if (Data->Owner->GetType() == ACTOR_VEHICLE)
+					{
+						Vehicle car(Data->Owner);
+						if (car.GetInstallTargetID() == mVirtualHouse.GetID())
+						{
+							System::Log("Hide virtual house");
+							int enteredHouse = mManOnPylon.GetEnteredHouseID();
+							mVirtualHouse.Hide();
+							mManOnPylon.SetEnteredHouseID(enteredHouse);
+						}
+					}
+				}
+				break;
+			case "EActionNegotiate":
+				for (int i = 0; i < mRowdyList.GetNumPersons(); i++)
+				{
+					if (mRowdyList.GetPerson(i)->GetID() == Data->Parameters[0].iValue)
+					{
+						System::Log("M16: Rowdy %d calmed down.",i);
+						mRowdyList.GetPerson(i)->SetRole(ROLE_CIVILIAN);
+						mRowdyList.GetPerson(i)->StopMovement();
+						mRowdyStates[i] = STATE_ROWDY_CALMEDDOWN;
+						mRowdyTimers[i] = TIME_ROWDY_CALMDOWN;
+						break;
+					}
+				}
+				break;
+			//case "EActionDrop":
+			//	if (!mManOnPylonSaved && Data->Parameters[0].iValue == mManOnPylon.GetID())
+			//	{
+			//		mManOnPylon.Revive();
+			//		//mManOnPylonSaved = true;
+			//	}
+			//	break;
+			case "EActionTurnTo":
+				if (Data->Parameters[3].iValue == mSliceableObject1.GetID())
+				{
+					System::Log("ActionTurnTo1");
+					mSliceableObject1.PushActionWait(ACTION_NEWLIST, 1.0f);
+					mSliceableObject1.PushActionInterruptAnim(ACTION_APPEND, "slice");
+					mSliceableObject1.ClearFlag(OF_FLOTSAM);
+					mSliceableObject1.SetFlag(OF_PULLABLE);
+				}
+				else if (Data->Parameters[3].iValue == mSliceableObject2.GetID())
+				{
+					System::Log("ActionTurnTo2");
+					mSliceableObject2.PushActionWait(ACTION_NEWLIST, 1.0f);
+					mSliceableObject2.PushActionInterruptAnim(ACTION_APPEND, "slice");
+					mSliceableObject2.ClearFlag(OF_FLOTSAM);
+					mSliceableObject2.SetFlag(OF_PULLABLE);
+				}
+				break;
+			case "EActionPull":
+				if (Data->Parameters[0].iValue == mSliceableObject1.GetID())
+				{
+					mSliceableObject1Pulled = true;
+				}
+				else if (Data->Parameters[0].iValue == mSliceableObject2.GetID())
+				{
+					mSliceableObject2Pulled = true;
+				}
+				if (mSliceableObject1Pulled && mSliceableObject2Pulled)
+					mDrummer.ClearFlag(OF_BLOCKED);
+				break;
+		}
+		return ACTION_CONTINUE;
+	}
+	
+	bool OnPostCommand(const char *Cmd, GameObject *Caller, Actor *Target)
+	{
+		if (Cmd == "DriveAwayPerson" && Target->GetID() == mManOnPylon.GetID() && !mManOnPylonSaved)
+		{
+			System::Log("drive away man on plyon");
+			mManOnPylon.SetEnteredHouseID(-1);//mVirtualHouse.GetID());
+			Caller->ClearActions();
+			Person pc, pt;
+			pc = Person(Caller);
+			pt = Person(Target);
+			Caller->PushActionLinkPerson(ACTION_NEWLIST, &pt);
+			//pc.SetLinkedPersonID(pt.GetID());
+			//pt.SetLinkedPersonID(pc.GetID());
+			mManOnPylonSaved = true;
+			return false;
+		}
+		return true;
+	}	
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data)
+	{
+		switch(Action)
+		{
+			//case "EActionLiftPerson":
+			//	if (!mManOnPylonSaved && Data->Parameters[0].iValue == mManOnPylon.GetID())
+			//	{
+			//		Vector pos;
+			//		pos = mManOnPylon.GetPosition();
+			//		mManOnPylonSaved = true;
+			//		//Audio::PlaySample3D("mod:/Audio/FX/freepilot01.wav",px,py,pz);					
+			//	}
+			//	break;
+			case "EActionBasketDown":
+				{
+					if (Data->Owner->GetType() == ACTOR_PERSON)
+					{
+						Person ps(Data->Owner);
+						Actor vc = Game::GetActor(ps.GetEnteredCarID());
+						Vehicle car(&vc);
+						if (car.GetInstallTargetID() == mVirtualHouse.GetID())
+						{
+							System::Log("Show virtual house");
+							System::Log("Set trace accuracy for virtual house to Polygons");
+							mVirtualHouse.Show();
+						}
+					}
+				}
+				break;
+			case "EActionLinkPerson":
+			case "EActionArrest":
+			case "EActionEvacuate":
+			case "EActionEvacuatePerson":
+				System::Log("Rowdies arrest");
+				int rowdyNr = -1;
+				for (int i = 0; i < mRowdyList.GetNumPersons(); i++)
+				{
+					if (mRowdyList.GetPerson(i)->GetID() == Data->Parameters[0].iValue)
+					{
+						rowdyNr = i;
+					}
+				}
+				if (rowdyNr > -1)
+				{
+					System::Log("Rowdy %d gets aggressive", rowdyNr);
+					if (!mRowdiesAggressive)
+						LetRowdiesBeAggressive();
+					else
+						MakeRowdyAggressive(rowdyNr);
+				}
+				break;
+			case "EActionUseEquipment":
+				Person pers(Data->Owner);
+				if (pers.IsValid())
+				{
+					if (pers.GetEquipment() == EQUIP_JUMPPAD)
+					{
+						System::Log("Action Use Equipment: Jumppad");
+						if (Data->Parameters[0].iValue == mVirtualHouse.GetID())
+						{
+							//System::Log("Make man healthy");
+							//mManOnPylon.Revive();
+							mManOnPylonSaved = true;
+						}
+					}
+				}
+				break;
+			case "EActionAskPerson":
+				for (int i = 0; i < mRowdyList.GetNumPersons(); i++)
+				{
+					if (Data->Parameters[0].iValue == mRowdyList.GetPerson(i)->GetID())
+					{
+						if (mRowdyStates[i] != STATE_ROWDY_QUIET)
+							return ACTION_SKIP;
+						break;
+					}
+				}
+				break;
+		}
+		return ACTION_CONTINUE;
+	}	
+
+	bool OnCheckCommand(const char *Cmd, GameObject *Caller, Actor *Target)
+	{
+		if (Cmd && Cmd == "EnterHouse" && Target && Target->HasName(NAME_VIRTUAL_HOUSE))
+			return false;
+		if (Cmd && Cmd == "M16UseShears" && Target && !Target->HasName(NAME_SLICEABLEOBJECT))
+			return false;
+
+		return true;
+	}
+
+	ActionCallbackResult OnAbortAction(const char *Action, ActionCallback* Data)
+	{		
+		return ACTION_CONTINUE;
+	}	
+		
+	PathFinishedAction OnPathFinished(const char *PathName, GameObject *Obj)
+	{		
+		return PATH_DEFAULT;
+	}
+	
+	void Update()
+	{		
+	}
+	
+	MissionState GetMissionState()
+	{
+		if (Mission::IsCutSceneRunning())
+			MISSION_RUNNING;
+		// only for debugging
+		//return MISSION_RUNNING;
+
+		if (!mHintDeadPersons && Mission::GetCounter("Dead Persons") > MAX_DEAD_CIVILIANS_HINT)
+		{
+			mHintDeadPersons = true;
+			Mission::PlayHint("HINT_M16_MANYINJURED");
+			Audio::SetMusicLevel(0.3f);
+		}
+
+		if (Mission::GetCounter("Dead Civils") > MAX_DEAD_CIVILS)
+		{
+			mFailedTooManyDeadCivils = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURED)
+		{
+			mFailedTooManyInjuredPersons = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Burning Houses") > 0)
+		{
+			mFailedCityBuildingBurns = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (!mManOnPylonSaved && mManOnPylon.IsValid() && !mManOnPylon.IsInjured())
+			Mission::IncCounter("Injured Persons", 1);
+
+		if (Mission::IsDefaultLogicNegative())
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished())
+		{
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_SUCCEEDED;
+		}
+			
+		return MISSION_RUNNING;
+	}
+	
+	const char *GetFailReason()
+	{
+		if (mFailedTooManyDeadCivils || mFailedTooManyInjuredPersons)
+		{
+			return "TOO_MANY_DIED";
+		}
+		else if (mFailedCityBuildingBurns)
+		{
+			return "TOO_MANY_FIRES";
+		}
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mFailedTooManyDeadCivils || mFailedTooManyInjuredPersons)
+			return "SUPERV_M16_FAIL01";
+		if (mFailedCityBuildingBurns)
+			return "SUPERV_M16_FAIL02";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.9f)
+			return "SUPERV_M16_RES01";
+		if (Mission::GetCounter("Person deaths") >= 8 && scoring->ThingsResult >= 0.7f)
+			return "SUPERV_M16_RES02";
+		if (scoring->PersonResult >= 0.7f && (mHintCampTreeBurns || mHintCampObjectBurns))
+			return "SUPERV_M16_RES03";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		Serializer->Write(mRowdyList);
+		Serializer->Write(mGaperForestList);
+		Serializer->Write(mGaperCampList);
+		Serializer->Write(mHintTreeList);
+		Serializer->Write(mHintCampTreeList);
+		Serializer->Write(mHintCampObjectList);
+
+		Serializer->Write(mManOnPylon);
+		Serializer->Write(mDrummer);
+		Serializer->Write(mSliceableObject1);
+		Serializer->Write(mSliceableObject2);
+		Serializer->Write(mBanner);
+		Serializer->Write(mVirtualHouse);
+		Serializer->Write(mExplodingVehicle);
+
+		Serializer->Write(mHintFrontGate);
+		Serializer->Write(mHintPylon);
+		Serializer->Write(mHintFirstCarExplode);
+		Serializer->Write(mHintTreeBurns);
+		Serializer->Write(mHintCampTreeBurns);
+		Serializer->Write(mHintCampObjectBurns);
+		Serializer->Write(mHintDeadPersons);
+		Serializer->Write(mRowdiesAggressive);
+		Serializer->Write(mManOnPylonSaved);
+		Serializer->Write(mAlreadyFiresExt);
+		Serializer->Write(mAlreadyInjuredSaved);
+		Serializer->Write(mFailedTooManyDeadCivils);
+		Serializer->Write(mFailedTooManyInjuredPersons);
+		Serializer->Write(mFailedCityBuildingBurns);
+		Serializer->Write(mSliceableObject1Pulled);
+		Serializer->Write(mSliceableObject2Pulled);
+		Serializer->Write(mTimePylonManFall);
+		Serializer->Write(mCurrentTransition);		
+
+		for (int i = 0; i < MAX_ROWDIES; i++)
+			Serializer->Write(mRowdyStates[i]);
+
+		for (int i = 0; i < MAX_ROWDIES; i++)
+			Serializer->Write(mRowdyTimers[i]);
+
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Write(mSparkObj[i]);
+			Serializer->Write(mSparkEmit[i]);
+			Serializer->Write(mSparkDestList[i]);
+		}
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		Serializer->Read(mRowdyList);
+		Serializer->Read(mGaperForestList);
+		Serializer->Read(mGaperCampList);
+		Serializer->Read(mHintTreeList);
+		Serializer->Read(mHintCampTreeList);
+		Serializer->Read(mHintCampObjectList);
+
+		Serializer->Read(mManOnPylon);
+		Serializer->Read(mDrummer);
+		Serializer->Read(mSliceableObject1);
+		Serializer->Read(mSliceableObject2);
+		Serializer->Read(mBanner);
+		Serializer->Read(mVirtualHouse);
+		Serializer->Read(mExplodingVehicle);
+
+		mHintFrontGate = Serializer->ReadBool();
+		mHintPylon = Serializer->ReadBool();
+		mHintFirstCarExplode = Serializer->ReadBool();
+		mHintTreeBurns = Serializer->ReadBool();
+		mHintCampTreeBurns = Serializer->ReadBool();
+		mHintCampObjectBurns = Serializer->ReadBool();
+		mHintDeadPersons = Serializer->ReadBool();
+		mRowdiesAggressive = Serializer->ReadBool();
+		mManOnPylonSaved = Serializer->ReadBool();
+		mAlreadyFiresExt = Serializer->ReadBool();
+		mAlreadyInjuredSaved = Serializer->ReadBool();
+		mFailedTooManyDeadCivils = Serializer->ReadBool();
+		mFailedTooManyInjuredPersons = Serializer->ReadBool();
+		mFailedCityBuildingBurns = Serializer->ReadBool();
+		mSliceableObject1Pulled = Serializer->ReadBool();
+		mSliceableObject2Pulled = Serializer->ReadBool();
+		Serializer->Read(mTimePylonManFall);
+		Serializer->Read(mCurrentTransition);
+
+		for (int i = 0; i < MAX_ROWDIES; i++)
+			Serializer->Read(mRowdyStates[i]);
+
+		for (int i = 0; i < MAX_ROWDIES; i++)
+			Serializer->Read(mRowdyTimers[i]);
+
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Read(mSparkObj[i]);
+			Serializer->Read(mSparkEmit[i]);
+			Serializer->Read(mSparkDestList[i]);
+		}
+
+		return true;
+	}
+};

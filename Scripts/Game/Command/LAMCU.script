@@ -1,0 +1,164 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+// 		Includes: All MCU commands
+//
+//	- VcmdMCUInstall
+//	- VcmdMCUDeinstall
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_FLOODLIGHTS_OFF[] 	= "VcmdFloodLightsOff";
+const char CMD_MCU_INSTALL[]		= "VcmdMCUInstall";
+const char CMD_MCU_DEINSTALL[]		= "VcmdMCUDeinstall";
+const char OBJ_MCU_PHYSICS[] 		= "mod:Prototypes/Vehicles/06 Objects/mass_casualty_unit_physics.e4p";
+const char NAME_MCU_PHYSICS[] 		= "MCUPhysics";
+const char HINT_INSTALL_MCU[] 		= "No space to expand Mass Casualty Unit!";
+
+int DummyGroup = 29;
+
+object VcmdMCUInstall : CommandScript
+{
+	VcmdMCUInstall()
+	{
+      		SetIcon("mcu_install");
+      		SetCursor("mcu");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetValidTargets(ACTOR_VEHICLE);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+        	Vehicle v(Caller);
+		v.PushActionWait(ACTION_NEWLIST, 0.1f);
+		Vector CarPos = v.GetPosition();
+
+       		float r[9];
+        	v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+                Vehicle m = Game::CreateVehicle(OBJ_MCU_PHYSICS, NAME_MCU_PHYSICS);
+		m.SetPosition(CarPos);
+                m.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+                m.UpdatePlacement();
+		Vector pos = m.GetPosition();
+		m.Hide();
+		if (!Game::FindFreePosition(&m, pos, 100.f))
+		{
+			Mission::PlayHint(HINT_INSTALL_MCU);
+			m.PushActionDeleteOwner(ACTION_NEWLIST);
+			return;
+		}
+		//	if (!Game::FindAvailablePosition(&m, pos, 10.f, false))
+		//		Mission::PlayHint(HINT_INSTALL_MCU);
+		m.Show();
+
+		int PlayerID = v.GetPlayerMP();
+		m.SetPlayerMP(PlayerID);
+
+		int UnitID = v.GetID();
+		m.SetUserData(UnitID);
+
+		m.SetSelectable(false);
+		System::Log("Physics of tent build");
+
+		v.RemoveCommand(CMD_MCU_INSTALL);
+		v.AssignCommand(CMD_MCU_DEINSTALL);
+		v.RemoveCommand("MoveTo");
+		v.RemoveCommand("GoHome");
+
+		if (v.HasCommand(CMD_FLOODLIGHTS_OFF))
+			v.SetAnimation("deployI");
+		else
+			v.SetAnimation("deploy");
+	}	
+};
+
+object VcmdMCUDeinstall : CommandScript
+{
+
+	VcmdMCUDeinstall()
+	{
+      		SetIcon("mcu_deinstall");
+      		SetCursor("mcu");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetValidTargets(ACTOR_VEHICLE);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.AssignCommand(CMD_MCU_INSTALL);
+		v.RemoveCommand(CMD_MCU_DEINSTALL);
+		v.AssignCommand("MoveTo");
+		v.AssignCommand("GoHome");
+
+		int UnitID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_MCU_PHYSICS);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == UnitID)
+			{
+				obj->PushActionDeleteOwner(ACTION_NEWLIST);
+				System::Log("Physics of tent found and deleted");
+			}
+		}
+
+		if (v.HasCommand(CMD_FLOODLIGHTS_OFF))
+			v.SetAnimation("undeployI");
+		else
+			v.SetAnimation("undeploy");
+	}	
+};

@@ -1,0 +1,452 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: All bomb squad robot scripts.
+//
+//	- PcmdRobotGet
+//	- PcmdRobotRemove
+//	- PcmdRobotSendTo 
+//	- PcmdRobotUse
+//	- PcmdDummyRobot
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_FLOODLIGHTS_ON[]		= "VCmdFloodLightsOn";
+const char CMD_FLOODLIGHTS_OFF[]		= "VCmdFloodLightsOff";
+const char CMD_DOORS[]				= "OpenCloseDoor";
+const char HINT_MAXREACHED[] 			= "Only one robot is allowed!";
+const char ANI_MIKE[] 				= "talkmike";
+const char ANI_IDLE[] 				= "idle";
+const char CMD_GETROBOT[]			= "PcmdRobotGet";
+const char CMD_REMOVEROBOT[]			= "PcmdRobotRemove";
+const char CMD_SENDROBOT[]			= "PcmdRobotSendTo";
+const char CMD_USEROBOT[]			= "PcmdRobotUse";
+const char OBJ_RADIO[]				= "01 LA Equipment/radio.V3O";
+const char OBJ_ROBOT[] 				= "mod:Prototypes/Vehicles/06 Objects/bomb_squad_robot.e4p";
+const char NAME_ROBOT[] 			= "BombRobot";
+const char NAME_BOMB01[]			= "bomb";
+const char NAME_BOMB02[]			= "m03_bomb";
+const char DUMMY_ROBOT[]			= "DummyRobot";
+
+int DummyGroup = 20;
+
+object PcmdRobotGet : CommandScript
+{
+	
+	PcmdRobotGet()
+	{
+    		SetIcon("robotget");
+    		SetCursor("robotget");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING);
+		SetPossibleCallers(ACTOR_PERSON);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		GameObjectList SelectPer = Game::GetSelectedGameObjects();
+		if (SelectPer.GetNumObjects() > 1)
+			return false;
+
+		Person p(Caller);
+		if (p.IsValid() && (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID() != 0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_bomb_squad.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}	
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		GameObjectList list = Game::GetGameObjects(NAME_ROBOT);
+		if (list.GetNumObjects() > 0)
+		{
+			Mission::PlayHint(HINT_MAXREACHED);
+			return;
+		}
+
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Target, 1, false);
+	}
+};
+
+object PcmdRobotRemove : CommandScript
+{
+	
+	PcmdRobotRemove()
+	{
+    		SetIcon("robotremove");
+    		SetCursor("robotremove");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING);
+		SetPossibleCallers(ACTOR_PERSON);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_bomb_squad.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		Person p(Caller);
+		int UnitID = p.GetID();
+		VehicleList list(NAME_ROBOT);
+		if (list.GetNumVehicles() > 0)
+		{
+			if (list.GetVehicle(0)->GetUserData() == UnitID) 
+			{
+				Vehicle obj = list.GetVehicle(0);
+				if (!obj.IsValid() || obj.IsDestroyed() || obj.IsSmoking() || obj.IsCarried())
+				{
+					System::Log("Robot not capable of performing actions!");
+					p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+					return;
+				}
+				else if (!obj.IsCurrentAction("EActionUse") && !obj.IsDestroyed() && obj.IsValid())
+				{
+					System::Log("Robot found!");	
+					Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+					p.PushActionMove(ACTION_NEWLIST, TargetPos);
+					p.PushActionTurnTo(ACTION_APPEND, Target);
+					p.PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+					p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Target, 2, false);
+
+					obj.PushActionMove(ACTION_NEWLIST, TargetPos);
+					obj.PushActionTurnTo(ACTION_APPEND, Target);
+				}
+				else
+				{
+					System::Log("Robot found, but has EactionUse!");	
+				}
+			}
+		} 
+		else
+		{
+			System::Log("Robot not found!");
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+		}
+	}
+};
+
+object PcmdRobotSendTo : CommandScript
+{
+	PcmdRobotSendTo()
+	{
+    		SetIcon("sendto");
+    		SetCursor("sendto");
+		SetValidTargets(ACTOR_FLOOR | ACTOR_VIRTUAL);
+		SetPriority(200);
+		SetDeselectCaller(false);
+		SetSelfClickActivation(true);
+		SetHighlightingEnabled(false);
+ 		SetGroupLeader(true);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->GetID() == Target->GetID())
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		Person p(Caller);
+		Vector CmdPos = Game::GetCommandPos();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_MIKE);
+		Caller->PushActionWait(ACTION_APPEND, 3.5f);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_IDLE);
+
+		int UnitID = p.GetID();
+		VehicleList list(NAME_ROBOT);
+		if (list.GetNumVehicles() > 0)
+		{
+			if (list.GetVehicle(0)->GetUserData() == UnitID) 
+			{
+				Vehicle obj = list.GetVehicle(0);
+				if (!obj.IsValid() || obj.IsDestroyed() || obj.IsSmoking() || obj.IsCarried())
+				{
+					System::Log("Robot not capable of performing actions!");
+					p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+					return;
+				}
+				else if (!obj.IsCurrentAction("EActionUse") && !obj.IsDestroyed() && obj.IsValid())
+				{
+					System::Log("Robot found!");	
+					obj.PushActionWait(ACTION_NEWLIST, 0.2f);
+					obj.PushActionMove(ACTION_APPEND, CmdPos);
+				}
+				else
+				{
+					System::Log("Robot found, but has EactionUse!");	
+				}
+			}
+		} 
+		else
+		{
+			System::Log("Robot not found!");
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+		}
+	}
+};
+
+object PcmdRobotUse : CommandScript
+{
+	
+	PcmdRobotUse()
+	{
+    		SetIcon("use");
+    		SetCursor("use");
+		SetValidTargets(ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_USABLE);
+		SetPriority(700);
+		SetSelfClickActivation(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		return Game::ExistsObjectWithFlagSet(OF_USABLE);
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || Caller->GetID()==Target->GetID())
+			return false;
+		
+		GameObject obj(Target);
+		Person p(Caller);
+		if(!obj.HasName(NAME_BOMB01) && !obj.HasName(NAME_BOMB02) && !obj.IsValid())
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		Person p(Caller);
+		Vector CmdPos = Target->GetPosition();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_MIKE);
+		Caller->PushActionWait(ACTION_APPEND, 3.5f);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_IDLE);
+
+		int UnitID = p.GetID();
+		VehicleList list(NAME_ROBOT);
+		if (list.GetNumVehicles() > 0)
+		{
+			if (list.GetVehicle(0)->GetUserData() == UnitID) 
+			{
+				Vehicle obj = list.GetVehicle(0);
+				if (!obj.IsValid() || obj.IsDestroyed() || obj.IsSmoking() || obj.IsCarried())
+				{
+					System::Log("Robot not capable of performing actions!");
+					p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+					return;
+				}
+				else if (!obj.IsCurrentAction("EActionUse") && !obj.IsDestroyed() && obj.IsValid())
+				{
+					System::Log("Robot found!");	
+					obj.PushActionMove(ACTION_NEWLIST, Target, TARGET_USE);
+					obj.PushActionTurnTo(ACTION_APPEND, Target);
+					obj.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, &obj, 4, false);
+					obj.PushActionUse(ACTION_APPEND, Target);
+					obj.PushActionWait(ACTION_APPEND, 0.5f);
+					obj.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, &obj, 5, false);
+				}
+				else
+				{
+					System::Log("Robot found, but has EactionUse!");	
+				}
+			}
+		} 
+		else
+		{
+			System::Log("Robot not found!");
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Caller, 3, false);
+		}
+	}
+};
+
+object DummyRobot : CommandScript
+{
+	DummyRobot()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(childID == 1)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_RADIO);
+			p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+			p.AssignCommand(CMD_REMOVEROBOT);
+			p.RemoveCommand(CMD_GETROBOT);
+			p.AssignCommand(CMD_SENDROBOT);
+			p.AssignCommand(CMD_USEROBOT);
+			p.RemoveCommand("Use");
+			p.RemoveCommand("EnterCar");
+			p.RemoveCommand("EnterHouse");
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+			Vector CarPos = v.GetPosition();
+				float r[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+			Vehicle m = Game::CreateVehicle(OBJ_ROBOT, NAME_ROBOT);
+			if (Game::FindFreePosition(&m, CarPos))
+			{
+           			m.SetPosition(CarPos);
+            			m.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+            			m.UpdatePlacement();
+            			m.Hide();
+				m.PushActionWait(ACTION_NEWLIST, 0.6f);
+				m.PushActionShowHide(ACTION_APPEND, false);
+				m.SetUserData(p.GetID());
+				m.SetPlayerMP(p.GetPlayerMP());
+				m.SetSpeed(4.5f);
+				m.SetParking(true);
+			}
+		}
+		if(childID == 2)
+		{
+ 			Person p(Caller);
+			int UnitID = p.GetID();
+
+			VehicleList list(NAME_ROBOT);
+			if (list.GetNumVehicles() > 0)
+			{
+				if (list.GetVehicle(0)->GetUserData() == UnitID) 
+				{
+					Vehicle obj = list.GetVehicle(0);
+					if (!obj.IsCurrentAction("EActionFindPath"))
+					{
+						p.RemoveObjectInRightHand();
+						p.PushActionSwitchAnim(ACTION_NEWLIST, "idle");
+						p.RemoveCommand(CMD_REMOVEROBOT);
+						p.AssignCommand(CMD_GETROBOT); 
+						p.RemoveCommand(CMD_SENDROBOT);
+						p.RemoveCommand(CMD_USEROBOT); 
+						p.AssignCommand("Use");
+						p.AssignCommand("EnterCar");
+						p.AssignCommand("EnterHouse");
+
+						obj.PushActionDeleteOwner(ACTION_NEWLIST);
+
+						Vehicle v(Target);
+						v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+					} else
+					{
+						p.PushActionWait(ACTION_NEWLIST, 2.0f);
+						p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ROBOT, Target, 2, false);
+					}
+				}
+			}
+		}
+		if(childID == 3)
+		{
+ 			Person p(Caller);
+			p.RemoveObjectInRightHand();
+			p.PushActionSwitchAnim(ACTION_NEWLIST, "idle");
+			p.RemoveCommand(CMD_REMOVEROBOT);
+			p.AssignCommand(CMD_GETROBOT); 
+			p.RemoveCommand(CMD_SENDROBOT);
+			p.RemoveCommand(CMD_USEROBOT); 
+			p.AssignCommand("Use");
+			p.AssignCommand("EnterCar");
+			p.AssignCommand("EnterHouse");
+		}
+		if(childID == 4)
+		{
+			System::Log("Open door");
+			Vehicle v(Caller);
+			v.PlayAnimOpenDoor(DAT_SPECIAL, 2.0f, NULL);
+
+		}
+		if(childID == 5)
+		{
+			System::Log("Close door");
+			Vehicle v(Caller);
+			v.PlayAnimCloseDoor(DAT_SPECIAL, 1.6f, NULL);
+		}
+	}
+};

@@ -1,0 +1,526 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 7;
+const int MAX_DEATHS = 16;
+const char HINT_BEWARE[] 			= "MISSION02_HINT01";
+const char HINT_CLOSED[] 			= "MISSION02_HINT02";
+const char HINT_TRANSPORTED[] 		= "MISSION02_HINT03";
+const char HINT_CONTAMINATED[] 		= "MISSION02_HINT04";
+const char HINT_CAREFUL[] 			= "MISSION02_HINT05";
+const char HINT_VANISHED[] 			= "MISSION02_HINT06";
+const char HINT_CANISTER[] 			= "MISSION02_HINT07";
+
+const char TIMER_UPDATE[] 			= "update";
+const float TIME_UPDATE				= 2.0f;
+const char TIMER_CS1[] 				= "StartCutscene";
+const float TIME_CS1				= 4.0f;
+const char TIMER_CS2[] 				= "Cs2";
+const float TIME_CS2				= 3.0f;
+const char TIMER_CS3[] 				= "Cs3";
+const float TIME_CS3				= 4.0f;
+const char TIMER_CONTAMINATE[] 			= "ContaminateTimer";
+const float TIME_CONTAMINATE			= 2.0f;
+const char TIMER_GAS[] 				= "GasTimer";
+const float TIME_GAS				= 4.0f;
+const char TIMER_CIVIL[] 			= "CivilsWalkIntoGas";
+const float TIME_CIVIL				= 310.0f;
+const char TIMER_HINT[] 			= "HintAboutCanister";
+const float TIME_HINT				= 290.0f;
+const float TIME_CLOSE_CANISTER 		= 25.0f;	
+const char MISSION02_TRANSPORT[]		= "MISSION02_TRANSPORT";
+const char MISSION02_DECON[]			= "MISSION02_DECON";
+const char MISSION02_CLOSE[]			= "MISSION02_CLOSE";
+const char NAME_CANISTER[]			= "m02_canister";
+const char NAME_GAS[]				= "m02_gas";
+const char TRIGGER_CONTAMINATED[]		= "m02_contaminated";
+const char UNIT_HAZMAT[]			= "mod:Prototypes/Persons/02 LA Fire Department/ff_hazmat.e4p";
+const char WAITINGPOINT[]			= "m02_wait";
+
+const char ANI_PERSON01[]			= "getblended";
+const char NAME_CS1_TRANSITION[]		= "cs1";
+const char NAME_CIVIL01[]			= "m02_civil01";
+const char NAME_CIVIL02[]			= "m02_civil02";
+const char NAME_CIVIL03[]			= "m02_civil03";
+const char PATH_CIVIL01[]			= "m02_path01";
+const char PATH_CIVIL02[]			= "m02_path02";
+
+object Mission02 : MissionScript
+{
+	int mHintCounter[MAX_HINTS];
+	bool mCutScenePlayed, mTooManyVictims;
+	GameObject mCanister;
+	GameObjectList mParticleGas;
+	Person mCivil01;
+	Person mCivil02;
+	Person mCivil03;
+	float mGasLevel;
+
+	Mission02()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mCutScenePlayed = false;
+		mTooManyVictims = false;
+		mGasLevel = 1.0f;
+	}
+	
+	~Mission02()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+
+			if (obj->HasName(NAME_CANISTER))
+			{
+				mCanister = obj;
+				mCanister.EnableSpecialLights(true);
+				if (!mCanister.IsFlagSet(OF_USABLE))
+					mCanister.SetFlag(OF_USABLE);
+			}
+			if (obj->HasName(NAME_CIVIL01))
+			{
+				mCivil01 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL02))
+			{
+				mCivil02 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL03))
+			{
+				mCivil03 = Person(obj);
+			}
+		}
+		mParticleGas = Game::GetGameObjects(NAME_GAS);
+		for(int i = 0; i < mParticleGas.GetNumObjects(); i++)
+		{
+			mParticleGas.GetObject(i)->SetParticleEffectStrength(mGasLevel);
+		}
+
+		Mission::AddObjective(MISSION02_CLOSE); 
+		Mission::AddObjective(MISSION02_DECON); 
+		Mission::AddObjective(MISSION02_TRANSPORT);
+		Mission::StartIntervalTimer(TIMER_CONTAMINATE, TIME_CONTAMINATE);
+		Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);
+		Mission::StartSingleTimer(TIMER_HINT, TIME_HINT);
+		Mission::StartSingleTimer(TIMER_CS1, TIME_CS1);
+		Mission::StartSingleTimer(TIMER_CIVIL, TIME_CIVIL);
+		Audio::PlaySoundtrack("27", 0.0f);
+
+		ScriptInterface::HideRadar();
+		ScriptInterface::HideMap();
+		ScriptInterface::HideNavigator();
+		ScriptInterface::HideInfoBar();
+		ScriptInterface::HideVehicleBrowser();
+		ScriptInterface::HideMouseCursor(true);
+		Camera::DisableCameraXYMovement();
+		Camera::DisableCameraZMovement();
+		Camera::DisableCameraRotation(); 
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	void OnSquadArrived(Person *p)
+	{
+		if(StrCompare(p->GetPrototypeFileName(), UNIT_HAZMAT) == 0)
+			p->AssignCommand("Use");
+	}
+
+	void OnTimer(const char* Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_CONTAMINATE :
+			{
+				GameObjectList l1;
+				Game::CollectObstaclesOnTrigger(TRIGGER_CONTAMINATED, l1, ACTOR_PERSON);
+				for(int i = 0; i < l1.GetNumObjects(); i++)
+				{
+					Person p(l1.GetObject(i));
+					if (!p.IsContaminated() && p.GetPersonType() != PT_FIREFIGHTER_ABC)
+					{
+						p.ExposeContamination(CONTAMINATION_CHEMICAL);
+						p.Hurt(INJUREREASON_CONTAM_CHEM, p.GetMaxHealth() * 0.21f);
+						System::Log("M02: Contaminate person");
+					}
+					else if (p.IsContaminated() && !p.IsDead() && !p.IsInjured() && p.GetHealth() > 0.2f * p.GetMaxHealth())
+					{
+						p.Hurt(INJUREREASON_CONTAM_CHEM, p.GetMaxHealth() * 0.21f);
+						System::Log("M02: Hurt person");
+					}
+					else if (p.IsContaminated() && !p.IsDead() && !p.IsInjured() && p.GetHealth() < 0.2f * p.GetMaxHealth())
+					{
+						int random = Math::rand()%4;
+						if (random == 0 || random == 2)
+						{
+							p.Kill(INJUREREASON_CONTAM_CHEM);
+							System::Log("M02: Kill person");
+						}
+						if (random == 1)
+						{
+							p.Injure(INJUREREASON_CONTAM_CHEM, true);
+							p.SetInjuredLifeDrain(16.0f);
+							p.SetMedicalLifeGain(6.0f);
+							System::Log("M02: Injure person. LifeDrain 16");
+						}
+						if (random == 3)
+						{
+							p.Kill(INJUREREASON_CONTAM_CHEM);
+							p.SetInjuredLifeDrain(9.0f);
+							p.SetMedicalLifeGain(6.0f);
+							System::Log("M02: Injure person. LifeDrain 9");
+						}
+					}
+				}
+			}
+			break;
+
+			case TIMER_CS1 :
+			{
+				if(!mCutScenePlayed)
+				{
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Mission::StartSingleTimer(TIMER_CS2, TIME_CS2);
+					Camera::StartTransition(NAME_CS1_TRANSITION, TIME_CS2);
+					mCivil01.SetObjectPath(PATH_CIVIL01);
+				}
+			}
+			break;
+
+			case TIMER_CS2 :
+			{
+				Vector pos;
+				Camera::FollowTarget(&mCivil01, pos, true);
+				Camera::LookAtTarget(&mCivil01, true, 0.0f, 1.0f);
+			}
+			break;
+
+			case TIMER_CS3 :
+			{
+				mCivil01.ExposeContamination(CONTAMINATION_CHEMICAL);
+				mCivil01.Kill(INJUREREASON_CONTAM_CHEM);
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				ScriptInterface::ShowRadar();
+				ScriptInterface::ShowMap();
+				ScriptInterface::ShowNavigator();
+				ScriptInterface::ShowInfoBar();
+				ScriptInterface::ShowVehicleBrowser();
+				ScriptInterface::HideMouseCursor(false);
+				Camera::EnableCameraXYMovement();
+				Camera::EnableCameraZMovement();
+				Camera::EnableCameraRotation();
+				ShowHint(0);
+			}
+			break;
+
+			case TIMER_HINT :
+			{
+				if (!Mission::IsObjectiveAccomplished(MISSION02_CLOSE))
+				{
+					if (mHintCounter[6] == 0)
+						ShowHint(6);
+				}
+			}
+			break;
+
+			case TIMER_GAS :
+			{
+				if (mGasLevel > 0.f)
+				{	
+					mGasLevel -= 0.1f;
+					for(int i = 0; i < mParticleGas.GetNumObjects(); i++)
+					{
+						mParticleGas.GetObject(i)->SetParticleEffectStrength(mGasLevel);
+					}
+					System::Log("M02: Gas level: %d", mGasLevel);
+				} else
+				{
+					Game::DeactivateTrigger(TRIGGER_CONTAMINATED);
+					Mission::StopTimer(TIMER_GAS);
+					Mission::StopTimer(TIMER_CONTAMINATE);
+					System::Log("M02: The area is safe! The gas is almost vanished!");
+					if (mHintCounter[5] == 0)
+						ShowHint(5);
+				}			
+			}
+			break;
+
+			case TIMER_CIVIL :
+			{
+				mCivil02.SetObjectPath(PATH_CIVIL02);
+				mCivil03.SetObjectPath(PATH_CIVIL02);
+			}
+			break;
+
+
+			case TIMER_UPDATE :
+			{
+				PersonList FFs(ROLE_SQUAD);
+				for(int i = 0; i < FFs.GetNumPersons(); i++)
+				{
+					if (StrCompare(FFs.GetPerson(i)->GetPrototypeFileName(), UNIT_HAZMAT) == 0 && !FFs.GetPerson(i)->HasCommand("Use"))
+						FFs.GetPerson(i)->AssignCommand("Use");
+				}
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_CIVIL01 :
+			{
+				if(!mCutScenePlayed)
+				{
+					mCivil01.SetAnimation(ANI_PERSON01);
+					Mission::StartSingleTimer(TIMER_CS3, TIME_CS3);
+					mCutScenePlayed = true;
+				}
+
+				return PATH_STOP;
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionUse" :
+			{
+				if(Data_->Parameters[0].iValue == mCanister.GetID())
+				{
+					System::Log("M02: Closing canister");
+					float *time = reinterpret_cast<float*>(Data_->Parameters[2].pValue);
+					*time = TIME_CLOSE_CANISTER;
+				}
+			}			
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionUse" :
+			{
+				if(Data_->Parameters[0].iValue == mCanister.GetID())
+				{
+					System::Log("M02: Canister closed");
+					Game::DeactivateWaitingPoint(WAITINGPOINT);
+					mCanister.ClearFlag(OF_USABLE);
+					mCanister.EnableSpecialLights(false);
+					Mission::StartIntervalTimer(TIMER_GAS, TIME_GAS);
+					Mission::SetObjectiveAccomplished(MISSION02_CLOSE, true);
+					if (mHintCounter[1] == 0)
+						ShowHint(1);
+				}
+			}			
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M02: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_BEWARE);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_CLOSED);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_TRANSPORTED);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_CONTAMINATED);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_CAREFUL);
+				break;
+			case 5:
+				Mission::PlayHint(HINT_VANISHED);
+				break;
+			case 6:
+				Mission::PlayHint(HINT_CANISTER);
+				break;
+		}
+	}
+	
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+      	if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION02_TRANSPORT))
+			{
+             		Mission::SetObjectiveAccomplished(MISSION02_TRANSPORT, true);
+				if (mHintCounter[2] == 0)
+					ShowHint(2);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION02_TRANSPORT))
+			{
+				Mission::SetObjectiveAccomplished(MISSION02_TRANSPORT, false);
+			}
+		}
+
+		if (Mission::GetCounter("Contaminated Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION02_DECON))
+			{
+				Mission::SetObjectiveAccomplished(MISSION02_DECON, true);
+				if (mHintCounter[3] == 0)
+					ShowHint(3);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION02_DECON))
+			{
+				Mission::SetObjectiveAccomplished(MISSION02_DECON, false);
+			}
+		}
+
+		if (Mission::GetCounter("Contaminated Persons") == 14)
+		{
+			if (mHintCounter[4] == 0)
+				ShowHint(4);
+		}
+
+		if(Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.3f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.4f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION02_01";
+		if (Mission::GetCounter("Dead Persons") >= 16)
+			return "SUPERV_MISSION02_02";
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mGasLevel);
+		Serializer->Write(mCutScenePlayed);		
+		Serializer->Write(mTooManyVictims);		
+		Serializer->Write(mCanister);		
+		Serializer->Write(mParticleGas);		
+		Serializer->Write(mCivil01);
+		Serializer->Write(mCivil02);
+		Serializer->Write(mCivil03);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mGasLevel);
+		Serializer->Read(mCutScenePlayed);		
+		Serializer->Read(mTooManyVictims);		
+		Serializer->Read(mCanister);		
+		Serializer->Read(mParticleGas);		
+		Serializer->Read(mCivil01);
+		Serializer->Read(mCivil02);
+		Serializer->Read(mCivil03);
+
+		return true;
+	}
+};

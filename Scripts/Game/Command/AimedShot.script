@@ -1,0 +1,95 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Changes: - Firing at innocent targets will cost the player $200.
+//
+//******************************************************************************************
+
+object AimedShot : CommandScript
+{
+	float Range;
+
+	AimedShot()
+	{
+		SetIcon("shoot");
+		SetCursor("shoot");
+		SetValidTargets(ACTOR_PERSON | ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_SHOOTABLE | RESTRICT_NOTINJURED);
+		//SetActivationByLeftClick(true);
+		SetDeselectCaller(false);
+		SetKeepAsCurrentCommand(true);
+		SetPossibleCallers(ACTOR_PERSON);
+		Range = 2048.f;
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		/*if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;*/
+		Person p(Caller);
+		if (!p.IsValid() || Caller->GetEquipment() != EQUIP_RIFLE || !Caller->IsAiming())
+			return false;
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() == Caller->GetID())
+			return false;
+
+		Person p(Caller);
+		if (!p.IsValid() || Caller->GetEquipment() != EQUIP_RIFLE || !Caller->IsAiming())
+			return false;
+
+		if(p.GetBoundingRadiusDistXYToObject(Target) > Range)
+			return false;
+		
+		if(Target->GetType()==ACTOR_PERSON)
+		{	
+			// check if target is valid target to aim at
+			Person t(Target);
+			if (t.IsValid() && t.GetEnteredHouseID() == p.GetEnteredHouseID())
+			{
+				Game::ActivateSceneLens(true);
+				return true;
+			}
+		}
+		
+		if(Target->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Target);
+			if (v.IsValid() && !v.IsDestroyed() && v.IsFlagSet(OF_SHOOTABLE) && p.GetEnteredHouseID() == -1)
+			{
+				if ((v.GetVehicleType() == VT_POLICE_PHC || v.GetVehicleType() == VT_AMBULANCE_RHC) && !v.IsOnGround())
+					return false;
+				Game::ActivateSceneLens(true);
+				return true;
+			}
+		}
+				
+		if(Target->GetType()==ACTOR_OBJECT)
+		{
+			GameObject o(Target);
+			if(o.IsValid() && o.IsFlagSet(OF_SHOOTABLE) && o.GetParentHouseID() == p.GetEnteredHouseID())
+			{
+				Game::ActivateSceneLens(true);
+				return true;
+			}				
+		}
+				
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person t(Target);
+		Vehicle v(Target);
+		if (t.GetRole() != ROLE_GANGSTER && v.GetVehicleType() != VT_GANGSTER_GETAWAY)
+		{
+			int Money = Mission::GetMoneyLeft();
+			int NewMoney = Money - 200;
+			Mission::SetMoney(NewMoney);
+		}
+		Caller->PushActionShoot(ACTION_INSERT, Target);
+	}
+};

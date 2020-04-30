@@ -1,0 +1,71 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Changes: - Compatibility with new motorboat
+//
+//******************************************************************************************
+
+object ShipDropWater : CommandScript
+{
+	// Motorboot-Transporter anlegen lassen
+	// mit oder ohne Boot, egal.
+	int UnloadPointID;
+
+	ShipDropWater()
+	{
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_FLOOR);
+		SetGroupID(CGROUP_SHIPDROP);
+		SetGroupLeader(true);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return v.HasBoatUploaded();
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		return Game::ExistsFreeLandingStage(true);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid())
+			return false;
+			
+		Vector TargetPos = Game::GetCommandPos();
+		// Code for tmfb (Motorboot-Transporter) 
+		// Nur Target tfmb gültig...
+		bool ok  = (Target->IsValid() && (Target->GetID() == Caller->GetID()));
+		// oder aufs Wasser geklickt
+		ok = ok || (!Target->IsValid() && Game::IsWater(TargetPos));
+		if (ok)
+		{
+			Vehicle vehi(Caller);
+			if (!vehi.IsValid())
+				return false;
+			// nur falls fmb installiert ist, fährt er zum Anlegepunkt
+			if (!vehi.HasBoatUploaded())
+				return false;
+			
+			// Falls Andockpunkt vorhanden, da hinfahren (TFMB = true)
+			UnloadPointID = vehi.FindLandingStage(true,TargetPos,-0.7f);
+			if (UnloadPointID >= 0)
+				return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, UnloadPointID, TARGET_UNLOAD_TFMB);
+		if(StrCompare(Caller->GetPrototypeFileName(), "mod:Prototypes/Vehicles/02 LA Fire Department/swr_truck.e4p") == 0)
+			Caller->PushActionExecuteCommand(ACTION_APPEND, "DummyMotorboat", Caller, 1, false);
+		Caller->PushActionUnload(ACTION_APPEND, UnloadPointID);
+	}
+};

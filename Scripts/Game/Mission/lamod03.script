@@ -1,0 +1,1142 @@
+//******************************************************************************************
+// #Version 1.5#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 7;
+const int MAX_DEATHS = 3;
+const int MAX_INJURIES = 6;
+
+const char HINT_SHOUT[]				= "MISSION03_HINT01";
+const char HINT_INNOCENT[]			= "MISSION03_HINT02";
+const char HINT_DISARMED[]			= "MISSION03_HINT03";
+const char HINT_SAFE[]				= "MISSION03_HINT04";
+const char HINT_EXPLOSION[]			= "MISSION03_HINT05";
+const char HINT_TERRORISTS[]			= "MISSION03_HINT06";
+const char HINT_SUICIDE[]			= "MISSION03_HINT07";
+
+const char TIMER_BOMB01[] 			= "bombtimer01";
+const float TIME_BOMB01				= 4.0f * 60.0f;
+const char TIMER_BOMB02[] 			= "bombtimer02";
+const float TIME_BOMB02				= 2.0f;
+const char TIMER_BOMB03[] 			= "bombtimer03";
+const float TIME_BOMB03				= 4.0f;
+const float TIME_DISARM		 		= 30.0f;
+
+const char TIMER_TERRORISTS01[] 		= "terrorists01";
+const float TIME_TERRORISTS01			= 17.0f;
+const float TIME_TERRORISTS01_2		= 60.0f;
+const char TIMER_TERRORISTS02[] 		= "terrorists02";
+const float TIME_TERRORISTS02			= 15.0f;
+const char TIMER_TERRORISTS03[] 		= "terrorists03";
+const float TIME_TERRORISTS03			= 3.0f;
+const char TIMER_TERRORISTS04[] 		= "terrorists04";
+const float TIME_TERRORISTS04			= 1.5f;
+const char TIMER_TERRORISTS05[] 		= "terrorists05";
+const float TIME_TERRORISTS05			= 0.1f;
+const char TIMER_TERRORISTS06[] 		= "terrorists06";
+const float TIME_TERRORISTS06			= 2.0f;
+const char TIMER_TERRORISTS07[] 		= "terrorists07";
+const float TIME_TERRORISTS07			= 3.0f;
+const char TIMER_TERRORISTS08[] 		= "terrorists08";
+const float TIME_TERRORISTS08			= 6.0f;
+const char TIMER_SUICIDE01[] 			= "suicidebomber01";
+const float TIME_SUICIDE01			= 10.0f;
+const char TIMER_SUICIDE02[] 			= "suicidebomber02";
+const float TIME_SUICIDE02			= 3.0f;
+
+const char TIMER_CS1[] 				= "cs1";
+const float TIME_CS1				= 2.0f;
+const char TIMER_CS2[]				= "cs2";
+const float TIME_CS2				= 2.0f;
+const char TIMER_CS3[]				= "cs3";
+const float TIME_CS3				= 0.9f;
+const char TIMER_CS4[]				= "cs4";
+const float TIME_CS4				= 0.5f;
+const char TIMER_CS5[]				= "cs5";
+const float TIME_CS5				= 6.0f;
+const char TIMER_CS6[] 				= "cs6";
+const float TIME_CS6				= 0.5f;
+const char TIMER_CLOSEDOOR[] 			= "closedoor";
+const float TIME_CLOSEDOOR			= 1.0f;
+
+const char TIMER_SIREN[] 			= "siren";
+const float TIME_SIREN				= 0.3f;
+const char TIMER_UPDATE[] 			= "update";
+const float TIME_UPDATE				= 1.0f;
+
+const char OBJ_BOMB[]				= "06 LA Misc/bomb_case.V3O";
+const char NAME_BOMB[]				= "m03_bomb";
+const char NAME_EXPLOSION01[]			= "m03_explosion";
+const char SND_SIREN[]				= "mod:Audio/Fx/sirens/Siren05.wav";
+const char SND_BEEP[]				= "mod:Audio/Fx/misc/beep.wav";
+const char SND_ENGINE[]				= "mod:Audio/Fx/misc/startengine.wav";
+const char SND_PLANTBOMB[]			= "mod:Audio/Fx/misc/scoutlaptop.wav";
+const char SND_CLOSEDOOR[]			= "mod:Audio/Fx/Vehicles/CarDoorClose.wav";
+const char SND_BRAKES[]				= "mod:Audio/Fx/Vehicles/Tyresqueal02.wav";
+
+const char NAME_PATROLCAR[]			= "m03_patrolcar";
+const char NAME_CIVIL01[]			= "m03_civil01";
+const char NAME_CIVIL02[]			= "m03_civil02";
+const char NAME_OFFICER01[]			= "m03_officer01";
+const char NAME_OFFICER02[]			= "m03_officer02";
+const char PATH_PATROLCAR[]			= "m03_path01";
+const char PATH_CIVIL01[]			= "m03_path02";
+const char PATH_CIVIL02[]			= "m03_path03";
+const char PATH_CIVIL03[]			= "m03_path04";
+const char PATH_CIVIL04[]			= "m03_path09";
+const char TRIGGER_CUTSCENE01[]		= "m03_cs01";
+const char TRIGGER_CUTSCENE02[]		= "m03_cs02";
+const char TRIGGER_CHECKFORSQUADS[]		= "m03_checksquad";
+const char NAME_TRANSITION01[]		= "cs1";
+const char NAME_TRANSITION02[]		= "cs2";
+const char NAME_TRANSITION03[]		= "cs3";
+const float TIME_TRANSITION03			= 7.0f;
+const char NAME_EXPLODINGCAR[]		= "m03_car01";
+const char NAME_TERRORVAN[]			= "m03_terrorvan";
+const char PATH_TERRORVAN01[]			= "m03_path05";
+const char PATH_TERRORVAN02[]			= "m03_path06";
+const char PATH_TERRORPATH01[]		= "m03_path07";
+const char PATH_TERRORPATH02[]		= "m03_path10";
+const char PATH_FLEE[]				= "m03_path08";
+const char NAME_TERRORIST01[]			= "m03_terrorist01";
+const char NAME_TERRORIST02[]			= "m03_terrorist02";
+const char NAME_TERRORIST03[]			= "m03_terrorist03";
+const char NAME_TERRORIST04[]			= "m03_terrorist04";
+const char NAME_STAIN[]				= "m03_stain";
+const char NAME_BURN[]				= "m03_burn";
+const char NAME_EXPLOSION02[]			= "m03_explosion02";
+const char NAME_PARTICLE_EXPLOSION[]	= "m03_explosion03";
+const char UNIT_BOMBSQUAD[]			= "mod:Prototypes/Persons/03 LA Police/lapd_bomb_squad.e4p";
+const char MISSION03_DISARM[]			= "MISSION03_DISARM";
+const char MISSION03_BOMB[]			= "MISSION03_BOMB";
+const char MISSION03_EXT[]			= "MISSION03_EXT";
+const char MISSION03_TRANSPORT[]		= "MISSION03_TRANSPORT";
+const char MISSION03_TERROR01[]		= "MISSION03_TERROR";
+const char MISSION03_TERROR02[]		= "MISSION03_TERROR02";
+const char MISSION03_TERRORVAN[]		= "MISSION03_TERRORVAN";
+
+object Mission03 : MissionScript
+{
+	int mHintCounter[MAX_HINTS];
+	bool mTooManyVictims, mBombDefused, mBombExploded, mBombPlanted, mCarExploded, mTerroristExploded, mTerroristsSeen, mSquadSeen, mTerroristsFlee, mTerroristEscaped, mSquad;
+	int mSoundBeep;
+	int mSoundSiren;
+	GameObject mBomb, mParticleExplosion02, mStain;
+	GameObjectList mBurn;
+	Person mCivil01, mCivil02, mOfficer01, mOfficer02, mTerrorist01, mTerrorist02, mTerrorist03, mTerrorist04;
+	Vehicle mPatrolcar, mTerrorvan, mExplodingcar, mExplosion01, mExplosion02;
+
+	Mission03()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mTooManyVictims = false;
+		mBombDefused = false;
+		mBombExploded = false;
+		mCarExploded = false;
+		mTerroristExploded = false;
+		mTerroristsSeen = false;
+		mTerroristsFlee = false;
+		mSquadSeen = false;
+		mBombPlanted = false;
+		mSquad = false;
+	}
+	
+	~Mission03()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList l1 = Game::GetGameObjects();
+		for(int i = 0; i < l1.GetNumObjects(); i++)
+		{
+			GameObject *obj = l1.GetObject(i);
+
+			if (obj->HasName(NAME_BOMB))
+			{
+				mBomb = obj;
+				mBomb.EnableSpecialLights(true);
+				if (!mBomb.IsFlagSet(OF_USABLE))
+					mBomb.SetFlag(OF_USABLE);
+			}
+			if (obj->HasName(NAME_CIVIL01))
+			{
+				mCivil01 = Person(obj);
+			}
+			if (obj->HasName(NAME_CIVIL02))
+			{
+				mCivil02 = Person(obj);
+				mCivil02.Hide();
+			}
+			if (obj->HasName(NAME_OFFICER01))
+			{
+				mOfficer01 = Person(obj);
+				mOfficer01.Hide();
+			}
+			if (obj->HasName(NAME_OFFICER02))
+			{
+				mOfficer02 = Person(obj);
+				mOfficer02.Hide();
+			}
+			if (obj->HasName(NAME_TERRORIST01))
+			{
+				mTerrorist01 = Person(obj);
+			}
+			if (obj->HasName(NAME_TERRORIST02))
+			{
+				mTerrorist02 = Person(obj);
+			}
+			if (obj->HasName(NAME_TERRORIST03))
+			{
+				mTerrorist03 = Person(obj);
+				mTerrorist03.Hide();
+			}
+			if (obj->HasName(NAME_TERRORIST04))
+			{
+				mTerrorist04 = Person(obj);
+				mTerrorist04.Hide();
+			}
+			if (obj->HasName(NAME_PATROLCAR))
+			{
+				mPatrolcar = Vehicle(obj);
+				mPatrolcar.SetMaxPassengers(2);
+				mPatrolcar.SetMaxTransports(2);
+			}
+			if (obj->HasName(NAME_TERRORVAN))
+			{
+				mTerrorvan = Vehicle(obj);
+				mTerrorvan.SetMaxPassengers(2);
+				mTerrorvan.Hide();
+			}
+			if (obj->HasName(NAME_EXPLODINGCAR))
+			{
+				mExplodingcar = Vehicle(obj);
+				mExplodingcar.SetMaxPassengers(1);
+			}
+			if (obj->HasName(NAME_EXPLOSION01))
+			{
+				mExplosion01 = obj;
+				mExplosion01.Hide();
+			}
+			if (obj->HasName(NAME_EXPLOSION02))
+			{
+				mExplosion02 = obj;
+				mExplosion02.Hide();
+			}
+			if (obj->HasName(NAME_PARTICLE_EXPLOSION))
+			{
+				mParticleExplosion02 = obj;
+				mParticleExplosion02.StopParticleEffect();
+				mParticleExplosion02.Hide();
+			}
+			if (obj->HasName(NAME_STAIN))
+			{
+				mStain = obj;
+				mStain.Hide();
+			}
+		}
+		mBurn = Game::GetGameObjects(NAME_BURN);
+
+		mTerrorvan.AddPassenger(&mTerrorist01);
+		mTerrorvan.AddPassenger(&mTerrorist02);
+		mTerrorvan.SetVehicleRole(VT_GANGSTER_GETAWAY);
+		Mission::AddObjective(MISSION03_DISARM);
+		Mission::AddObjective(MISSION03_BOMB);
+		Mission::StartSingleTimer(TIMER_BOMB01, TIME_BOMB01);
+		Mission::StartSingleTimer(TIMER_CS1, TIME_CS1);
+		Audio::PlaySoundtrack("28", 0.4f);
+   		mSoundBeep = Audio::PlaySample3D(SND_BEEP, mBomb.GetPosition(), true);
+		ScriptInterface::HideRadar();
+		ScriptInterface::HideMap();
+		ScriptInterface::HideNavigator();
+		ScriptInterface::HideInfoBar();
+		ScriptInterface::HideVehicleBrowser();
+		ScriptInterface::HideMouseCursor(false);
+		Camera::DisableCameraXYMovement();
+		Camera::DisableCameraZMovement();
+		Camera::DisableCameraRotation();
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	void OnSquadArrived(Person *p)
+	{
+		if(StrCompare(p->GetPrototypeFileName(), UNIT_BOMBSQUAD) == 0)
+			p->AssignCommand("M03PickUp");
+	}
+
+	void OnTimer(const char* Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_BOMB01 :
+			{
+				if (!mBombDefused)
+				{
+					System::Log("M03: Bomb explodes");
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Camera::StartTransition(NAME_TRANSITION01, TIME_BOMB02);
+					Audio::SetMusicLevel(0.5f);
+					Mission::StartSingleTimer(TIMER_BOMB02, TIME_BOMB02);
+				}
+			}
+			break;
+
+			case TIMER_BOMB02 :
+			{
+				mExplosion01.Show();
+				mExplosion01.Explode();
+				for(int i = 0; i < mBurn.GetNumObjects(); i++)
+				{
+					mBurn.GetObject(i)->Burn();
+				}
+				Audio::StopSample(mSoundBeep);
+				mBomb.PushActionDeleteOwner(ACTION_NEWLIST);
+				Mission::StartSingleTimer(TIMER_BOMB03, TIME_BOMB03);
+			}
+			break;
+
+			case TIMER_BOMB03 :
+			{
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				Mission::RemoveObjective(MISSION03_DISARM); 
+				Mission::RemoveObjective(MISSION03_BOMB); 
+				mBombExploded = true;
+				SoundNewObjective();
+				if (mHintCounter[4] == 0)
+					ShowHint(4);
+				Mission::StartSingleTimer(TIMER_TERRORISTS01, TIME_TERRORISTS01_2);
+				if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") > 0) 
+					Mission::AddObjective(MISSION03_EXT); 
+				if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") > 0)
+					Mission::AddObjective(MISSION03_TRANSPORT);	
+			}
+			break;
+
+			case TIMER_TERRORISTS01 :
+			{
+				if (mHintCounter[5] == 0)
+					ShowHint(5);
+				Mission::StartSingleTimer(TIMER_TERRORISTS02, TIME_TERRORISTS02);
+				Mission::AddObjective(MISSION03_TERROR01); 
+				Mission::AddObjective(MISSION03_TERRORVAN);
+				mTerroristsSeen = true; 
+				SoundNewObjective();
+			}
+			break;
+
+			case TIMER_TERRORISTS02 :
+			{
+				mTerrorvan.Show();
+				mTerrorvan.SetObjectPath(PATH_TERRORVAN01, 6.0f);
+				Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);	
+			}
+			break;
+
+			case TIMER_TERRORISTS03 :
+			{
+				Vector pos;
+				Camera::FollowTarget(&mTerrorvan, pos, true);
+				Camera::LookAtTarget(&mTerrorvan, true, 0.0f, 1.0f);
+				Camera::Rotate(-10000, 0, 0, -5);	
+			}
+			break;
+
+			case TIMER_TERRORISTS04 :
+			{
+				mTerrorvan.RemovePassenger(&mTerrorist01);
+				mTerrorvan.RemovePassenger(&mTerrorist02);
+				mTerrorist03.Show();
+				mTerrorist04.Show();
+				mTerrorist03.PushActionEquipWeapon(ACTION_NEWLIST, false);
+				mTerrorist03.PushActionWait(ACTION_APPEND, 2.0f);
+				mTerrorist03.SetObjectPath(PATH_TERRORPATH01);
+			}
+			break;
+
+			case TIMER_TERRORISTS05 :
+			{
+				mTerrorist03.PushActionDeleteOwner(ACTION_APPEND);
+				mTerrorist04.PushActionTurnTo(ACTION_NEWLIST, &mTerrorvan);
+				mTerrorist04.PushActionDeleteOwner(ACTION_APPEND);
+				mTerrorvan.PlayAnimCloseDoor(DAT_PERSON, 2.0f, NULL);
+				mTerrorvan.PushActionWait(ACTION_APPEND, 3.0f);
+				mTerrorvan.SetObjectPath(PATH_TERRORVAN02, 8.0f);	
+				Mission::StartSingleTimer(TIMER_TERRORISTS06, TIME_TERRORISTS06);
+			}
+			break;
+
+			case TIMER_TERRORISTS06 :
+			{
+				Vector pos;
+				Camera::FollowTarget(&mExplodingcar, pos, true);
+				Camera::LookAtTarget(&mExplodingcar, true, 0.0f, 1.0f);
+				Camera::Rotate(-10000, 0, 0, -2);
+				mCivil02.Show();
+				mCivil02.SetObjectPath(PATH_CIVIL04);
+			}
+			break;
+
+			case TIMER_TERRORISTS07 :
+			{
+				mExplodingcar.Explode();
+				Mission::StartSingleTimer(TIMER_TERRORISTS08, TIME_TERRORISTS08);
+			}
+			break;
+
+			case TIMER_TERRORISTS08 :
+			{
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				mCarExploded = true;
+			}
+			break;
+
+			case TIMER_SUICIDE01 :
+			{
+				if (!mTerroristExploded && mTerroristsFlee)
+				{
+					if (!mTerrorist02.IsInjured() && !mTerrorist02.IsArrested() && !mTerrorist02.IsDead() && mTerrorist02.IsInsideMap() && mTerrorist02.GetEnteredCarID() == -1)
+					{
+						System::Log("M03: A terrorist explodes");
+						Mission::StartCutScene();
+						Mission::ShowBlackBars();
+						Vector pos, dir;
+						float yaw, pitch, roll;
+						pos = Camera::Get();
+						Camera::GetRotation(yaw, pitch, roll);
+						Camera::StartTransition(mTerrorist02.GetPosition(), pos.z, yaw, pitch, roll, TIME_SUICIDE02);
+						mExplosion02.SetPosition(&mTerrorist02);
+						mExplosion02.Show();
+						mExplosion02.Explode();
+						mParticleExplosion02.SetPosition(&mTerrorist02);
+						mParticleExplosion02.Show();
+						mParticleExplosion02.StartParticleEffect();
+						mStain.SetPosition(&mTerrorist02);
+						mStain.Show();
+						mTerrorist02.PushActionDeleteOwner(ACTION_NEWLIST);
+
+						Mission::StartSingleTimer(TIMER_SUICIDE02, TIME_SUICIDE02);
+					} else
+					 {
+						System::Log("M03: Suicide bombing prevented");
+					 }
+				}
+			}
+			break;
+
+			case TIMER_SUICIDE02 :
+			{
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				mTerroristExploded = true;
+				SoundNewObjective();
+				Mission::RemoveObjective(MISSION03_TERROR01); 
+				Mission::AddObjective(MISSION03_TERROR02); 
+				if (!Mission::HasObjective(MISSION03_EXT) && (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") > 0))
+					Mission::AddObjective(MISSION03_EXT); 
+				if (!Mission::HasObjective(MISSION03_TRANSPORT) && (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") > 0))
+					Mission::AddObjective(MISSION03_TRANSPORT);
+				if (mHintCounter[6] == 0)
+					ShowHint(6);
+			}
+			break;
+
+			case TIMER_CS1 :
+			{
+				mPatrolcar.SetObjectPath(PATH_PATROLCAR, 10.0f);
+				mPatrolcar.SetCommandable(false);
+   				mSoundSiren = Audio::PlaySample3D(SND_SIREN, mPatrolcar.GetPosition(), true);
+				mPatrolcar.AttachSound(mSoundSiren);
+				Mission::StartIntervalTimer(TIMER_SIREN, TIME_SIREN);
+			}
+			break;
+
+			case TIMER_CS2 :
+			{
+				mPatrolcar.PlayAnimOpenDoor(DAT_PERSON, 1.0f, NULL);
+				mPatrolcar.PlayAnimOpenDoor(DAT_SPECIAL, 1.0f, NULL);
+				Mission::StartSingleTimer(TIMER_CS3, TIME_CS3);
+			}
+			break;
+
+			case TIMER_CS3 :
+			{
+				mOfficer01.Show();
+				mOfficer02.Show();
+				mOfficer01.SetCommandable(false);
+				mOfficer02.SetCommandable(false);
+				Mission::StartSingleTimer(TIMER_CS4, TIME_CS4);
+				break;
+			}
+			break;
+
+			case TIMER_CS4 :
+			{
+				mOfficer01.SetEscapePath(PATH_CIVIL02);
+				mOfficer01.SetFleeing(true, false);
+				mOfficer02.SetEscapePath(PATH_CIVIL03);
+				mOfficer02.SetFleeing(true, false);
+				mCivil01.SetAnimation("idle");
+				mPatrolcar.PlayAnimCloseDoor(DAT_PERSON, 1.0f, NULL);
+				mPatrolcar.PlayAnimCloseDoor(DAT_SPECIAL, 1.0f, NULL);
+			}
+			break;
+
+			case TIMER_CLOSEDOOR :
+			{
+				Audio::PlaySample3D(SND_CLOSEDOOR, mPatrolcar.GetPosition(), false);
+			}
+			break;
+
+			case TIMER_CS5 :
+			{
+				mCivil01.SetObjectPath(PATH_CIVIL01);
+			}
+			break;
+
+
+			case TIMER_CS6 :
+			{
+				System::Log("M03: End cutscene");
+				mPatrolcar.SetCommandable(true);
+				mOfficer01.SetCommandable(true);
+				mOfficer02.SetCommandable(true);
+				ScriptInterface::ShowRadar();
+				ScriptInterface::ShowMap();
+				ScriptInterface::ShowNavigator();
+				ScriptInterface::ShowInfoBar();
+				ScriptInterface::ShowVehicleBrowser();
+				ScriptInterface::HideMouseCursor(false);
+				Camera::EnableCameraXYMovement();
+				Camera::EnableCameraZMovement();
+				Camera::EnableCameraRotation(); 
+			}
+			break;
+
+			case TIMER_SIREN :
+			{
+				Audio::UpdatePos(mSoundSiren, mPatrolcar.GetPosition(), true);
+			}
+			break;
+
+			case TIMER_UPDATE :
+			{
+				if(mTerrorvan.WasStoppedByRoadblock())
+				{
+					StartEscapeOnFoot();
+					Mission::StopTimer(TIMER_UPDATE);
+				}
+			}
+			break;
+		}
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_CUTSCENE01 :
+			{
+				if (Collider->GetID() == mPatrolcar.GetID())
+				{
+					System::Log("M03: Start cutscene 1");
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Game::DeactivateTrigger(TRIGGER_CUTSCENE01);
+					Vector pos;
+					Camera::FollowTarget(&mPatrolcar, pos, true);
+					Camera::LookAtTarget(&mPatrolcar, true, 0.0f, 1.0f);
+					Camera::Rotate(-10000, 0, 0, -4);
+				}
+			}
+			break;
+
+			case TRIGGER_CUTSCENE02 :
+			{
+				if (Collider->GetID() == mTerrorvan.GetID())
+				{
+					GameObjectList list;
+					Game::CollectObstaclesOnTrigger(TRIGGER_CHECKFORSQUADS, list, ACTOR_VEHICLE | ACTOR_PERSON);
+					for(int i = 0; i < list.GetNumObjects(); i++)
+					{
+						GameObject obj = list.GetObject(i);
+						if (obj.GetType() == ACTOR_PERSON)
+						{
+							Person p(&obj);
+							if (p.GetRole() == ROLE_SQUAD)
+							{
+								mSquad = true;
+							}
+						}
+						if (obj.GetType() == ACTOR_VEHICLE)
+						{
+							Vehicle v(&obj);
+							if (v.GetVehicleType() != VT_NOSQUAD && v.GetVehicleType() != VT_GANGSTER_GETAWAY)
+							{
+								mSquad = true;
+							}
+						}
+					}
+					
+					if (!mSquad)
+					{
+						System::Log("M03: Start cutscene 2");
+						Mission::StartCutScene();
+						Mission::ShowBlackBars();
+						Game::DeactivateTrigger(TRIGGER_CUTSCENE02);
+						Camera::StartTransition(NAME_TRANSITION02, TIME_TERRORISTS03);
+						Mission::StartSingleTimer(TIMER_TERRORISTS03, TIME_TERRORISTS03);
+						Audio::SetMusicLevel(0.5f);
+					}
+					else
+					{
+						System::Log("M03: Car bombing prevented");
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_PATROLCAR :
+			{
+				Audio::StopSample(mSoundSiren);
+				Mission::StopTimer(TIMER_SIREN);
+				Mission::StartSingleTimer(TIMER_CS2, TIME_CS2);
+				Mission::HideBlackBars();
+				Mission::EndCutScene();
+			}
+			break;
+
+			case PATH_CIVIL01 :
+			{
+				Mission::StartSingleTimer(TIMER_CS6, TIME_CS6);
+				mCivil01.PushActionSwitchAnim(ACTION_NEWLIST, "talkto");
+				mCivil01.PushActionWait(ACTION_APPEND, 3.0f);
+				mCivil01.PushActionSwitchAnim(ACTION_APPEND, "idle");
+
+				if (mHintCounter[1] == 0)
+					ShowHint(1);
+			}
+			break;
+
+			case PATH_CIVIL02 :
+			{
+				mOfficer01.SetFleeing(false);
+				mOfficer01.PushActionTurnTo(ACTION_NEWLIST, &mCivil01);
+				mOfficer01.PushActionSwitchAnim(ACTION_APPEND, "pistoltarget");
+				mOfficer01.PushActionWait(ACTION_APPEND, 13.0f);
+				mOfficer01.PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+			}
+			break;
+
+			case PATH_CIVIL03 :
+			{
+				mOfficer02.SetFleeing(false);
+				mOfficer02.PushActionTurnTo(ACTION_NEWLIST, &mCivil01);
+				mOfficer02.PushActionSwitchAnim(ACTION_APPEND, "pistoltarget");
+				mOfficer02.PushActionWait(ACTION_APPEND, 13.0f);
+				mOfficer02.PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+				Mission::StartSingleTimer(TIMER_CS5, TIME_CS5);
+				if (mHintCounter[0] == 0)
+					ShowHint(0);
+			}
+			break;
+
+			case PATH_CIVIL04 :
+			{
+				mCivil02.PushActionTurnTo(ACTION_APPEND, &mExplodingcar);
+				mCivil02.PushActionEnterCar(ACTION_APPEND, &mExplodingcar);
+				Audio::PlaySample3D(SND_ENGINE, mExplodingcar.GetPosition(), false);
+				Mission::StartSingleTimer(TIMER_TERRORISTS07, TIME_TERRORISTS07);
+			}
+			break;
+
+			case PATH_TERRORVAN01 :
+			{
+				if (!mSquad)
+				{
+					Audio::PlaySample3D(SND_BRAKES, mTerrorvan.GetPosition(), false);
+					mTerrorvan.PlayAnimOpenDoor(DAT_PERSON, 1.0f, NULL);
+					Mission::StartSingleTimer(TIMER_TERRORISTS04, TIME_TERRORISTS04);
+				}
+				else
+				{
+					mTerrorvan.SetObjectPath(PATH_TERRORVAN02, 6.0f);
+				}
+			}
+			break;
+
+			case PATH_TERRORVAN02 :
+			{
+				if (!mBombPlanted)
+				{
+					System::Log("M03: Terrorists escaped by car");
+					mTerroristEscaped = true;
+				}
+			}
+			break;
+
+			case PATH_FLEE :
+			{
+				if (!mTerroristEscaped)
+				{
+					System::Log("M03: Terrorists escaped on foot");
+					mTerroristEscaped = true;
+				}
+			}
+			break;
+
+			case PATH_TERRORPATH01 :
+			{
+				mTerrorist03.PushActionSwitchAnim(ACTION_NEWLIST, "treatinjured1");
+				mTerrorist03.PushActionWait(ACTION_APPEND, 4.0f);
+				mTerrorist03.PushActionSwitchAnim(ACTION_APPEND, "idle");
+				mTerrorist03.PushActionWait(ACTION_APPEND, 1.0f);
+				mTerrorist03.PushActionUsePath(ACTION_APPEND, PATH_TERRORPATH02, true, 2.0f);
+				Audio::PlaySample3D(SND_PLANTBOMB, mTerrorist03.GetPosition(), false);
+				mBombPlanted = true;
+			}
+			break;
+
+			case PATH_TERRORPATH02 :
+			{
+				Mission::StartSingleTimer(TIMER_TERRORISTS05, TIME_TERRORISTS05);
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionUse" :
+			{
+				if(Data_->Parameters[0].iValue == mBomb.GetID())
+				{
+					if (!mBombDefused)
+					{
+						System::Log("M03: Defusing bomb");
+						float *time = reinterpret_cast<float*>(Data_->Parameters[2].pValue);
+						*time = TIME_DISARM;
+					}
+				}
+			}			
+			break;
+
+			case "EActionPutInCar" :
+			{
+				Person p(Data_->Owner);
+				if (p.HasCommand("M03PutInCar"))
+				{
+					p.RemoveCommand("M03PutInCar");
+					p.AssignCommand("Use");
+					p.AssignCommand("EnterCar");
+					p.RemoveObjectInRightHand();
+					p.PushActionSwitchAnim(ACTION_NEWLIST, "idle");
+					Mission::SetObjectiveAccomplished(MISSION03_BOMB, true);	
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionUse" :
+			{
+				if(Data_->Parameters[0].iValue == mBomb.GetID())
+				{
+					if (!mBombDefused)
+					{
+						System::Log("M03: Bomb defused");
+						mBomb.ClearFlag(OF_USABLE);
+						mBomb.EnableSpecialLights(false);
+						mBomb.PushActionSwitchAnim(ACTION_NEWLIST, "closing");
+						Audio::StopSample(mSoundBeep);
+						Mission::StopTimer(TIMER_BOMB01);
+             					Mission::SetObjectiveAccomplished(MISSION03_DISARM, true);
+						mBombDefused = true;
+						if (mHintCounter[2] == 0)
+							ShowHint(2);
+						Mission::StartSingleTimer(TIMER_TERRORISTS01, TIME_TERRORISTS01);	
+					}
+				}
+			}			
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	bool OnHalt(Person *source, GameObject *receiver)
+	{
+		if (mTerrorist01.GetID() == receiver->GetID() || mTerrorist02.GetID() == receiver->GetID() || mTerrorist03.GetID() == receiver->GetID() || mTerrorist04.GetID() == receiver->GetID())
+			return false;
+
+		if (mTerrorvan.GetID() == receiver->GetID())
+		{
+			if (!mTerroristsFlee)
+			{
+				StartEscapeOnFoot();
+			}
+			return false;
+		}
+
+		if (mCivil02.GetID() == receiver->GetID())
+			return false;
+		
+		return true;
+	}
+
+	bool OnRedirectVehicle(Person *redirector, Vehicle *vehicle)
+	{
+		if (vehicle->GetID() == mTerrorvan.GetID())
+		{
+			if (!mTerroristsFlee)
+			{
+				StartEscapeOnFoot();
+			}
+			return false;
+		}
+
+		return true;
+	}
+
+	bool OnHit(GameObject *Shooter, GameObject *HitObject, Vector *hitPoint)
+	{
+		if (HitObject->GetID() == mTerrorvan.GetID())
+		{
+			if (!mTerroristsFlee)
+			{
+				StartEscapeOnFoot();
+			}
+		}
+		return true;
+	}
+
+	void StartEscapeOnFoot()
+	{
+		System::Log("M03: StartEscapeOnFoot");
+		mTerroristsFlee = true;
+		mTerrorvan.RemoveObjectPath();
+		mTerrorvan.PushActionWait(ACTION_NEWLIST, 0.1f);
+		mTerrorvan.SetFlag(OF_TRANSPORTABLE);
+		mTerrorvan.SetParking(true);
+		mTerrorist01.PushActionWait(ACTION_NEWLIST, 0.5f);
+		mTerrorist01.PushActionLeaveCar(ACTION_APPEND, &mTerrorvan);
+		mTerrorist01.SetObjectPath(PATH_FLEE, 3.8f);
+		mTerrorist01.SetFleeing(true, false);
+		mTerrorist01.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+		mTerrorist02.PushActionWait(ACTION_NEWLIST, 0.5f);
+		mTerrorist02.PushActionLeaveCar(ACTION_APPEND, &mTerrorvan);
+		mTerrorist02.SetObjectPath(PATH_FLEE, 3.8f);
+		mTerrorist02.SetFleeing(true, false);
+		mTerrorist02.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+		mTerrorist03.PushActionDeleteOwner(ACTION_APPEND);
+		mTerrorist04.PushActionDeleteOwner(ACTION_APPEND);
+		Mission::StartSingleTimer(TIMER_SUICIDE01, TIME_SUICIDE01);	
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->GetID() == mTerrorvan.GetID())
+		{
+			if (Mission::HasObjective(MISSION03_TERRORVAN))
+				Mission::SetObjectiveAccomplished(MISSION03_TERRORVAN, true);
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void SoundNewObjective()
+	{
+		Audio::PlaySample("mod:Audio/FX/misc/newobjective.wav");
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M03: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_SHOUT);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_INNOCENT);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_DISARMED);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_SAFE);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_EXPLOSION);
+				break;
+			case 5:
+				Mission::PlayHint(HINT_TERRORISTS);
+				break;
+			case 6:
+				Mission::PlayHint(HINT_SUICIDE);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION03_EXT))
+			{
+				if (Mission::HasObjective(MISSION03_EXT))
+					Mission::SetObjectiveAccomplished(MISSION03_EXT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION03_EXT))
+			{
+				if (Mission::HasObjective(MISSION03_EXT))
+					Mission::SetObjectiveAccomplished(MISSION03_EXT, false);
+			}
+		}
+
+		if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION03_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION03_TRANSPORT))
+             			Mission::SetObjectiveAccomplished(MISSION03_TRANSPORT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION03_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION03_TRANSPORT))
+					Mission::SetObjectiveAccomplished(MISSION03_TRANSPORT, false);
+			}
+		}
+
+		if (Mission::GetCounter("Gangsters") == 0)
+		{
+			if (Mission::HasObjective(MISSION03_TERROR01))
+			{
+				if (!Mission::IsObjectiveAccomplished(MISSION03_TERROR01))
+             			Mission::SetObjectiveAccomplished(MISSION03_TERROR01, true);
+			}
+			if (Mission::HasObjective(MISSION03_TERROR02))
+			{
+				if (!Mission::IsObjectiveAccomplished(MISSION03_TERROR02))
+             			Mission::SetObjectiveAccomplished(MISSION03_TERROR02, true);
+			}
+		}
+		else
+		{
+			if (Mission::HasObjective(MISSION03_TERROR01))
+			{
+				if (Mission::IsObjectiveAccomplished(MISSION03_TERROR01))
+             			Mission::SetObjectiveAccomplished(MISSION03_TERROR01, false);
+			}
+			if (Mission::HasObjective(MISSION03_TERROR02))
+			{
+				if (Mission::IsObjectiveAccomplished(MISSION03_TERROR02))
+             			Mission::SetObjectiveAccomplished(MISSION03_TERROR02, false);
+			}
+		}
+
+		if(mTerroristsSeen && Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.7f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_FAILED;
+		}
+
+		if (mCarExploded || mTerroristEscaped)
+		{
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		if (mCarExploded)
+			return "M03_CAREXPLODED_REASON";
+
+		if (mTerroristEscaped)
+			return "M03_TERRORIST_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		if (mCarExploded)
+			return "M03_CAREXPLODED_COMMENT";
+
+		if (mTerroristEscaped)
+			return "M03_TERRORIST_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION03_01";
+		else if (scoring->Efficiency < 0.8f)
+			return "SUPERV_MISSION03_01";
+		else if (mBombExploded || mTerroristExploded)
+			return "SUPERV_MISSION03_02";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mBomb);
+		Serializer->Write(mSoundBeep);
+		Serializer->Write(mSoundSiren);
+		Serializer->Write(mCivil01);
+		Serializer->Write(mCivil02);
+		Serializer->Write(mOfficer01);
+		Serializer->Write(mOfficer02);
+		Serializer->Write(mTerrorist01);
+		Serializer->Write(mTerrorist02);
+		Serializer->Write(mTerrorist03);
+		Serializer->Write(mTerrorist04);
+		Serializer->Write(mPatrolcar);
+		Serializer->Write(mTerrorvan);
+		Serializer->Write(mExplodingcar);
+		Serializer->Write(mExplosion01);
+		Serializer->Write(mExplosion02);
+		Serializer->Write(mParticleExplosion02);
+		Serializer->Write(mStain);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mBombDefused);
+		Serializer->Write(mBombExploded);
+		Serializer->Write(mBombPlanted);
+		Serializer->Write(mCarExploded);
+		Serializer->Write(mTerroristExploded);
+		Serializer->Write(mTerroristsSeen);
+		Serializer->Write(mSquadSeen);
+		Serializer->Write(mTerroristsFlee);
+		Serializer->Write(mTerroristEscaped);
+		Serializer->Write(mBurn);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mBomb);
+		Serializer->Read(mSoundBeep);
+		Serializer->Read(mSoundSiren);
+		Serializer->Read(mCivil01);
+		Serializer->Read(mCivil02);
+		Serializer->Read(mOfficer01);
+		Serializer->Read(mOfficer02);
+		Serializer->Read(mTerrorist01);
+		Serializer->Read(mTerrorist02);
+		Serializer->Read(mTerrorist03);
+		Serializer->Read(mTerrorist04);
+		Serializer->Read(mPatrolcar);
+		Serializer->Read(mTerrorvan);
+		Serializer->Read(mExplodingcar);
+		Serializer->Read(mExplosion01);
+		Serializer->Read(mExplosion02);
+		Serializer->Read(mParticleExplosion02);
+		Serializer->Read(mStain);
+		Serializer->Read(mTooManyVictims);
+		Serializer->Read(mBombDefused);
+		Serializer->Read(mBombExploded);
+		Serializer->Read(mBombPlanted);
+		Serializer->Read(mCarExploded);
+		Serializer->Read(mTerroristExploded);
+		Serializer->Read(mTerroristsSeen);
+		Serializer->Read(mSquadSeen);
+		Serializer->Read(mTerroristsFlee);
+		Serializer->Read(mTerroristEscaped);
+		Serializer->Read(mBurn);
+
+		return true;
+	}
+};

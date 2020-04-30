@@ -1,0 +1,118 @@
+const char OBJ_CRANE_NORMAL[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_rescue_crane.e4p";
+const char OBJ_CRANE_REVERSED[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_rescue_crane_rev.e4p";
+const char NAME_CRANE_REVERSED[]		= "cranereversed";
+
+object LiftWithCrane : CommandScript
+{
+	Vector TargetPos;
+	bool move;
+
+	LiftWithCrane()
+	{
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetGroupID(CGROUP_CRANE);
+		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_RECOVERABLE);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+
+		return Caller->GetCarriedObjects().GetNumObjects() == 0;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		move = true;
+	
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() == Caller->GetID())
+			return false;
+
+		bool ok = false;
+		if (Target->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Target);
+			if (v.GetEnergy() <= 0.1f * v.GetMaxEnergy() && !v.IsSmoking())
+			        ok = true; // Fahrzeug kaputt und gelöscht
+			if (v.IsDestroyed())
+			        ok = true; // Fahrzeug zerstört
+			if (!ok && !v.IsParking())
+				return false;
+		}
+		
+		// check if target object can be picked up
+		GameObject obj(Target);
+		if (!obj.IsValid() /*|| obj.IsFlagSet(OF_PERSON_ENCLOSED)*/ || obj.IsBurning())
+			return false;
+	
+		GameObjectList l = Caller->GetCarriedObjects();
+		if (l.GetNumObjects() > 0) 
+			return false;
+	
+		if (!obj.IsFlagSet(OF_RECOVERABLE) && !obj.HasName("fgrr_signal") && !ok) 
+			return false;
+
+		bool quiet = true;
+		if (obj.IsPhysicsSimulationEnabled() && !obj.IsPhysicsFreezed())
+		{
+			Vector lin, ang;
+			obj.GetPhysicsLinearVelocity(0, lin);
+			obj.GetPhysicsLinearVelocity(0, ang);
+			if (lin.GetLen() > 8.0f && ang.GetLen() > 0.2f)
+				quiet = false;
+		}
+
+		if (!quiet && !obj.HasName("fgrr_signal"))
+			return false;
+		
+		Vehicle vehi(Caller);
+		if (vehi.IsValid()) 
+		{
+			if (!vehi.CanBeTaken(&obj) && vehi.HasName(NAME_CRANE_REVERSED))
+				return false;
+			else if (vehi.CanBeTaken(&obj))
+			{
+				move = false;
+				return true;
+			}
+			else if (vehi.IsReady())
+			{
+				vehi.FindReachablePosition(&obj,TargetPos);
+				return true;
+			}
+		}			
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (StrCompare(v.GetPrototypeFileName(), OBJ_CRANE_NORMAL) == 0)
+		{
+			GameObject obj(Target);
+			if (move && !v.HasName(NAME_CRANE_REVERSED)) 
+			{
+				System::Log("Crane not installed && not in range");
+				v.PushActionMove(ACTION_NEWLIST, TargetPos);
+				v.PushActionExecuteCommand(ACTION_APPEND, "DummyCrane", Target, 1, false);
+			} 
+			else if (!move && !v.HasName(NAME_CRANE_REVERSED)) 
+				v.PushActionExecuteCommand(ACTION_NEWLIST, "DummyCrane", Target, 1, false);
+			else if (!move && v.HasName(NAME_CRANE_REVERSED))
+				v.PushActionLiftWithCrane(ACTION_NEWLIST, Target);
+			else
+				return;
+		} else
+		{
+			if (move) 
+			{
+				Caller->PushActionDeinstall(ACTION_NEWLIST);
+				Caller->PushActionMove(ACTION_APPEND, TargetPos);
+				Caller->PushActionLiftWithCrane(ACTION_APPEND, Target);  
+			} else		
+				Caller->PushActionLiftWithCrane(ACTION_NEWLIST, Target);
+		}
+	}	
+};

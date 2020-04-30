@@ -1,0 +1,41 @@
+object M08Use : CommandScript
+{
+	M08Use()
+	{
+		SetValidTargets(ACTOR_VEHICLE);
+		SetIcon("use");
+		SetCursor("use");
+		SetRestrictions(RESTRICT_USABLE);
+		SetPriority(700);
+		SetSelfClickActivation(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		return Game::ExistsObjectWithFlagSet(OF_USABLE);
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || Caller->GetID()==Target->GetID())
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && v.IsParking())
+			return true;
+
+		if (!v.IsValid()) 
+			return false;
+		
+		return false;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_USE);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionUse(ACTION_APPEND, Target);
+	}
+};

@@ -1,0 +1,1326 @@
+//******************************************************************************************
+// #Version 1.4#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 10;
+const int MAX_DEATHS = 4;
+const int MAX_INJURIES = 12;
+const int MAX_NUM_AGENTS = 8;
+const int MAX_NUM_TERRORS = 15;
+const int MAX_NUM_BLACKHAWKS = 3;
+const int MAX_NUM_RPGS = 4;
+const int MAX_NUM_CARBOMBS = 2;
+const int MAX_NUM_TERRORCARS = 2;
+
+const char HINT_START[]				= "MISSION08_HINT01";
+const char HINT_GENERAL[]			= "MISSION08_HINT02";
+const char HINT_AIRFIELD[]			= "MISSION08_HINT03";
+const char HINT_CONVOYSTOPPED[]			= "MISSION08_HINT04";
+const char HINT_CONVOYATTACKED[]		= "MISSION08_HINT05";
+const char HINT_CONVOYLOST[]			= "MISSION08_HINT06";
+const char HINT_CARBOMB[]			= "MISSION08_HINT07";
+const char HINT_CARBOMBFOUND[]			= "MISSION08_HINT08";
+const char HINT_NOCARBOMB[]			= "MISSION08_HINT09";
+const char HINT_BOMBDISARMED[]			= "MISSION08_HINT10";
+
+const char MISSION08_CONVOY[]			= "MISSION08_CONVOY";
+
+const char NAME_GENERAL[]			= "general";
+const char NAME_SOLDIER1[]			= "soldier1";
+const char NAME_SOLDIER2[]			= "soldier2";
+const char NAME_AGENT0[]			= "secretservice1";
+const char NAME_AGENT1[]			= "secretservice2";
+const char NAME_AGENT2[]			= "secretservice3";
+const char NAME_AGENT3[]			= "secretservice4";
+const char NAME_AGENT4[]			= "secretservice5";
+const char NAME_AGENT5[]			= "secretservice6";
+const char NAME_AGENT6[]			= "secretservice7";
+const char NAME_AGENT7[]			= "secretservice8";
+const char NAME_CONVOY1[]			= "convoy1";
+const char NAME_CONVOY2[]			= "convoy2";
+const char NAME_CONVOY3[]			= "convoy3";
+const char NAME_BLACKHAWK1[]			= "blackhawk1";
+const char NAME_BLACKHAWK2[]			= "blackhawk2";
+const char NAME_BLACKHAWK3[]			= "blackhawk3";
+
+const char PATH_CONVOYARRIVES[]			= "path_convoyarrives";
+const char PATH_CONVOY[]			= "path_convoy";
+const char PATH_GENERAL[]			= "path_general";
+const char PATH_GENERAL2[]			= "path_general2";
+const char PATH_SOLDIER1[]			= "path_soldier1";
+const char PATH_SOLDIER2[]			= "path_soldier2";
+const float PATH_SPEED				= 7.5f;
+
+const char NAME_COMMAND_START[]			= "M08StartConvoy";
+const char NAME_COMMAND_STOP[]			= "M08StopConvoy";
+const char NAME_COMMAND_EMPTYCAR[]		= "M08EmptyCar";
+const char NAME_COMMAND_USE[]			= "M08Use";
+
+const char TRIGGER_CONVOY[]			= "trigger_convoy";
+const char NAME_AREALIGHT[]			= "arealight";
+
+const char TIMER_UPDATE[] 			= "update";
+const float TIME_UPDATE				= 1.f;
+const char TIMER_RPG[] 				= "rpg";
+const float TIME_RPG				= 0.2f;
+const char TIMER_RPG2[] 			= "rpg2";
+const float TIME_RPG2				= 1.4f;
+const char TIMER_RPG3[] 			= "rpg3";
+const float TIME_RPG3				= 2.0f;
+const char TIMER_GENERAL[] 			= "generaltimer";
+const float TIME_GENERAL			= 2.0f;
+
+const char NAME_TERRORIST0[]			= "terror01";
+const char NAME_TERRORIST1[]			= "terror01_rpg";
+const char NAME_TERRORIST2[]			= "terror02";
+const char NAME_TERRORIST3[]			= "terror03";
+const char NAME_TERRORIST4[]			= "terror04";
+
+const char NAME_TERRORIST5[]			= "terror05";
+const char NAME_TERRORIST6[]			= "terror06";
+const char NAME_TERRORIST7[]			= "terror07";
+const char NAME_TERRORIST8[]			= "terror08";
+const char NAME_TERRORIST9[]			= "terror09";
+const char NAME_TERRORIST10[]			= "terror10";
+
+const char NAME_TERRORIST11[]			= "terror11";
+const char NAME_TERRORIST12[]			= "terror12";
+const char NAME_TERRORIST13[]			= "terror13";
+const char NAME_TERRORIST14[]			= "terror14";
+
+const char NAME_RPG1[]				= "rpg1";
+const char NAME_RPG2[]				= "rpg2";
+const char NAME_RPG3[]				= "rpg3";
+const char NAME_RPG4[]				= "rpg4";
+
+const char OBJ_RPG[]				= "06 LA Misc/rpg.V3O";
+const char OBJ_RPG_FIRE[]			= "06 LA Misc/rpg_fire.V3O";
+const char OBJ_RPG_EMPTY[]			= "06 LA Misc/rpg_empty.V3O";
+const char OBJ_RPG_EMPTY_FIRE[]			= "06 LA Misc/rpg_fire_empty.V3O";
+const char NAME_PARTICLE_RPG[]			= "rpg_particle";
+const char NAME_PARTICLE_RPG_EXPLOSION[]	= "rpg_explosion";
+const char TRIGGER_RPG[]			= "trigger_rpg";
+const char TRIGGER_RPG2[]			= "trigger_rpg2";
+const char TRIGGER_RPG3[]			= "trigger_rpg3";
+const char SND_EXPLOSION[]			= "mod:Audio/FX/Explosion02.wav";
+const char SND_RPG_FIRE[]			= "mod:Audio/FX/misc/rpg_fire.wav";
+
+const char NAME_PREFIX_CARBOMB[]		= "carbomb";
+const char NAME_CARBOMB01[]			= "carbomb01";
+const char TRIGGER_CARBOMB01[]			= "trigger_carbomb01";
+const char NAME_CARBOMB02[]			= "carbomb02";
+const char TRIGGER_CARBOMB02[]			= "trigger_carbomb02";
+const float TIME_CARCHECK		 	= 3.0f;
+const float TIME_DISARM		 		= 10.0f;
+
+const char TRIGGER_ATTACK01[]			= "trigger_attack01";
+const char TRIGGER_ATTACK02[]			= "trigger_attack02";
+const char TRIGGER_TERRORGROUP01[]		= "trigger_terrorgroup01";
+const char TRIGGER_TERRORGROUP02[]		= "trigger_terrorgroup02";
+const char TRIGGER_TERRORGROUP03[]		= "trigger_terrorgroup03";
+const char TRIGGER_TERRORGROUP04[]		= "trigger_terrorgroup04";
+const char TRIGGER_TERRORGROUP05[]		= "trigger_terrorgroup05";
+const char PATH_TERROR14[]			= "path_terror14";
+const char NAME_TERRORCAR01[]			= "terrorcar01";
+const char PATH_TERRORCAR01[]			= "path_terrorcar01";
+const char NAME_TERRORCAR02[]			= "terrorcar02";
+const char PATH_TERRORCAR02[]			= "path_terrorcar02";
+const char SND_BRAKES[]				= "mod:Audio/Fx/Vehicles/Tyresqueal02.wav";
+const char TIMER_SHOOT[] 			= "shoot";
+const float TIME_SHOOT				= 2.5f;
+
+object Mission08 : MissionScript
+{
+	bool mTooManyVictims, mConvoyStopped, mConvoyArrived, mConvoyLost, mGeneralDown, mLostSUV;
+	int mHintCounter[MAX_HINTS];
+	Person mAgent[MAX_NUM_AGENTS];
+	Person mTerror[MAX_NUM_TERRORS];
+	Person mGeneral, mSoldier1, mSoldier2;
+	Vehicle mConvoy1, mConvoy2, mConvoy3;
+	Vehicle mBlackhawk[MAX_NUM_BLACKHAWKS];
+	Vehicle mCarBomb[MAX_NUM_CARBOMBS];
+	Vehicle mTerrorCar[MAX_NUM_TERRORCARS];
+	GameObject mRpg[MAX_NUM_RPGS], mRpgParticle, mRpgExplosion;
+	GameObjectList mAreaLights;
+
+	Mission08()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+			mHintCounter[i] = 0;
+		mTooManyVictims = false;
+		mConvoyStopped = true;
+		mConvoyLost = false;
+		mConvoyArrived = false;
+		mGeneralDown = false;
+		mLostSUV = false;
+	}
+	
+	~Mission08()
+	{
+	}
+	
+	void Start()
+	{
+		System::Log("M08 Start");
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->HasName(NAME_AGENT0))
+				mAgent[0] = Person(obj);
+			if (obj->HasName(NAME_AGENT1))
+				mAgent[1] = Person(obj);
+			if (obj->HasName(NAME_AGENT2))
+				mAgent[2] = Person(obj);
+			if (obj->HasName(NAME_AGENT3))
+				mAgent[3] = Person(obj);
+			if (obj->HasName(NAME_AGENT4))
+				mAgent[4] = Person(obj);
+			if (obj->HasName(NAME_AGENT5))
+				mAgent[5] = Person(obj);
+			if (obj->HasName(NAME_AGENT6))
+				mAgent[6] = Person(obj);
+			if (obj->HasName(NAME_AGENT7))
+				mAgent[7] = Person(obj);
+			if (obj->HasName(NAME_GENERAL))
+				mGeneral = Person(obj);
+			if (obj->HasName(NAME_SOLDIER1))
+			{
+				mSoldier1 = Person(obj);
+				mSoldier1.SetUpgradeLevel(0);
+			}
+			if (obj->HasName(NAME_SOLDIER2))
+			{
+				mSoldier2 = Person(obj);
+				mSoldier2.SetUpgradeLevel(0);
+			}
+			if (obj->HasName(NAME_CONVOY1))
+			{
+				mConvoy1 = Vehicle(obj);
+				mConvoy1.SetMaxPassengers(4);
+				mConvoy1.SetMaxTransports(0);
+				mConvoy1.AddPassenger(&mAgent[0]);
+				mConvoy1.AddPassenger(&mAgent[1]);
+				mConvoy1.AddPassenger(&mAgent[2]);
+				mConvoy1.AddPassenger(&mAgent[3]);
+				mConvoy1.SetCommandable(false);
+				mConvoy1.SetMaxEnergy(3500.f);
+			}
+			if (obj->HasName(NAME_CONVOY2))
+			{
+				mConvoy2 = Vehicle(obj);
+				mConvoy2.SetMaxPassengers(1);
+				mConvoy2.SetVehicleRole(VT_POLICE_MTW);
+				mConvoy2.SetCommandable(false);
+				mConvoy2.SetMaxEnergy(3500.f);
+			}
+			if (obj->HasName(NAME_CONVOY3))
+			{
+				mConvoy3 = Vehicle(obj);
+				mConvoy3.SetMaxPassengers(4);
+				mConvoy3.SetMaxTransports(0);
+				mConvoy3.AddPassenger(&mAgent[4]);
+				mConvoy3.AddPassenger(&mAgent[5]);
+				mConvoy3.AddPassenger(&mAgent[6]);
+				mConvoy3.AddPassenger(&mAgent[7]);
+				mConvoy3.SetCommandable(false);
+				mConvoy3.SetMaxEnergy(3500.f);
+			}
+			if (obj->HasName(NAME_BLACKHAWK1))
+			{
+				mBlackhawk[0] = Vehicle(obj);
+				mBlackhawk[0].SetMaxPassengers(1);
+				mBlackhawk[0].SetMaxTransports(0);
+			}
+			if (obj->HasName(NAME_BLACKHAWK2))
+			{
+				mBlackhawk[1] = Vehicle(obj);
+				mBlackhawk[1].SetMaxPassengers(0);
+				mBlackhawk[1].SetMaxTransports(0);
+			}
+			if (obj->HasName(NAME_BLACKHAWK3))
+			{
+				mBlackhawk[2] = Vehicle(obj);
+				mBlackhawk[2].SetMaxPassengers(0);
+				mBlackhawk[2].SetMaxTransports(0);
+			}
+			if (obj->HasName(NAME_TERRORIST0))
+				mTerror[0] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST1))
+			{
+				mTerror[1] = Person(obj);
+				mTerror[1].Hide();
+			}
+			if (obj->HasName(NAME_TERRORIST2))
+				mTerror[2] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST3))
+				mTerror[3] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST4))
+				mTerror[4] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST5))
+				mTerror[5] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST6))
+				mTerror[6] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST7))
+				mTerror[7] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST8))
+				mTerror[8] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST9))
+				mTerror[9] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST10))
+				mTerror[10] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST11))
+				mTerror[11] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST12))
+				mTerror[12] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST13))
+				mTerror[13] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST14))
+				mTerror[14] = Person(obj);
+
+			if (obj->HasName(NAME_RPG1))
+				mRpg[0] = obj;
+			if (obj->HasName(NAME_RPG2))
+				mRpg[1] = obj;
+			if (obj->HasName(NAME_RPG3))
+				mRpg[2] = obj;
+			if (obj->HasName(NAME_RPG4))
+				mRpg[3] = obj;
+			if (obj->HasName(NAME_PARTICLE_RPG))
+			{
+				mRpgParticle = obj;
+				mRpgParticle.StopParticleEffect();
+			}
+			if (obj->HasName(NAME_PARTICLE_RPG_EXPLOSION))
+			{
+				mRpgExplosion = obj;
+				mRpgExplosion.StopParticleEffect();
+			}
+			if (obj->HasName(NAME_CARBOMB01))
+				mCarBomb[0] = Vehicle(obj);
+			if (obj->HasName(NAME_CARBOMB02))
+				mCarBomb[1] = Vehicle(obj);
+			if (obj->HasName(NAME_TERRORCAR01))
+				mTerrorCar[0] = Vehicle(obj);
+			if (obj->HasName(NAME_TERRORCAR02))
+				mTerrorCar[1] = Vehicle(obj);
+		}
+		for (int i = 0; i < MAX_NUM_AGENTS; ++i)
+		{
+			mAgent[i].SetUpgradeLevel(3);
+			mAgent[i].AssignCommand("PutInCar");
+		}
+		for (int i = 0; i < MAX_NUM_RPGS; ++i)
+			mRpg[i].Hide();
+		for (int i = 0; i < MAX_NUM_TERRORS; ++i)
+		{
+			mTerror[i].SetCivilsFleeRange(0.0f);
+			mTerror[i].SetShootRange(10.f);
+			mTerror[i].SetShootFrequency(2000.f);
+			mTerror[i].SetShootPower(190.f);
+			mTerror[i].SetSightAngle(360.f);
+			mTerror[i].SetResistance(INJUREREASON_SHOT, 100.f);
+		}
+
+		VehicleList clist(VT_NOSQUAD, VT_TAXI);
+		for(int i = 0; i < clist.GetNumVehicles(); i++)
+		{
+			if (clist.GetVehicle(i)->IsParking() && !clist.GetVehicle(i)->IsFlagSet(OF_USABLE))
+				clist.GetVehicle(i)->SetFlag(OF_USABLE);
+		}
+		Game::CreateAreaLightsAroundTrigger(TRIGGER_CONVOY, NAME_AREALIGHT, 400.f);
+		mAreaLights = Game::GetGameObjects(NAME_AREALIGHT);
+		SwitchAreaLights(&mAreaLights, true);
+		ShowHint(0);
+		Mission::AddObjective(MISSION08_CONVOY);
+		Audio::PlaySoundtrack("33", 0.0f);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+		if (v->HasCommand("VcmdDirectionalLightsOn"))
+			v->RemoveCommand("VcmdDirectionalLightsOn");
+	}
+
+	void OnSquadArrived(Person *p)
+	{
+		if (StrCompare(p->GetPrototypeFileName(), "mod:Prototypes/Persons/03 LA Police/lapd_bomb_squad.e4p") == 0)
+		{
+			p->RemoveCommand("Use");
+			p->AssignCommand(NAME_COMMAND_USE);
+
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_CONVOYARRIVES :
+			{
+				mConvoy1.RemoveObjectPath();
+				mConvoy2.RemoveObjectPath();
+				mConvoy3.RemoveObjectPath();
+				mGeneral.PushActionWait(ACTION_NEWLIST, 3.0f);
+				mGeneral.SetObjectPath(PATH_GENERAL, 1.9f);
+				mSoldier1.PushActionWait(ACTION_NEWLIST, 3.3f);
+				mSoldier1.SetObjectPath(PATH_SOLDIER1, 1.9f);
+				mSoldier2.PushActionWait(ACTION_NEWLIST, 3.3f);
+				mSoldier2.SetObjectPath(PATH_SOLDIER2, 1.9f);
+			}
+			break;
+
+			case PATH_CONVOY :
+			{
+				mConvoyArrived = true;
+				if (mHintCounter[2] == 0)
+					ShowHint(2);
+				mConvoy1.RemoveCommand(NAME_COMMAND_START);
+				mConvoy2.RemoveCommand(NAME_COMMAND_START);
+				mConvoy3.RemoveCommand(NAME_COMMAND_START);
+				mConvoy1.RemoveCommand(NAME_COMMAND_STOP);
+				mConvoy2.RemoveCommand(NAME_COMMAND_STOP);
+				mConvoy3.RemoveCommand(NAME_COMMAND_STOP);
+				mConvoy1.SetPausePath(true);
+				Mission::StartSingleTimer(TIMER_GENERAL, TIME_GENERAL);
+				Mission::StopTimer(TIMER_UPDATE);
+			}
+			break;
+
+			case PATH_GENERAL :
+			{
+				mGeneral.PushActionMove(ACTION_NEWLIST, &mConvoy2, TARGET_PASSENGERDOOR);
+				mGeneral.PushActionTurnTo(ACTION_APPEND, &mConvoy2);
+				mGeneral.PushActionEnterCar(ACTION_APPEND, &mConvoy2);
+			}
+			break;
+
+			case PATH_TERRORCAR01 :
+			{
+				mTerrorCar[0].RemoveObjectPath();
+				mTerrorCar[0].SetParking(true);
+				Audio::PlaySample3D(SND_BRAKES, mTerrorCar[0].GetPosition(), false);
+				mTerror[2].SetFleeing(true);
+				mTerror[2].PushActionLeaveCar(ACTION_NEWLIST, &mTerrorCar[0]);
+				mTerror[2].PushActionMove(ACTION_APPEND, &mConvoy2, TARGET_ANY);
+				mTerror[3].SetFleeing(true);
+				mTerror[4].SetFleeing(true);
+				mTerror[3].PushActionMove(ACTION_NEWLIST, &mConvoy1, TARGET_ANY);
+				mTerror[4].PushActionMove(ACTION_NEWLIST, &mConvoy3, TARGET_ANY);
+				Mission::StartSingleTimer(TIMER_SHOOT, TIME_SHOOT);
+			}
+			break;
+
+			case PATH_TERRORCAR02 :
+			{
+				mTerrorCar[1].RemoveObjectPath();
+				mTerrorCar[1].SetParking(true);
+				Audio::PlaySample3D(SND_BRAKES, mTerrorCar[1].GetPosition(), false);
+				mTerror[10].SetFleeing(true);
+				mTerror[10].PushActionLeaveCar(ACTION_NEWLIST, &mTerrorCar[1]);
+				mTerror[10].SetRole(ROLE_GANGSTER);
+				mTerror[10].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+				mTerror[10].SetEquipment(EQUIP_PISTOL);
+				mTerror[10].SetPrimaryTarget(&mConvoy2);
+
+			}
+			break;
+
+			case PATH_TERROR14 :
+			{
+				mTerror[14].SetFleeing(false);
+				//mTerror[14].SetRole(ROLE_GANGSTER);
+				mTerror[14].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+				mTerror[14].SetEquipment(EQUIP_PISTOL);
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	void OnTimer(const char *Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_UPDATE :
+			{
+				if (mConvoy1.IsSmoking() || mConvoy1.GetEnergy() < 0.1f * mConvoy1.GetMaxEnergy())
+				{
+					if (!mConvoy1.IsFlagSet(OF_RECOVERABLE))
+						mConvoy1.SetFlag(OF_RECOVERABLE);
+					if (!mConvoy1.IsFlagSet(OF_TRANSPORTABLE))
+						mConvoy1.SetFlag(OF_TRANSPORTABLE);
+					if (mHintCounter[5] == 0)
+						ShowHint(5);
+					if (mConvoy1.HasObjectPath(NULL))
+						mConvoy1.RemoveObjectPath();
+					if (!mConvoy1.IsParking())
+						mConvoy1.SetParking(true);
+					if (!mLostSUV)
+						mLostSUV = true;	
+				}
+				if (mConvoy3.IsSmoking() || mConvoy3.GetEnergy() < 0.1f * mConvoy3.GetMaxEnergy())
+				{
+					if (!mConvoy3.IsFlagSet(OF_RECOVERABLE))
+						mConvoy3.SetFlag(OF_RECOVERABLE);
+					if (!mConvoy3.IsFlagSet(OF_TRANSPORTABLE))
+						mConvoy3.SetFlag(OF_TRANSPORTABLE);
+					if (mHintCounter[5] == 0)
+						ShowHint(5);
+					if (mConvoy3.HasObjectPath(NULL))
+						mConvoy3.RemoveObjectPath();
+					if (!mConvoy3.IsParking())
+						mConvoy3.SetParking(true);
+					if (!mLostSUV)
+						mLostSUV = true;
+				}
+				else if (mConvoy2.IsSmoking())
+					mConvoyLost = true;
+
+				if (!mConvoyStopped && !mConvoy1.IsMoving() && mConvoy1.IsValid() && !mConvoy1.IsDestroyed() && !mConvoy1.IsSmoking())
+				{
+					mConvoy1.SetPausePath(true);
+					mConvoyStopped = true;
+				}
+				else if (!mConvoyStopped && !mConvoy2.IsMoving() && mConvoy2.IsValid() && !mConvoy2.IsDestroyed() && !mConvoy2.IsSmoking() && !mConvoy2.IsBurning())
+				{
+					mConvoy1.SetPausePath(true);
+					mConvoy2.SetPausePath(true);
+					mConvoyStopped = true;
+				}
+				else if (!mConvoyStopped && !mConvoy3.IsMoving() && mConvoy3.IsValid() && !mConvoy3.IsDestroyed() && !mConvoy3.IsSmoking())
+				{
+					mConvoy1.SetPausePath(true);
+					mConvoy2.SetPausePath(true);
+					mConvoy3.SetPausePath(true);
+					mConvoyStopped = true;
+					ShowHint(3);
+				}
+			}
+			break;
+
+			case TIMER_GENERAL :
+			{
+				mGeneral.PushActionLeaveCar(ACTION_APPEND, &mConvoy2);
+				mGeneral.PushActionMove(ACTION_APPEND, &mBlackhawk[0], TARGET_PASSENGERDOOR);
+				mGeneral.PushActionTurnTo(ACTION_APPEND, &mBlackhawk[0]);
+				mGeneral.PushActionEnterCar(ACTION_APPEND, &mBlackhawk[0]);
+			}
+			break;
+
+			case TIMER_RPG :
+			{
+				Mission::StartSingleTimer(TIMER_RPG2, TIME_RPG2);
+				mTerror[1].RemoveObjectInRightHand();
+				mTerror[1].PlaceObjectInRightHand(OBJ_RPG_EMPTY_FIRE);
+				mRpgParticle.StartParticleEffect();
+				mRpg[0].SetCollisionMode(PHYSIC_COLLISION_NONE);
+				mRpg[0].SetChildEnabled("rpg", true);
+				mRpg[0].Show();
+				mRpg[0].PushActionMoveToPoint(ACTION_NEWLIST, &mRpg[1], 41.0f);
+				mRpg[0].PushActionMoveToPoint(ACTION_APPEND, &mRpg[2], 43.0f);
+				mRpg[0].PushActionMoveToPoint(ACTION_APPEND, &mRpg[3], 45.0f);
+				Audio::PlaySample(SND_RPG_FIRE);
+			}
+			break;
+
+			case TIMER_RPG2 :
+			{
+				Mission::StartSingleTimer(TIMER_RPG3, TIME_RPG3);
+				mRpgExplosion.SetPosition(&mRpg[0]);
+				mRpgExplosion.StartParticleEffect();
+				Audio::PlaySample3D(SND_EXPLOSION, mRpg[0].GetPosition(), false);
+				GameObject nearest = mRpg[0].GetClosestObjectInRange(600.0f, ACTOR_VEHICLE);
+				if (nearest.IsValid() && nearest.GetID() == mConvoy1.GetID())
+					nearest.Explode();
+				mRpg[0].Hide();
+
+				Game::DeactivateTrigger(TRIGGER_TERRORGROUP02);
+				Game::DeactivateTrigger(TRIGGER_TERRORGROUP03);
+				if (mTerror[5].IsValid() && !mTerror[5].IsDead() && !mTerror[5].IsInjured() && !mTerror[5].IsArrested() && mTerror[5].GetRole() != ROLE_GANGSTER && mTerror[5].IsCollidingWithTrigger(TRIGGER_TERRORGROUP02))
+				{
+					mTerror[5].SetRole(ROLE_GANGSTER);
+					mTerror[5].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+					mTerror[5].SetEquipment(EQUIP_PISTOL);
+				}
+				if (mTerror[6].IsValid() && !mTerror[6].IsDead() && !mTerror[6].IsInjured() && !mTerror[6].IsArrested() && mTerror[6].GetRole() != ROLE_GANGSTER && mTerror[6].IsCollidingWithTrigger(TRIGGER_TERRORGROUP02))
+				{
+					mTerror[6].SetRole(ROLE_GANGSTER);
+					mTerror[6].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[6].SetEquipment(EQUIP_PISTOL);
+				}
+				if (mTerror[7].IsValid() && !mTerror[7].IsDead() && !mTerror[7].IsInjured() && !mTerror[7].IsArrested() && mTerror[7].GetRole() != ROLE_GANGSTER)
+				{
+					mTerror[7].SetRole(ROLE_GANGSTER);
+					mTerror[7].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[7].SetEquipment(EQUIP_RIFLE);
+					mTerror[7].SetShootPower(200.f);
+					mTerror[7].SetShootRange(20.f);
+				}
+				if (mTerror[8].IsValid() && !mTerror[8].IsDead() && !mTerror[8].IsInjured() && !mTerror[8].IsArrested() && mTerror[8].GetRole() != ROLE_GANGSTER)
+				{
+					mTerror[8].SetRole(ROLE_GANGSTER);
+					mTerror[8].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[8].SetEquipment(EQUIP_PISTOL);
+				}
+				if (mTerror[9].IsValid() && !mTerror[9].IsDead() && !mTerror[9].IsInjured() && !mTerror[9].IsArrested() && mTerror[9].GetRole() != ROLE_GANGSTER)
+				{
+					mTerror[9].SetRole(ROLE_GANGSTER);
+					mTerror[9].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[9].SetEquipment(EQUIP_PISTOL);
+					mTerror[9].RemoveObjectPath();
+					mTerror[9].SetPrimaryTarget(&mConvoy2);
+				}
+				if (mTerror[10].IsValid() && !mTerror[10].IsDead() && !mTerror[10].IsInjured() && !mTerror[10].IsArrested() && mTerror[10].GetRole() != ROLE_GANGSTER && mTerror[10].IsCollidingWithTrigger(TRIGGER_TERRORGROUP03))
+				{
+					if (mTerrorCar[1].IsValid() && mTerrorCar[1].IsCollidingWithTrigger(TRIGGER_TERRORGROUP03) && !mTerrorCar[1].IsDestroyed() && !mTerrorCar[1].IsSmoking())
+					{
+						mTerrorCar[1].SetMaxPassengers(1);
+						mTerrorCar[1].SetMaxTransports(0);
+						mTerrorCar[1].AddPassenger(&mTerror[10]);
+						mTerrorCar[1].SetObjectPath(PATH_TERRORCAR02, 8.7f);
+					}
+				}
+			}
+			break;
+
+			case TIMER_RPG3 :
+			{
+				mTerror[1].RemoveObjectInRightHand();
+				mTerror[1].PlaceObjectInRightHand(OBJ_RPG_EMPTY);
+				mTerror[1].PushActionSwitchAnim(ACTION_NEWLIST, "idlegun");
+				mTerror[1].PushActionWait(ACTION_APPEND, 3.0f);
+				mTerror[1].PushActionDeleteOwner(ACTION_APPEND);
+				mTerror[0].PushActionWait(ACTION_NEWLIST, 5.5f);
+				mTerror[0].PushActionShowHide(ACTION_APPEND, false);
+				mTerror[0].SetRole(ROLE_GANGSTER);
+				mTerror[0].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[0].SetEquipment(EQUIP_PISTOL);
+				Mission::EndCutScene();
+				ScriptInterface::ShowRadar();
+				ScriptInterface::ShowMap();
+				ScriptInterface::ShowNavigator();
+				ScriptInterface::ShowInfoBar();
+				ScriptInterface::ShowVehicleBrowser();
+				ScriptInterface::HideMouseCursor(false);
+			}
+			break;
+
+			case TIMER_SHOOT :
+			{
+				mTerror[2].PushActionWait(ACTION_NEWLIST, 0.1f);
+				mTerror[2].SetRole(ROLE_GANGSTER);
+				mTerror[2].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+				mTerror[2].SetEquipment(EQUIP_PISTOL);
+				mTerror[3].PushActionWait(ACTION_NEWLIST, 0.1f);
+				mTerror[3].SetRole(ROLE_GANGSTER);
+				mTerror[3].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[3].SetEquipment(EQUIP_PISTOL);
+				mTerror[4].PushActionWait(ACTION_NEWLIST, 0.1f);
+				mTerror[4].SetRole(ROLE_GANGSTER);
+				mTerror[4].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+				mTerror[4].SetEquipment(EQUIP_PISTOL);
+			}
+			break;
+		}
+	}
+
+	bool OnCheckCommand(const char *Cmd_, GameObject *Caller_, Actor *Target_)
+	{
+		switch(Cmd_)
+		{
+			case "EnterCar":
+			{
+				for (int i=0; i < MAX_NUM_BLACKHAWKS; ++i)
+				{
+					if (Target_->GetID() == mBlackhawk[i].GetID() && Caller_->GetID() != mGeneral.GetID())
+						return false;
+				}
+			}
+			break;
+		}
+		return true;
+	}
+
+	void OnPostCommand(const char *Cmd, GameObject *Caller, Actor *Target)
+	{
+		switch(Cmd)
+		{
+			case NAME_COMMAND_STOP :
+			{
+				if (!mConvoyStopped)
+					mConvoyStopped = true;
+				if (!mConvoy1.IsPathPaused())
+					mConvoy1.SetPausePath(true);
+				if (!mConvoy2.IsPathPaused())
+					mConvoy2.SetPausePath(true);
+				if (!mConvoy3.IsPathPaused())
+					mConvoy3.SetPausePath(true);
+				SwitchAreaLights(&mAreaLights, true);
+			}
+			break;
+
+			case NAME_COMMAND_START :
+			{
+				if (!mConvoyArrived && !Mission::TimerIsStarted(TIMER_UPDATE))
+					Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);
+				if (mConvoyStopped)
+					mConvoyStopped = false;
+				if (mConvoy1.IsPathPaused())
+					mConvoy1.SetPausePath(false);
+				if (mConvoy2.IsPathPaused())
+					mConvoy2.SetPausePath(false);
+				if (mConvoy3.IsPathPaused())
+					mConvoy3.SetPausePath(false);
+				SwitchAreaLights(&mAreaLights, false);
+			}
+			break;
+
+			case NAME_COMMAND_EMPTYCAR :
+			{
+				if (Caller->HasName(NAME_CONVOY1) || Caller->HasName(NAME_CONVOY3))
+				{
+					if (!mConvoyStopped)
+					{
+						mConvoy1.SetPausePath(true);
+						mConvoy2.SetPausePath(true);
+						mConvoy3.SetPausePath(true);
+						mConvoyStopped = true;
+						SwitchAreaLights(&mAreaLights, true);
+					}
+				}
+			}
+			break;
+		}
+	}
+	
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_RPG :
+			{
+				if (Collider->GetID() == mConvoy1.GetID() || Collider->GetID() == mConvoy2.GetID() || Collider->GetID() == mConvoy3.GetID())
+				{
+					GameObjectList list;
+					Game::CollectObstaclesOnTrigger(TRIGGER_RPG, list, ACTOR_VEHICLE | ACTOR_PERSON);
+					if (list.GetNumObjects() > 1)
+					{
+						Game::DeactivateTrigger(TRIGGER_RPG);
+						Game::DeactivateTrigger(TRIGGER_RPG2);
+						Game::DeactivateTrigger(TRIGGER_RPG3);
+						mTerror[0].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+						mTerror[0].SetEquipment(EQUIP_PISTOL);
+						mTerror[0].SetPrimaryTarget(&mConvoy2);
+					}
+					else if (mTerror[0].IsValid() && !mTerror[0].IsDead() && !mTerror[0].IsInjured() && !mTerror[0].IsArrested() && mTerror[0].GetRole() != ROLE_GANGSTER && mTerror[0].IsCollidingWithTrigger(TRIGGER_RPG3))
+					{
+						Game::DeactivateTrigger(TRIGGER_RPG3);
+						mTerror[0].Hide();
+						mTerror[1].Show();
+						mTerror[1].PlaceObjectInRightHand(OBJ_RPG_FIRE);
+						mTerror[1].PushActionSwitchAnim(ACTION_NEWLIST, "pistoltarget");
+						Game::DeactivateTrigger(TRIGGER_RPG);
+						Mission::StartCutScene();
+						Game::SetGameSpeed(1.0f);
+						Camera::StartTransition("rpg", 0.7f);
+						ScriptInterface::HideRadar();
+						ScriptInterface::HideMap();
+						ScriptInterface::HideNavigator();
+						ScriptInterface::HideInfoBar();
+						ScriptInterface::HideVehicleBrowser();
+						ScriptInterface::HideMouseCursor(true);
+						Audio::SetMusicLevel(0.7f);
+					} else
+					{
+						Game::DeactivateTrigger(TRIGGER_RPG);
+						Game::DeactivateTrigger(TRIGGER_RPG2);
+						Game::DeactivateTrigger(TRIGGER_RPG3);
+					}
+				}
+			}
+			break;
+
+			case TRIGGER_RPG2 :
+			{
+				if (Collider->GetID() == mConvoy1.GetID())
+				{
+					if (mTerror[1].IsValid() && !mTerror[1].IsDead() && !mTerror[1].IsInjured() && !mTerror[1].IsArrested() && mTerror[1].GetRole() != ROLE_GANGSTER)
+					{
+						Mission::StartSingleTimer(TIMER_RPG, TIME_RPG);
+						Game::DeactivateTrigger(TRIGGER_RPG2);
+					}
+				}
+			}
+			break;
+
+			case TRIGGER_CARBOMB01 :
+			{
+				if (Collider->GetID() == mConvoy1.GetID() || Collider->GetID() == mConvoy2.GetID() || Collider->GetID() == mConvoy3.GetID())
+				{
+					if (mCarBomb[0].IsFlagSet(OF_USABLE) && mCarBomb[0].IsCollidingWithTrigger(TRIGGER_CARBOMB01))
+					{
+						mCarBomb[0].Explode();
+						ShowHint(6);
+					}
+					Game::DeactivateTrigger(TRIGGER_CARBOMB01);
+				}
+			}
+			break;
+
+			case TRIGGER_CARBOMB02 :
+			{
+				if (Collider->GetID() == mConvoy1.GetID() || Collider->GetID() == mConvoy2.GetID() || Collider->GetID() == mConvoy3.GetID())
+				{
+					if (mCarBomb[1].IsFlagSet(OF_USABLE) && mCarBomb[1].IsCollidingWithTrigger(TRIGGER_CARBOMB02))
+					{
+						mCarBomb[1].Explode();
+						ShowHint(6);
+					}
+					Game::DeactivateTrigger(TRIGGER_CARBOMB02);
+				}
+			}
+			break;
+
+
+			case TRIGGER_TERRORGROUP01 :
+			{
+				mTerror[2].SetFleeing(true);
+				mTerror[2].SetRole(ROLE_GANGSTER);
+				mTerror[2].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[2].SetEquipment(EQUIP_PISTOL);
+				mTerror[3].SetFleeing(true);
+				mTerror[3].SetRole(ROLE_GANGSTER);
+				mTerror[3].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[3].SetEquipment(EQUIP_PISTOL);
+				mTerror[4].SetFleeing(true);
+				mTerror[4].SetRole(ROLE_GANGSTER);
+				mTerror[4].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[4].SetEquipment(EQUIP_PISTOL);
+				Game::DeactivateTrigger(TRIGGER_TERRORGROUP01);
+				Game::DeactivateTrigger(TRIGGER_ATTACK01);
+			}
+			break;
+
+			case TRIGGER_ATTACK01 :
+			{
+				if (Collider->GetID() == mConvoy1.GetID() || Collider->GetID() == mConvoy2.GetID() || Collider->GetID() == mConvoy3.GetID())
+				{
+					if (mTerrorCar[0].IsValid() && mTerrorCar[0].IsCollidingWithTrigger(TRIGGER_TERRORGROUP01) && !mTerrorCar[0].IsDestroyed() && !mTerrorCar[0].IsSmoking())
+					{
+						if (mTerror[2].IsValid() && !mTerror[2].IsDead() && !mTerror[2].IsInjured() && !mTerror[2].IsArrested() && mTerror[2].GetRole() != ROLE_GANGSTER &&  
+						mTerror[3].IsValid() && !mTerror[3].IsDead() && !mTerror[3].IsInjured() && !mTerror[3].IsArrested() && mTerror[3].GetRole() != ROLE_GANGSTER && 
+						mTerror[4].IsValid() && !mTerror[4].IsDead() && !mTerror[4].IsInjured() && !mTerror[4].IsArrested() && mTerror[4].GetRole() != ROLE_GANGSTER)
+						{
+							mTerrorCar[0].SetMaxPassengers(1);
+							mTerrorCar[0].SetMaxTransports(0);
+							mTerrorCar[0].AddPassenger(&mTerror[2]);
+							mTerrorCar[0].SetObjectPath(PATH_TERRORCAR01, 9.2f);
+						}
+					}
+					Game::DeactivateTrigger(TRIGGER_TERRORGROUP01);
+					Game::DeactivateTrigger(TRIGGER_ATTACK01);
+				}
+			}
+			break;
+
+			case TRIGGER_ATTACK02 :
+			{
+				if (Collider->GetID() == mConvoy1.GetID() || Collider->GetID() == mConvoy2.GetID() || Collider->GetID() == mConvoy3.GetID())
+				{
+					Attack02();
+				}
+			}
+			break;
+
+			case TRIGGER_TERRORGROUP02 :
+			{
+				mTerror[5].SetFleeing(true);
+				mTerror[5].SetRole(ROLE_GANGSTER);
+				mTerror[5].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[5].SetEquipment(EQUIP_PISTOL);
+				mTerror[6].SetFleeing(true);
+				mTerror[6].SetRole(ROLE_GANGSTER);
+				mTerror[6].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[6].SetEquipment(EQUIP_PISTOL);
+				Game::DeactivateTrigger(TRIGGER_TERRORGROUP02);
+			}
+			break;
+
+			case TRIGGER_TERRORGROUP03 :
+			{
+				mTerror[10].SetFleeing(true);
+				mTerror[10].SetRole(ROLE_GANGSTER);
+				mTerror[10].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				mTerror[10].SetEquipment(EQUIP_PISTOL);
+				Game::DeactivateTrigger(TRIGGER_TERRORGROUP03);
+			}
+			break;
+
+			case TRIGGER_TERRORGROUP05 :
+			{
+				Attack02();
+			}
+			break;
+		}
+	}
+
+	void Attack02()
+	{
+		Game::DeactivateTrigger(TRIGGER_TERRORGROUP04);
+		Game::DeactivateTrigger(TRIGGER_TERRORGROUP05);
+		Game::DeactivateTrigger(TRIGGER_ATTACK02);
+		if (mTerror[11].IsValid() && !mTerror[11].IsDead() && !mTerror[11].IsInjured() && !mTerror[11].IsArrested() && mTerror[11].GetRole() != ROLE_GANGSTER && mTerror[11].IsCollidingWithTrigger(TRIGGER_TERRORGROUP05))
+		{
+			mTerror[11].SetRole(ROLE_GANGSTER);
+			mTerror[11].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+			mTerror[11].SetEquipment(EQUIP_PISTOL);
+		}
+		if (mTerror[12].IsValid() && !mTerror[12].IsDead() && !mTerror[12].IsInjured() && !mTerror[12].IsArrested() && mTerror[12].GetRole() != ROLE_GANGSTER && mTerror[12].IsCollidingWithTrigger(TRIGGER_TERRORGROUP05))
+		{
+			mTerror[12].SetRole(ROLE_GANGSTER);
+			mTerror[12].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART);
+			mTerror[12].SetEquipment(EQUIP_PISTOL);
+		}
+		if (mTerror[13].IsValid() && !mTerror[13].IsDead() && !mTerror[13].IsInjured() && !mTerror[13].IsArrested() && mTerror[13].GetRole() != ROLE_GANGSTER && mTerror[13].IsCollidingWithTrigger(TRIGGER_TERRORGROUP04))
+		{
+			mTerror[13].SetRole(ROLE_GANGSTER);
+			mTerror[13].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+			mTerror[13].SetEquipment(EQUIP_RIFLE);
+			mTerror[13].SetShootPower(200.f);
+			mTerror[13].SetShootRange(20.f);
+		}
+		if (mTerror[14].IsValid() && !mTerror[14].IsDead() && !mTerror[14].IsInjured() && !mTerror[14].IsArrested() && mTerror[14].GetRole() != ROLE_GANGSTER && mTerror[14].IsCollidingWithTrigger(TRIGGER_TERRORGROUP04))
+		{
+			mTerror[14].SetRole(ROLE_GANGSTER);
+			mTerror[14].SetEscapePath(PATH_TERROR14);
+			mTerror[14].SetFleeing(true, false);
+		}
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data)
+	{
+		switch(Action)
+		{
+			case "EActionLeaveCar" :
+			{
+				if(!mConvoyArrived && Data->Parameters[0].iValue == mConvoy2.GetID())
+					return ACTION_SKIP;
+				if(!mConvoyStopped && (Data->Parameters[0].iValue == mConvoy1.GetID() || Data->Parameters[0].iValue == mConvoy3.GetID()))
+					return ACTION_SKIP;
+			}
+			break;
+
+			case "EActionArrest" :
+			case "EActionArrestPerson" :
+			case "EActionAskPerson" :
+			case "EActionShoot" :
+			case "EActionLinkPerson" :
+			case "EActionSendPeople" :
+			{
+				Actor target = Game::GetActor(Data->Parameters[0].iValue);
+				if (target.IsValid() && target.GetType() == ACTOR_PERSON)
+				{
+					Person t(&target);
+					if (t.HasNamePrefix("terror") && t.GetRole() != ROLE_GANGSTER)
+					{
+						t.SetRole(ROLE_GANGSTER);
+						t.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+						t.SetEquipment(EQUIP_PISTOL);
+						//Data->Owner->PushActionArrest(ACTION_INSERTAFTERFIRST, &target, true);
+						//return ACTION_SKIP;	
+					}
+				}
+			}
+			break;
+
+			case "EActionUse" :
+			{
+				if(Data->Owner->HasCommand(NAME_COMMAND_USE))
+				{
+					Actor target = Game::GetActor(Data->Parameters[0].iValue);
+					if (target.GetUserData() != 1 && target.IsValid() && target.GetType() == ACTOR_VEHICLE)
+					{
+						float *time = reinterpret_cast<float*>(Data->Parameters[2].pValue);
+						*time = TIME_CARCHECK;
+					}
+					else if (target.GetUserData() == 1 && target.IsValid() && target.GetType() == ACTOR_VEHICLE)
+					{
+						float *time = reinterpret_cast<float*>(Data->Parameters[2].pValue);
+						*time = TIME_DISARM;
+					}
+				}
+			}			
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback *Data)
+	{
+		switch(Action)
+		{
+			case "EActionEnterCar":
+			{
+				if(Data->Parameters[0].iValue == mConvoy2.GetID() && Data->Owner->GetID() == mGeneral.GetID())
+				{
+					if (mHintCounter[1] == 0)
+					{
+						ShowHint(1);
+						mConvoy1.SetCommandable(true);
+						mConvoy2.SetCommandable(true);
+						mConvoy3.SetCommandable(true);
+						mConvoy1.SetObjectPath(PATH_CONVOY, PATH_SPEED);
+						mConvoy2.SetObjectPath(PATH_CONVOY, PATH_SPEED);
+						mConvoy3.SetObjectPath(PATH_CONVOY, PATH_SPEED);
+						mConvoy1.SetPausePath(true);
+						mConvoy2.SetPausePath(true);
+						mConvoy3.SetPausePath(true);
+					}
+				}
+				if(Data->Parameters[0].iValue == mBlackhawk[0].GetID() && Data->Owner->GetID() == mGeneral.GetID())
+				{
+					mBlackhawk[0].PushActionReturnToBase(ACTION_NEWLIST);
+					mBlackhawk[1].PushActionReturnToBase(ACTION_NEWLIST);
+					mBlackhawk[2].PushActionReturnToBase(ACTION_NEWLIST);
+				}					
+			}
+			break;
+
+			case "EActionUse" :
+			{
+				if(Data->Owner->HasCommand(NAME_COMMAND_USE))
+				{
+					Actor target = Game::GetActor(Data->Parameters[0].iValue);
+					if (target.IsValid() && target.GetType() == ACTOR_VEHICLE)
+					{
+						Vehicle t(&target);
+						if (t.HasNamePrefix(NAME_PREFIX_CARBOMB))
+						{
+							if (t.GetUserData() == 0)
+							{
+								t.SetUserData(1);
+								//Person p(Data->Owner);
+								//p.PushActionUse(ACTION_NEWLIST, &target); ->Doesn't work??
+								ShowHint(7);
+							} else
+							{
+								t.ClearFlag(OF_USABLE);
+								ShowHint(9);
+							}
+						} else	
+						{
+							ShowHint(8);
+							t.ClearFlag(OF_USABLE);
+						}
+					}
+				}
+			}			
+			break;
+
+		}
+		return ACTION_CONTINUE;
+	}
+
+	bool OnHit(GameObject *Shooter, GameObject *HitObject, Vector *hitPoint)
+	{
+		if (HitObject->GetType() == ACTOR_PERSON)
+		{
+			Person h(HitObject);
+			if (h.GetRole() == ROLE_SQUAD && !h.IsCurrentAnimation("pistoltarget") && !h.IsCurrentAnimation("pistolshoot") && h.GetHealth() > 0.1f * h.GetMaxHealth())
+			{
+				Person s(Shooter);
+				if (h.GetEquipment() == EQUIP_PISTOL)
+				{
+					h.PushActionTurnTo(ACTION_NEWLIST, &s);
+					h.PushActionShoot(ACTION_APPEND, &s);
+				}
+				else if (h.HasCommand("DrawWeapon") && h.GetEquipment() != EQUIP_PISTOL)
+				{
+					h.PushActionExecuteCommand(ACTION_NEWLIST, "DrawWeapon", &h, 0, false);
+				}
+			}
+		}
+		else if (HitObject->GetID() == mConvoy1.GetID() || HitObject->GetID() == mConvoy2.GetID() || HitObject->GetID() == mConvoy3.GetID())
+		{
+			if (mHintCounter[4] == 0)
+				ShowHint(4);
+		}
+		return true;
+	}
+
+	bool OnExplode(GameObject *Obj)
+	{
+		if (Obj->GetID() == mConvoy2.GetID())
+			mConvoyLost = true;
+		
+		if (Obj->GetID() == mConvoy1.GetID() || Obj->GetID() == mConvoy3.GetID())
+		{
+			if(!mLostSUV)
+			{
+				mLostSUV = true;
+				ShowHint(5);
+			}
+		}
+		return true;
+	}
+
+	bool OnRedirectVehicle(Actor *redirector, Vehicle *vehicle)
+	{
+		if (vehicle->HasNamePrefix("convoy"))
+			return false;
+
+		return true;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->GetID() == mGeneral.GetID())
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION08_CONVOY))
+				Mission::SetObjectiveAccomplished(MISSION08_CONVOY, true);
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void SwitchAreaLights(GameObjectList *lights_, bool enable_)
+	{
+		for ( int i=0; i<lights_->GetNumObjects(); ++i )
+		{
+			if ( enable_ )
+				lights_->GetObject(i)->Show();
+			else
+				lights_->GetObject(i)->Hide();
+		}
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M08: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_START);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_GENERAL);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_AIRFIELD);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_CONVOYSTOPPED);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_CONVOYATTACKED);
+				break;
+			case 5:
+				Mission::PlayHint(HINT_CONVOYLOST);
+				break;
+			case 6:
+				Mission::PlayHint(HINT_CARBOMB);
+				break;
+			case 7:
+				Mission::PlayHint(HINT_CARBOMBFOUND);
+				break;
+			case 8:
+				Mission::PlayHint(HINT_NOCARBOMB);
+				break;
+			case 9:
+				Mission::PlayHint(HINT_BOMBDISARMED);
+				break;
+		}
+	}
+
+	void OnPersonInjured(Person *p)
+	{
+		if (p->GetID() == mGeneral.GetID())
+			mGeneralDown = true;
+	}
+
+	void OnPersonKilled(Person *p)
+	{
+		if (p->GetID() == mGeneral.GetID())
+			mGeneralDown = true;
+	}
+
+	MissionState GetMissionState()
+	{
+		if (mConvoyLost || mGeneralDown)
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::IsDefaultLogicNegative())
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished())
+		{
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_SUCCEEDED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		if (mConvoyLost)
+			return "M08_CONVOYLOST_REASON";
+
+		if (mGeneralDown)
+			return "M08_GENERAL_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		if (mConvoyLost)
+			return "M08_CONVOYLOST_COMMENT";
+
+		if (mGeneralDown)
+			return "M08_GENERAL_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (mLostSUV)
+			return "SUPERV_MISSION08_01";
+		else if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION08_02";
+		else if (scoring->Efficiency < 0.8f)
+			return "SUPERV_MISSION08_03";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+		for (int i = 0; i < MAX_NUM_AGENTS; i++)
+			Serializer->Write(mAgent[i]);
+		for (int i = 0; i < MAX_NUM_BLACKHAWKS; i++)
+			Serializer->Write(mBlackhawk[i]);
+		for (int i = 0; i < MAX_NUM_TERRORS; i++)
+			Serializer->Write(mTerror[i]);
+		for (int i = 0; i < MAX_NUM_RPGS; i++)
+			Serializer->Write(mRpg[i]);
+		for (int i = 0; i < MAX_NUM_CARBOMBS; i++)
+			Serializer->Write(mCarBomb[i]);
+		for (int i = 0; i < MAX_NUM_TERRORCARS; i++)
+			Serializer->Write(mTerrorCar[i]);
+		Serializer->Write(mRpgParticle);
+		Serializer->Write(mRpgExplosion);
+		Serializer->Write(mGeneral);
+		Serializer->Write(mSoldier1);
+		Serializer->Write(mSoldier2);
+		Serializer->Write(mConvoy1);
+		Serializer->Write(mConvoy2);
+		Serializer->Write(mConvoy3);
+		Serializer->Write(mAreaLights);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mConvoyStopped);
+		Serializer->Write(mConvoyArrived);
+		Serializer->Write(mConvoyLost);
+		Serializer->Write(mGeneralDown);
+		Serializer->Write(mLostSUV);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+		for (int i = 0; i < MAX_NUM_AGENTS; i++)
+			Serializer->Read(mAgent[i]);
+		for (int i = 0; i < MAX_NUM_BLACKHAWKS; i++)
+			Serializer->Read(mBlackhawk[i]);
+		for (int i = 0; i < MAX_NUM_TERRORS; i++)
+			Serializer->Read(mTerror[i]);
+		for (int i = 0; i < MAX_NUM_RPGS; i++)
+			Serializer->Read(mRpg[i]);
+		for (int i = 0; i < MAX_NUM_CARBOMBS; i++)
+			Serializer->Read(mCarBomb[i]);
+		for (int i = 0; i < MAX_NUM_TERRORCARS; i++)
+			Serializer->Read(mTerrorCar[i]);
+		Serializer->Read(mRpgParticle);
+		Serializer->Read(mRpgExplosion);
+		Serializer->Read(mGeneral);
+		Serializer->Read(mSoldier1);
+		Serializer->Read(mSoldier2);
+		Serializer->Read(mConvoy1);
+		Serializer->Read(mConvoy2);
+		Serializer->Read(mConvoy3);
+		Serializer->Read(mAreaLights);
+		mTooManyVictims = Serializer->ReadBool();
+		mConvoyStopped = Serializer->ReadBool();
+		mConvoyArrived = Serializer->ReadBool();
+		mConvoyLost = Serializer->ReadBool();
+		mGeneralDown = Serializer->ReadBool();
+		mLostSUV = Serializer->ReadBool();
+
+		return true;
+	}
+};

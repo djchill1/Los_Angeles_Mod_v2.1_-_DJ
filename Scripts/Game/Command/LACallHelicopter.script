@@ -1,0 +1,351 @@
+//******************************************************************************************
+// #Version 1.4#
+//
+// 		Includes: Backup command for police units.
+//
+//	- PcmdCallPoliceHelicopter
+//	- PcmdCallRescueHelicopter
+//
+//		Script by Hoppah
+//		Thanks to Bass-Ti for his help
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char HINT_NOHELICOPTER[] 			= "No helicopter available!";
+const char HINT_PDHELOBOUGHT[] 			= "LAPD helicopter bought for $4000 and dispatched!";
+const char HINT_AIRAMBUBOUGHT[] 		= "Air ambulance bought for $4000 and dispatched!";
+const char VO_POLICEHELI[] 			= "policestation_heli";
+const char VO_RESCUEHELI[] 			= "hospital_heli";
+const char ANI_MIKE[] 				= "talkmike";
+const char ANI_IDLE[] 				= "idle";
+const char SND_PDHELO[]				= "mod:Audio/FX/radio/pd_air.wav";
+const char SND_BATHELO[]			= "mod:Audio/FX/radio/bat_medflight.wav";
+const char SND_EMSHELO[]			= "mod:Audio/FX/radio/ems_medflight.wav";
+const char PROTO_PDHELO[] 			= "mod:Prototypes/Vehicles/03 LA Police/as350_lapd.e4p";
+const char PROTO_AIRAMBULANCE[] 		= "mod:Prototypes/Vehicles/01 LA Ambulance/helicopter_rescue.e4p";
+const char OBJ_OFFICER_M[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p";
+const char OBJ_PM[]				= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic.e4p";
+const char OBJ_PM_STRETCHER[]			= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic_stretcher.e4p";
+const char OBJ_BATTALION_CHIEF[]		= "mod:Prototypes/Persons/02 LA Fire Department/battalion_chief.e4p";
+const char OBJ_EMS_CAPTAIN[]			= "mod:Prototypes/Persons/01 LA Ambulance/ems_paramedic_captain.e4p";
+const char VO_SPAWN_ALL[] 			= "spawn_all";
+const char VO_SPAWN_POLICE02[] 			= "spawn_police2";
+const char VO_SPAWN_AMBU[] 			= "spawn_ambu";
+const char VO_SPAWN_ALLR[] 			= "spawn_allr";
+const char VO_SPAWN_POLICE02R[] 		= "spawn_police2r";
+const char VO_SPAWN_AMBUR[] 			= "spawn_ambur";
+const char UNNAMED[] 				= "Unnamed";
+
+object PcmdCallPoliceHelicopter : CommandScript
+{
+	PcmdCallPoliceHelicopter()
+	{
+		SetIcon("callpolicehelicopter");
+		SetCursor("callassistance");
+		SetValidTargets(ACTOR_FLOOR | ACTOR_VIRTUAL);
+		SetDeselectCaller(false);
+		SetSelfClickActivation(true);
+		SetHighlightingEnabled(false);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+ 		SetGroupLeader(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		GameObjectList SelectPer = Game::GetSelectedGameObjects();
+		if (SelectPer.GetNumObjects() != 1)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->GetID() == Target->GetID())
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vector CmdPos;
+		CmdPos = Game::GetCommandPos();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_MIKE);
+		Caller->PushActionWait(ACTION_APPEND, 3.5f);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_IDLE);
+		Audio::PlaySample3D(SND_PDHELO, Caller->GetPosition());
+
+		GameObjectList l1;
+ 		Game::CollectObstaclesOnVirtualObject(VO_POLICEHELI, l1, ACTOR_VEHICLE);
+		if(l1.GetNumObjects() > 0)
+		{
+			Vehicle v = l1.GetObject(0);	
+
+			GameObject obj(Target);
+			float landingDirection = v.GetValidLandingAngle(&obj, CmdPos);
+			if (landingDirection >= 0.f)
+			{
+				v.PushActionFlyTo(ACTION_NEWLIST, CmdPos, true, landingDirection);
+			} else
+			{
+				v.PushActionFlyTo(ACTION_NEWLIST, CmdPos, false, -1.0f);
+			}			
+		} else
+		{
+			Vector Spawn;
+			Vector Rotate;
+			ActorList l2 = Game::GetActors(VO_SPAWN_ALL);
+			ActorList l3 = Game::GetActors(VO_SPAWN_POLICE02);
+			ActorList l4 = Game::GetActors(VO_SPAWN_ALLR);
+			ActorList l5 = Game::GetActors(VO_SPAWN_POLICE02R);
+			if(l2.GetNumActors() > 0)
+			{
+				Spawn = l2.GetActor(0)->GetPosition();
+				Rotate = l4.GetActor(0)->GetPosition();
+			}
+			else if(l3.GetNumActors() > 0)
+			{
+				Spawn = l3.GetActor(0)->GetPosition();
+				Rotate = l5.GetActor(0)->GetPosition();
+			} else
+			{
+				Mission::PlayHint(HINT_NOHELICOPTER);
+				return;
+			}
+			System::Log("Buy lapd helicopter");
+			int Money = Mission::GetMoneyLeft();
+			if (Money <= 4000)
+			{
+				Mission::PlayHint(HINT_NOHELICOPTER);
+				return;
+			}
+
+			int NewMoney = Money - 4000;
+			Mission::SetMoney(NewMoney);
+			Vehicle n;
+			Person p1;
+			Person p2;
+			n = Game::CreateVehicle(PROTO_PDHELO, UNNAMED);
+			n.SetSpeed(20.0f);
+			p1 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+			p2 = Game::CreatePerson(OBJ_OFFICER_M, UNNAMED);
+			n.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetPlayerMP(Caller->GetPlayerMP());
+			p2.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetUpgradeLevel(3);
+			p2.SetUpgradeLevel(3);
+			n.SetMaxPassengers(4);
+			n.SetMaxTransports(1);
+			n.AddPassenger(&p1);
+			n.AddPassenger(&p2);
+			Vector Pos = Caller->GetPosition();
+				float r[9];
+			Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			float dx = 0.f, dy = 0.f, dz = 1000.f;
+			Math::RotateVector(dx, dy, dz, r);
+			Vector Spawn2 = Spawn + Vector(dx, dy, dz);
+			n.SetPosition(Spawn2);
+			n.SetAnimation("fly");
+			
+			n.PushActionWait(ACTION_NEWLIST, 0.1f);
+			n.PushActionTurnTo(ACTION_APPEND, Rotate);
+
+			GameObject obj(Target);
+			float landingDirection = n.GetValidLandingAngle(&obj, CmdPos);
+			if (landingDirection >= 0.f)
+			{
+				n.PushActionFlyTo(ACTION_APPEND, CmdPos, true, landingDirection);
+			} else
+			{
+				n.PushActionFlyTo(ACTION_APPEND, CmdPos, false, -1.0f);
+			}		
+
+			//n.PushActionMove(ACTION_APPEND, CmdPos);
+			if (Game::IsMission())
+				n.RemoveCommand("VcmdToPoliceStation");
+			Mission::PlayHint(HINT_PDHELOBOUGHT);
+		}
+	}
+};
+
+object PcmdCallRescueHelicopter : CommandScript
+{
+	PcmdCallRescueHelicopter()
+	{
+		SetIcon("callrescuehelicopter");
+		SetCursor("callassistance");
+		SetValidTargets(ACTOR_FLOOR | ACTOR_VIRTUAL);
+		SetDeselectCaller(false);
+		SetSelfClickActivation(true);
+		SetHighlightingEnabled(false);
+ 		SetGroupID(CGROUP_GETEQUIPMENT);
+ 		SetGroupLeader(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		GameObjectList SelectPer = Game::GetSelectedGameObjects();
+		if (SelectPer.GetNumObjects() != 1)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->GetID() == Target->GetID())
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vector CmdPos;
+		CmdPos = Game::GetCommandPos();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_MIKE);
+		Caller->PushActionWait(ACTION_APPEND, 3.5f);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, ANI_IDLE);
+
+		if(StrCompare(Caller->GetPrototypeFileName(), OBJ_BATTALION_CHIEF) == 0)
+			Audio::PlaySample3D(SND_BATHELO, Caller->GetPosition());
+		else if(StrCompare(Caller->GetPrototypeFileName(), OBJ_EMS_CAPTAIN) == 0)
+			Audio::PlaySample3D(SND_EMSHELO, Caller->GetPosition());
+
+		GameObjectList l1;
+ 		Game::CollectObstaclesOnVirtualObject(VO_RESCUEHELI, l1, ACTOR_VEHICLE);
+		if(l1.GetNumObjects() > 0)
+		{
+			Vehicle v = l1.GetObject(0);	
+
+			GameObject obj(Target);
+			float landingDirection = v.GetValidLandingAngle(&obj, CmdPos);
+			if (landingDirection >= 0.f)
+			{
+				v.PushActionFlyTo(ACTION_NEWLIST, CmdPos, true, landingDirection);
+			} else
+			{
+				v.PushActionFlyTo(ACTION_NEWLIST, CmdPos, false, -1.0f);
+			}			
+		} else
+		{
+			Vector Spawn;
+			Vector Rotate;
+			ActorList l2 = Game::GetActors(VO_SPAWN_ALL);
+			ActorList l3 = Game::GetActors(VO_SPAWN_AMBU);
+			ActorList l4 = Game::GetActors(VO_SPAWN_ALLR);
+			ActorList l5 = Game::GetActors(VO_SPAWN_AMBUR);
+			if(l2.GetNumActors() > 0)
+			{
+				Spawn = l2.GetActor(0)->GetPosition();
+				Rotate = l4.GetActor(0)->GetPosition();
+			}
+			else if(l3.GetNumActors() > 0)
+			{
+				Spawn = l3.GetActor(0)->GetPosition();
+				Rotate = l5.GetActor(0)->GetPosition();
+			} else
+			{
+				Mission::PlayHint(HINT_NOHELICOPTER);
+				return;
+			}
+			System::Log("Buy lapd helicopter");
+			int Money = Mission::GetMoneyLeft();
+			if (Money <= 4000)
+			{
+				Mission::PlayHint(HINT_NOHELICOPTER);
+				return;
+			}
+			int NewMoney = Money - 4000;
+			Mission::SetMoney(NewMoney);
+			Vehicle n;
+			Person p1;
+			Person p2;
+			n = Game::CreateVehicle(PROTO_AIRAMBULANCE, UNNAMED);
+			n.SetSpeed(17.0f);
+			p1 = Game::CreatePerson(OBJ_PM, UNNAMED);
+			p2 = Game::CreatePerson(OBJ_PM_STRETCHER, UNNAMED);
+			p1.SetEquipment(EQUIP_EMERGENCY_CASE);
+			n.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetPlayerMP(Caller->GetPlayerMP());
+			p2.SetPlayerMP(Caller->GetPlayerMP());
+			p1.SetUpgradeLevel(3);
+			p2.SetUpgradeLevel(3);
+			n.SetMaxPassengers(6);
+			n.SetMaxTransports(1);
+			n.AddPassenger(&p1);
+			n.AddPassenger(&p2);
+
+			Vector Pos = Caller->GetPosition();
+				float r[9];
+			Caller->GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			float dx = 0.f, dy = 0.f, dz = 1000.f;
+			Math::RotateVector(dx, dy, dz, r);
+			Vector Spawn2 = Spawn + Vector(dx, dy, dz);
+			n.SetPosition(Spawn2);
+			n.SetAnimation("fly");
+			
+			n.PushActionWait(ACTION_NEWLIST, 0.1f);
+			n.PushActionTurnTo(ACTION_APPEND, Rotate);
+
+			GameObject obj(Target);
+			float landingDirection = n.GetValidLandingAngle(&obj, CmdPos);
+			if (landingDirection >= 0.f)
+			{
+				n.PushActionFlyTo(ACTION_APPEND, CmdPos, true, landingDirection);
+			} else
+			{
+				n.PushActionFlyTo(ACTION_APPEND, CmdPos, false, -1.0f);
+			}	
+
+			if (Game::IsMission())
+				n.RemoveCommand("VcmdToHospital");
+			Mission::PlayHint(HINT_AIRAMBUBOUGHT);
+		}
+	}
+};

@@ -1,0 +1,74 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+// 		Changes: - No heal without bag
+//			     - Blanket command added
+//
+//******************************************************************************************
+
+const char CMD_DEAD[]			= "PcmdDead";
+
+object Heal : CommandScript
+{
+	Heal()
+	{
+		SetValidTargets(ACTOR_PERSON);
+		SetRestrictions(RESTRICT_NOTARRESTED);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPossibleExists(CPE_INJURED_PERSON | CPE_WOUNDED_SQUAD);
+		SetPriority(300);
+		SetSelfClickActivation(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		/*if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;*/
+		Person c(Caller);
+		if(c.IsParamedicTeam() && c.IsCarryingPerson())
+			return false;
+		if(StrCompare(c.GetPrototypeFileName(), "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedic.e4p") == 0 && c.GetEquipment() != EQUIP_EMERGENCY_CASE)
+			return false;
+
+		//return Game::ExistsInjuredPerson() || Game::ExistsWoundedSquad();
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() == Caller->GetID())
+			return false;
+
+		Person p(Caller);
+		if(p.IsParamedicTeam() && p.IsCarryingPerson())
+			return false;
+
+		if(Target->GetType()==ACTOR_PERSON)
+		{
+			Person t(Target);
+			if (p.IsParamedicTeam() && t.GetRole() == ROLE_SQUAD && !t.IsInjured())
+				return false;
+				
+			if(t.HasCommand("DummyBlanket"))
+				return false;
+				
+			if(!t.IsDrowning() && !t.IsHealing() && t.GetRole() != ROLE_ANIMAL && !t.IsRescueDog() && (t.IsInjured() || t.IsWoundedSquad()) && t.GetEnteredCarID() == -1 && !t.IsCarried() )
+				return true;
+		}
+
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_TREATMENT);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Person t(Target);
+		if (t.IsDead())
+		{
+			Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_DEAD, &t, 0, false);
+			return;
+		}
+		Caller->PushActionHeal(ACTION_APPEND, Target);
+	}
+};

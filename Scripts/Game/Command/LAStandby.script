@@ -1,0 +1,127 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: All Automatic Sirens commands
+//
+//	- VcmdStandbyOn
+//	- VcmdStandbyOff
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_STANDBY_ON[]			= "VcmdStandbyOn";
+const char CMD_STANDBY_OFF[]			= "VcmdStandbyOff";
+const char CMD_AUTOSIREN_OFF[]			= "VcmdAutoSirenOff";
+const char SND_STANDBY[] 			= "mod:Audio/FX/radio/1023.wav";
+const char DUMMY_PATROL[] 			= "DummyPatrol";
+const char DUMMY_DISABLE[] 			= "DummyDisableSiren";
+const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
+const char DUMMY_HOSESON[] 			= "DummyHosesAreOn";
+const char DUMMY_TILLERGOHOME[]		= "DummyTillerGoHome";
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+const char VO_BATTALION[]			= "fs_battalion";
+
+int DummyGroup = 28;
+
+object VcmdStandbyOn : CommandScript
+{
+	VcmdStandbyOn()
+	{
+		SetIcon("standbyon");
+		SetCursor("standbyon");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+
+ 		Vehicle v(Caller);
+		if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02) || v.IsCollidingWithVirtualObject(VO_BATTALION) || v.HasCommand(DUMMY_HOSESON) || v.IsInstalled())
+			return false;
+		if (v.IsCurrentAction("EActionCrossBridge") || v.IsCurrentAction("EActioninstall") || v.IsCurrentAction("EActionloadup") || v.IsCurrentAction("EActionUnload") || v.IsCurrentAction("EActionDropWithCrane") || !v.HasCommand("MoveTo"))
+			return false;
+ 
+ 		return true;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.PushActionWait(ACTION_NEWLIST, 0.1f);
+		v.RemoveCommand(CMD_STANDBY_ON);
+		v.AssignCommand(CMD_STANDBY_OFF);
+		if (v.HasObjectPath(NULL))
+			Game::ExecuteCommand(DUMMY_PATROL, &v, &v);
+		if (v.HasCommand(DUMMY_TILLERGOHOME))
+			v.RemoveCommand(DUMMY_TILLERGOHOME);
+		if (v.HasCommand(DUMMY_HASSIREN) && v.HasCommand(CMD_AUTOSIREN_OFF))
+			Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		if (v.IsBlueLightEnabled())
+			v.EnableBlueLights(false);
+		Audio::PlaySample3D(SND_STANDBY, v.GetPosition(), false); 
+	}
+};
+
+object VcmdStandbyOff : CommandScript
+{
+	VcmdStandbyOff()
+	{
+		SetIcon("standbyoff");
+		SetCursor("standbyoff");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 			return true;
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.RemoveCommand(CMD_STANDBY_OFF);
+		v.AssignCommand(CMD_STANDBY_ON);
+	}
+};
+

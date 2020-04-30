@@ -1,0 +1,536 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 1;
+const int MAX_DEATHS = 3;
+const int MAX_INJURIES = 9;
+
+const char HINT_START[]				= "MISSION07_HINT01";
+
+const char MISSION07_EXT[]			= "MISSION07_EXT";
+const char MISSION07_TRANSPORT[]		= "MISSION07_TRANSPORT";
+const char MISSION07_TRANSPORT_WRECKS[]		= "MISSION07_TRANSPORT_WRECKS";
+const char MISSION07_TERROR[]			= "MISSION07_TERROR";
+
+const char NAME_WRECK01[]	= "wreck01";
+const char NAME_WRECK02[]	= "wreck02";
+const char NAME_WRECK03[]	= "wreck03";
+const char NAME_WRECK04[]	= "wreck04";
+const char NAME_WRECK05[]	= "wreck05";
+const char NAME_WRECKFRAME[]	= "wreckframe";
+const char NAME_OFFICER01[]	= "officer01";
+const char NAME_OFFICER02[]	= "officer02";
+const char NAME_GANGSTER01[]	= "gangster01";
+const char NAME_GANGSTER02[]	= "gangster02";
+const char NAME_SMOKE[]		= "smoke";
+const char NAME_SPLASH[]	= "splash";
+const char SND_CAR[]		= "mod:Audio/Fx/destruction/break01.wav";
+const char SND_SPLASH[]		= "mod:Audio/Fx/misc/Watersplash02.wav";
+
+const char TIMER_SMOKE[] 	= "Smokeytimer";
+const float TIME_SMOKE		= 3.0f;
+const char TIMER_CAR01[] 	= "cartimer1";
+const float TIME_CAR01		= 2.3f * 60.0f;
+const char TIMER_CAR02[] 	= "cartimer2";
+const float TIME_CAR02		= 1.5f;
+const char TIMER_CAR03[] 	= "cartimer3";
+const float TIME_CAR03		= 1.0f;
+const char TRIGGER_SPLASH[] 	= "trigger_splash";
+const char NAME_CS1_TRANSITION[]= "Unnamed0";
+const char PATH_GANGSTER[] 	= "gangster";
+
+object Mission07 : MissionScript
+{
+	int mHintCounter[MAX_HINTS];
+	int mNumWrecksTow;
+	bool mTooManyVictims, mSplashTriggered, mCarLifted, mGangsterArrived;
+	Vehicle mWreck01, mWreck02, mWreck03, mWreck04, mWreck05;
+	Person mOfficer01, mOfficer02, mGangster01, mGangster02;
+	GameObject mSmoke, mSplash, mWreckFrame;
+	float mSmokeStrength;
+
+	Mission07()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mTooManyVictims = false;
+		mSplashTriggered = false;
+		mCarLifted = false;
+		mGangsterArrived = false;
+		mNumWrecksTow = 4;
+		mSmokeStrength = 0.2f;
+	}
+	
+	~Mission07()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+
+			if (obj->HasName(NAME_WRECK01))
+			{
+				mWreck01 = Vehicle(obj);
+				mWreck01.SetSelectable(false);
+				mWreck01.SetMaxPassengers(0);
+				mWreck01.SetMaxTransports(0);
+			}
+			if (obj->HasName(NAME_WRECK02))
+				mWreck02 = Vehicle(obj);
+			if (obj->HasName(NAME_WRECK03))
+				mWreck03 = Vehicle(obj);
+			if (obj->HasName(NAME_WRECK04))
+				mWreck04 = Vehicle(obj);
+			if (obj->HasName(NAME_WRECK05))
+				mWreck05 = Vehicle(obj);
+			if (obj->HasName(NAME_WRECKFRAME))
+			{
+				mWreckFrame = obj;
+				mWreckFrame.Hide(); 
+			}
+			if (obj->HasName(NAME_OFFICER01))
+				mOfficer01 = Person(obj);
+			if (obj->HasName(NAME_OFFICER02))
+				mOfficer02 = Person(obj);
+			if (obj->HasName(NAME_GANGSTER01))
+				mGangster01 = Person(obj);
+			if (obj->HasName(NAME_GANGSTER02))
+				mGangster02 = Person(obj);
+			if (obj->HasName(NAME_SMOKE))
+			{
+				mSmoke = obj;
+				mSmoke.SetParticleEffectStrength(mSmokeStrength);
+			}
+			if (obj->HasName(NAME_SPLASH))
+			{
+				mSplash = obj;
+				mSplash.StopParticleEffect();
+				mSplash.Hide();
+			}
+		}
+		Mission::AddObjective(MISSION07_EXT); 
+		Mission::AddObjective(MISSION07_TERROR); 
+		Mission::AddObjective(MISSION07_TRANSPORT);
+		Mission::AddObjective(MISSION07_TRANSPORT_WRECKS); 
+		Mission::StartIntervalTimer(TIMER_SMOKE, TIME_SMOKE);
+		Mission::StartSingleTimer(TIMER_CAR01, TIME_CAR01);
+		Audio::PlaySoundtrack("32", 0.0f);
+		ShowHint(0);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	void OnTimer(const char* Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_SMOKE :
+			{
+				if (mSmokeStrength < 1.0f)
+				{	
+					mSmokeStrength += 0.1f;
+					mSmoke.SetParticleEffectStrength(mSmokeStrength);
+				} else
+				{
+					mWreck01.EnableBlueLights(false); 
+					mOfficer02.EnablePhysicsSimulation();
+					Mission::StopTimer(TIMER_SMOKE);
+				}			
+			}
+			break;
+
+			case TIMER_CAR01 :
+			{
+				if (!mCarLifted)
+				{
+					Mission::StartCutScene();
+					Mission::ShowBlackBars();
+					Camera::StartTransition(NAME_CS1_TRANSITION, 1.0f);
+					Mission::StartSingleTimer(TIMER_CAR02, TIME_CAR02);
+				}
+			}
+			break;
+
+			case TIMER_CAR02 :
+			{
+				Mission::StartSingleTimer(TIMER_CAR03, TIME_CAR03);
+				mSmoke.SetParticleEffectStrength(0.0f);
+				Audio::PlaySample3D(SND_CAR, mWreck01.GetPosition(), false);
+			}
+			break;
+
+			case TIMER_CAR03 :
+			{
+				mWreck01.EnablePhysicsSimulation();
+				mWreck01.UnfreezePhysics();
+				if (!mWreck01.IsFlagSet(OF_RECOVERABLE))
+					mWreck01.SetFlag(OF_RECOVERABLE);
+				if (mWreck01.IsFlagSet(OF_COOLABLE))
+					mWreck01.ClearFlag(OF_COOLABLE);
+			}
+			break;
+		}
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_SPLASH :
+			{
+				if (Collider->GetID() == mWreck01.GetID())
+				{
+					if (!mSplashTriggered)
+					{
+						mWreck01.DisablePhysicsSimulation();
+						mSplashTriggered = true;
+						Audio::PlaySample3D(SND_SPLASH, mWreck01.GetPosition(), false);
+						mSplash.SetPosition(&mWreck01);
+						mSplash.Show();
+						mSplash.StartParticleEffect();
+						Mission::EndCutScene();
+						Mission::HideBlackBars();
+						mWreck01.PushActionMoveToPoint(ACTION_NEWLIST, &mWreckFrame, 2.0f);
+						if (!Mission::IsObjectiveAccomplished(MISSION07_EXT))
+             						Mission::SetObjectiveAccomplished(MISSION07_EXT, true);
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_GANGSTER :
+			{
+				if (!mGangsterArrived)
+				{
+					mGangsterArrived = true;
+					mGangster01.SetRole(ROLE_GANGSTER);
+					mGangster01.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+				}
+				return PATH_STOP;
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionExtinguish" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!Mission::IsObjectiveAccomplished(MISSION07_EXT))
+					{
+             					Mission::SetObjectiveAccomplished(MISSION07_EXT, true);
+						if (Mission::TimerIsStarted(TIMER_SMOKE))
+							Mission::StopTimer(TIMER_SMOKE);
+						mSmoke.SetParticleEffectStrength(0.0f);
+						if (!mWreck01.IsFlagSet(OF_RECOVERABLE))
+							mWreck01.SetFlag(OF_RECOVERABLE);
+					}
+				}	
+			}	
+			break;
+
+			case "EActionCool" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!Mission::IsObjectiveAccomplished(MISSION07_EXT))
+					{
+             					Mission::SetObjectiveAccomplished(MISSION07_EXT, true);
+						if (Mission::TimerIsStarted(TIMER_SMOKE))
+							Mission::StopTimer(TIMER_SMOKE);
+						mSmoke.SetParticleEffectStrength(0.0f);
+						if (!mWreck01.IsFlagSet(OF_RECOVERABLE))
+							mWreck01.SetFlag(OF_RECOVERABLE);
+					}
+				}
+			}
+			break;
+
+			case "EActionUseEquipment" :
+			{
+				if (Data_->Owner->GetEquipment() == EQUIP_SHEARS)
+				{
+					if(Data_->Parameters[0].iValue == mWreck01.GetID())
+					{
+						if(!mCarLifted)
+							return ACTION_SKIP;
+					}
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionExtinguish" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!Mission::IsObjectiveAccomplished(MISSION07_EXT))
+					{
+             					Mission::SetObjectiveAccomplished(MISSION07_EXT, true);
+						if (Mission::TimerIsStarted(TIMER_SMOKE))
+							Mission::StopTimer(TIMER_SMOKE);
+						mSmoke.SetParticleEffectStrength(0.0f);
+						if (!mWreck01.IsFlagSet(OF_RECOVERABLE))
+							mWreck01.SetFlag(OF_RECOVERABLE);
+					}
+				}	
+			}	
+			break;
+
+			case "EActionCool" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!Mission::IsObjectiveAccomplished(MISSION07_EXT))
+					{
+             					Mission::SetObjectiveAccomplished(MISSION07_EXT, true);
+						if (Mission::TimerIsStarted(TIMER_SMOKE))
+							Mission::StopTimer(TIMER_SMOKE);
+						mSmoke.SetParticleEffectStrength(0.0f);
+						if (!mWreck01.IsFlagSet(OF_RECOVERABLE))
+							mWreck01.SetFlag(OF_RECOVERABLE);
+					}
+				}
+			}
+			break;
+
+			case "EActionLiftWithCrane":
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!mCarLifted)
+					{
+						mCarLifted = true;
+						if (!mWreck01.IsFlagSet(OF_TRANSPORTABLE))
+							mWreck01.SetFlag(OF_TRANSPORTABLE);
+					}
+				}
+				break;
+			}
+
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasName(NAME_WRECK01) || Obj->HasName(NAME_WRECK02) || Obj->HasName(NAME_WRECK03) || Obj->HasName(NAME_WRECK04) || Obj->HasName(NAME_WRECK05))
+		{
+			mNumWrecksTow--;
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M07: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_START);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+      		if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION07_TRANSPORT))
+			{
+             			Mission::SetObjectiveAccomplished(MISSION07_TRANSPORT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION07_TRANSPORT))
+			{
+				Mission::SetObjectiveAccomplished(MISSION07_TRANSPORT, false);
+			}
+		}
+
+		if (Mission::GetCounter("Gangsters") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION07_TERROR))
+			{
+             			Mission::SetObjectiveAccomplished(MISSION07_TERROR, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION07_TERROR))
+			{
+             			Mission::SetObjectiveAccomplished(MISSION07_TERROR, false);
+			}
+		}
+
+		if (mNumWrecksTow == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION07_TRANSPORT_WRECKS))
+			{
+				Mission::SetObjectiveAccomplished(MISSION07_TRANSPORT_WRECKS, true);
+			}
+		}
+
+		if (Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.6f);
+             		return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION07_01";
+		if (Mission::GetCounter("Injured Persons") >= 5)
+			return "SUPERV_MISSION07_02";
+		if (Mission::GetCounter("Burnt Objects") >= 10)
+			return "SUPERV_MISSION07_03";
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+		Serializer->Write(mWreck01);
+		Serializer->Write(mWreck02);
+		Serializer->Write(mWreck03);
+		Serializer->Write(mWreck04);
+		Serializer->Write(mWreck05);
+		Serializer->Write(mWreckFrame);
+		Serializer->Write(mOfficer01);
+		Serializer->Write(mOfficer02);
+		Serializer->Write(mGangster01);
+		Serializer->Write(mgangster02);
+		Serializer->Write(mSmoke);
+		Serializer->Write(mSplash);
+		Serializer->Write(mNumWrecksTow);
+		Serializer->Write(mSmokeStrength);
+		Serializer->Write(mSplashTriggered);
+		Serializer->Write(mCarLifted);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mGangsterArrived);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+		Serializer->Read(mWreck01);
+		Serializer->Read(mWreck02);
+		Serializer->Read(mWreck03);
+		Serializer->Read(mWreck04);
+		Serializer->Read(mWreck05);
+		Serializer->Read(mWreckFrame);
+		Serializer->Read(mOfficer01);
+		Serializer->Read(mOfficer02);
+		Serializer->Read(mGangster01);
+		Serializer->Read(mgangster02);
+		Serializer->Read(mSmoke);
+		Serializer->Read(mSplash);
+		Serializer->Read(mNumWrecksTow);		
+		Serializer->Read(mSmokeStrength);
+		mSplashTriggered = Serializer->ReadBool();
+		mCarLifted = Serializer->ReadBool();
+		mTooManyVictims = Serializer->ReadBool();
+		mGangsterArrived = Serializer->ReadBool();
+
+		return true;
+	}
+};

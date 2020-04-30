@@ -1,0 +1,303 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: FBI Command Vehicle commands
+//
+//	- VcmdFBIDeploy
+//	- VcmdFBIUnDeploy
+//	- VcmdBuyFBI
+//	- VcmdBuyFBITac
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char DUMMY_DISABLE[] 			= "DummyDisableSiren";
+const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
+const char CMD_AUTOSIREN_OFF[]			= "VcmdAutoSirenOff";
+const char HINT_DEPLOY[] 			= "When the FBI Command Vehicle is deployed you are able to buy FBI agents and all persons who are inside will be healed";
+const char OBJ_FBI[]				= "mod:Prototypes/Persons/07 Government/fbi_agent.e4p";
+const char OBJ_FBI_TAC[]			= "mod:Prototypes/Persons/07 Government/fbi_agent_tac.e4p";
+const char UNNAMED[]				= "Unnamed";
+
+int DummyGroup = 28;
+
+object VcmdFBIDeploy : CommandScript
+{
+ 	VcmdFBIDeploy()
+ 	{
+ 		SetIcon("install");
+ 		SetCursor("install");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(100);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		Vehicle v(Caller);
+		if (childID == 0)
+		{
+			v.SetAnimation("deploy");
+			v.RemoveCommand("MoveTo");
+			v.RemoveCommand("GoHome");
+			v.RemoveCommand("VcmdFBIDeploy");
+			v.AssignCommand("VcmdFBIUnDeploy");
+			v.AssignCommand("VcmdBuyFBI");
+			v.AssignCommand("VcmdBuyFBITac");
+			v.PlayAnimOpenDoor(DAT_SPECIAL, 4.0f, Caller);
+			if (v.HasCommand(DUMMY_HASSIREN) && v.HasCommand(CMD_AUTOSIREN_OFF))
+			{
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+			}
+			v.PushActionWait(ACTION_NEWLIST, 5.0f);
+			v.PushActionExecuteCommand(ACTION_APPEND, "VcmdFBIDeploy", Caller, 1, false);
+
+			PersonList passengers = v.GetPassengers();
+			for(int i=0; i<passengers.GetNumPersons(); i++)
+			{
+				if (passengers.GetPerson(i)->GetHealth() < 1.0f * passengers.GetPerson(i)->GetMaxHealth())
+				{
+					passengers.GetPerson(i)->SetHealth(passengers.GetPerson(i)->GetMaxHealth() * 1.0f);
+				}
+			}
+			if(v.GetUserData() == 0)
+			{
+				v.SetUserData(1);
+				Mission::PlayHint(HINT_DEPLOY);
+			}
+		}
+		if (childID == 1)
+		{
+			v.EnableSpecialLights(true);
+		}
+	}
+};
+
+object VcmdFBIUndeploy : CommandScript
+{
+ 	VcmdFBIUndeploy()
+ 	{
+ 		SetIcon("deinstall");
+		SetCursor("deinstall");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(100);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		Vehicle v(Caller);
+		v.SetAnimation("undeploy");
+		v.EnableSpecialLights(false);
+		v.RemoveCommand("VcmdFBIUnDeploy");
+		v.RemoveCommand("VcmdBuyFBI");
+		v.RemoveCommand("VcmdBuyFBITac");
+		v.AssignCommand("MoveTo");
+		v.AssignCommand("GoHome");
+		v.AssignCommand("VcmdFBIDeploy");
+		v.PlayAnimCloseDoor(DAT_SPECIAL, 2.0f, Caller);
+ 	}	
+};
+
+object VcmdBuyFBI : CommandScript
+{
+ 	VcmdBuyFBI()
+ 	{
+ 		SetIcon("buyfbi");
+		SetCursor("buyfbi");
+ 		SetGroupID(29);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+		if (Caller->HasCommand("DummyFBI"))
+			return false;
+	
+		int GetMoney = Mission::GetMoneyLeft();
+		if (GetMoney < 700)
+			return false;
+ 
+ 		return true;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+ 	}
+ 
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		Vehicle v(Caller);
+		if (childID == 0)
+		{
+			v.AssignCommand("DummyFBI");
+			v.PushActionWait(ACTION_NEWLIST, 1.5f);	
+			v.PushActionExecuteCommand(ACTION_APPEND, "VcmdBuyFBI", Caller, 1, false);
+		
+			int Money = Mission::GetMoneyLeft();
+			int NewMoney = Money - 700;
+			Mission::SetMoney(NewMoney);
+
+			Person p = Game::CreatePerson(OBJ_FBI, UNNAMED);
+			p.SetPlayerMP(v.GetPlayerMP());
+			p.SetUpgradeLevel(3);
+            		p.Hide();
+			p.PushActionWait(ACTION_NEWLIST, 1.f);
+			p.PushActionShowHide(ACTION_APPEND, false);
+			p.PushActionLeaveCar(ACTION_APPEND, Caller);
+		}
+		if (childID == 1)
+		{
+			v.RemoveCommand("DummyFBI");
+		}
+ 	}	
+};
+
+object VcmdBuyFBITac : CommandScript
+{
+ 	VcmdBuyFBITac()
+ 	{
+ 		SetIcon("buyfbitac");
+		SetCursor("buyfbitac");
+ 		SetGroupID(30);
+ 		SetGroupLeader(true);
+ 		SetRestrictions(RESTRICT_SELFEXECUTE);
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+ 
+		if (Caller->HasCommand("DummyFBI"))
+			return false;
+	
+		int GetMoney = Mission::GetMoneyLeft();
+		if (GetMoney < 900)
+			return false;
+ 
+ 		return true;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		Vehicle v(Caller);
+		if (childID == 0)
+		{
+			v.AssignCommand("DummyFBI");
+			v.PushActionWait(ACTION_NEWLIST, 1.5f);	
+			v.PushActionExecuteCommand(ACTION_APPEND, "VcmdBuyFBITac", Caller, 1, false);
+		
+			int Money = Mission::GetMoneyLeft();
+			int NewMoney = Money - 900;
+			Mission::SetMoney(NewMoney);
+
+			Person p = Game::CreatePerson(OBJ_FBI_TAC, UNNAMED);
+			p.SetPlayerMP(v.GetPlayerMP());
+			p.SetUpgradeLevel(3);
+            		p.Hide();
+			p.PushActionWait(ACTION_NEWLIST, 1.f);
+			p.PushActionShowHide(ACTION_APPEND, false);
+			p.PushActionLeaveCar(ACTION_APPEND, Caller);
+		}
+		if (childID == 1)
+		{
+			v.RemoveCommand("DummyFBI");
+		}
+ 	}	
+};
+
+object DummyFBI : CommandScript
+{
+	DummyFBI()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+	}
+};

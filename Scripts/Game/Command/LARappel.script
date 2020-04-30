@@ -1,0 +1,433 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: All Rappel commands
+//
+//	- VcmdInstallRope
+//	- VcmdDeInstallRope
+//	- VcmdSingleRappel
+//	- VcmdDoubleRappel
+//	- DummyRappel
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char OBJ_ROPE[] 			= "mod:Prototypes/Objects/04 LA ObjectChildren/blackhawk_rope.e4p";
+const char NAME_ROPE[] 			= "Rope";
+const char DUMMY_RAPPEL[]		= "DummyRappel";
+
+const char CMD_SHOOTGUN[] 		= "Shoot";
+const char CMD_HOLSTERGUN[] 		= "HolsterWeapon";
+const char CMD_DRAWGUN[] 		= "DrawWeapon";
+const char CMD_ARREST[] 		= "Arrest";
+const char CMD_ARREST2[] 		= "PcmdArrest2";
+
+int DummyGroup = 28;
+
+object VcmdInstallRope : CommandScript
+{
+	Vector TargetPos;
+	float landingDirection;
+
+	VcmdInstallRope()
+	{
+      		SetIcon("rappel");
+      		SetCursor("rappel");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetValidTargets(ACTOR_FLOOR | ACTOR_OBJECT | ACTOR_VIRTUAL);
+		SetHighlightingEnabled(false);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return !v.IsOnGround();
+	}
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || /*!Target->IsValid() ||*/ Target->GetID() == Caller->GetID())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.IsOnGround())
+			return false;
+
+		TargetPos = Game::GetCommandPos();
+
+		GameObject obj(Target);
+		landingDirection = v.GetValidLandingAngle(&obj, TargetPos);
+		if (landingDirection >= 0.f)
+			return true;
+		
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.PushActionFlyTo(ACTION_NEWLIST, TargetPos, false, landingDirection);
+ 		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_RAPPEL, Caller, 1, false);
+		v.PushActionWait(ACTION_APPEND, 3.5f);
+		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_RAPPEL, Caller, 4, false);
+	}	
+};
+
+object VcmdDeInstallRope : CommandScript
+{
+	VcmdDeInstallRope()
+	{
+      		SetIcon("rappel");
+      		SetCursor("rappel");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+ 		if (!Caller->IsValid() && Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+	}
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		Vehicle v(Caller);
+		v.PlayAnimCloseDoor(DAT_PERSON, 1.5f, Caller);
+		//v.PlayAnimCloseDoor(DAT_SPECIAL, 1.5f, Caller);
+		v.AssignCommand("FlyTo");
+		v.AssignCommand("FlyToLanding");
+		v.AssignCommand("GoHome");
+		v.AssignCommand("Follow");
+		v.AssignCommand("EmptyCar");
+		v.AssignCommand("Evacuate");
+		v.AssignCommand("VcmdInstallRope");
+		v.RemoveCommand("VcmdDeInstallRope");
+		v.RemoveCommand("VcmdSingleRappel");
+		v.RemoveCommand("VcmdDoubleRappel");
+
+		int UnitID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_ROPE);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == UnitID)
+			{
+				obj->PushActionSwitchAnim(ACTION_NEWLIST, "RappelDeinstall");
+				obj->PushActionWait(ACTION_APPEND, 4.0f);
+				obj->PushActionDeleteOwner(ACTION_APPEND);
+			}
+		}
+	}	
+};
+
+object VcmdSingleRappel : CommandScript
+{
+	VcmdSingleRappel()
+	{
+      		SetIcon("rappelsingle");
+      		SetCursor("rappelsingle");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+ 		if (!Caller->IsValid() && Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+
+		Vehicle v(Caller); 
+		PersonList passengers = v.GetPassengers();
+		if (passengers.GetNumPersons() >= 1)
+			return true;
+
+ 		return false;
+	}
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.SetCommandable(false);
+		v.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_RAPPEL, Caller, 2, false);
+		v.PushActionWait(ACTION_APPEND, 3.5f);
+		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_RAPPEL, Caller, 4, false);
+
+		int UnitID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_ROPE);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == UnitID)
+			{
+				obj->PushActionSwitchAnim(ACTION_NEWLIST, "none");
+				obj->PushActionSwitchAnim(ACTION_APPEND, "RappelOne");
+			}
+		}
+	}	
+};
+
+object VcmdDoubleRappel : CommandScript
+{
+	VcmdDoubleRappel()
+	{
+      		SetIcon("rappeldouble");
+      		SetCursor("rappeldouble");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+ 		if (!Caller->IsValid() && Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+
+		Vehicle v(Caller); 
+		PersonList passengers = v.GetPassengers();
+		if (passengers.GetNumPersons() >= 2)
+			return true;
+
+ 		return false;
+	}
+ 
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() != ACTOR_VEHICLE)
+ 			return false;
+ 
+ 		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.SetCommandable(false);
+		v.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_RAPPEL, Caller, 2, false);
+		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_RAPPEL, Caller, 3, false);
+		v.PushActionWait(ACTION_APPEND, 3.0f);
+		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_RAPPEL, Caller, 4, false);
+
+		int UnitID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_ROPE);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->GetUserData() == UnitID)
+			{
+				obj->PushActionSwitchAnim(ACTION_NEWLIST, "none");
+				obj->PushActionSwitchAnim(ACTION_APPEND, "RappelTwo");
+			}
+		}
+	}	
+};
+
+Object DummyRappel: CommandScript
+{
+	DummyRappel()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		return false;
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return false;
+	}
+
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+      		if(childID == 1) //install rope
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(false);
+			v.RemoveCommand("FlyTo");
+			v.RemoveCommand("FlyToLanding");
+			v.RemoveCommand("GoHome");
+			v.RemoveCommand("Follow");
+			v.RemoveCommand("EmptyCar");
+			v.RemoveCommand("Evacuate");
+			v.RemoveCommand("VcmdInstallRope");
+			v.AssignCommand("VcmdDeInstallRope");
+			v.AssignCommand("VcmdSingleRappel");
+			v.AssignCommand("VcmdDoubleRappel");
+
+			v.PlayAnimOpenDoor(DAT_PERSON, 1.5f, Caller);
+			//v.PlayAnimOpenDoor(DAT_SPECIAL, 1.5f, Caller);
+
+			Vector Pos = v.GetPosition();
+			Pos.x -= 0.f;
+			Pos.y -= 0.f;
+			Pos.z -= 0.f;
+
+       			float r[9];
+        		v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+			GameObject m;
+               		m = Game::CreateObject(OBJ_ROPE, NAME_ROPE);
+			m.SetSelectable(false);
+			m.SetPosition(Pos);
+			m.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+ 			m.Hide();
+			m.PushActionSwitchAnim(ACTION_NEWLIST, "RappelNoAnim");
+			m.PushActionWait(ACTION_APPEND, 1.6f);
+			m.PushActionShowHide(ACTION_APPEND, false);
+			m.PushActionSwitchAnim(ACTION_APPEND, "RappelInstall");
+
+			int UnitID = v.GetID();
+			m.SetUserData(UnitID);
+		}
+
+      		if(childID == 2) //Person 1 down
+		{
+			Vehicle v(Caller);
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+			int Pcnt = 0;
+			PersonList passengers = v.GetPassengers();
+			if (passengers.GetNumPersons() > 0)
+			{
+				for(int i=0; i<passengers.GetNumPersons(); i++)
+				{
+					if (Pcnt == 0)
+					{
+						System::Log("Rappel person 1 found");
+						Pcnt++;
+						float dx = 92.f, dy = 55.f, dz = 0.f;
+						Math::RotateVector(dx, dy, dz, r);
+						Math::EulerToMatrix(90.0f, 0.f, 0.f, childr);
+						Math::MultiplyMatrices(childr, r);
+						//Pos = Pos + Vector(dx, dy, 0);
+						Vector Pos2 = Pos + Vector(dx, dy, 0);
+						v.RemovePassenger(&passengers.GetPerson(i));
+						Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+						passengers.GetPerson(i)->SetPosition(Pos2);
+						passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+						passengers.GetPerson(i)->UpdatePlacement();
+ 						passengers.GetPerson(i)->Hide();
+						passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 3.5f);
+						passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+						if (passengers.GetPerson(i)->HasCommand("DrawWeapon"))
+						{
+							passengers.GetPerson(i)->PushActionEquipWeapon(ACTION_APPEND, true);
+							passengers.GetPerson(i)->AssignCommand("Shoot");
+							passengers.GetPerson(i)->AssignCommand("HolsterWeapon");
+							passengers.GetPerson(i)->RemoveCommand("DrawWeapon");
+							passengers.GetPerson(i)->AssignCommand("PcmdArrest2");
+							passengers.GetPerson(i)->RemoveCommand("Arrest");
+						}
+						else if (passengers.GetPerson(i)->HasCommand("Aim"))
+						{
+							passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+						}
+						else
+						{
+							passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+						}
+					}
+				}
+			} 
+		}
+
+
+      		if(childID == 3) //Person 2 down
+		{
+			Vehicle v(Caller);
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+
+			int Pcnt = 0;
+			PersonList passengers = v.GetPassengers();
+			if (passengers.GetNumPersons() > 0)
+			{
+				for(int i=0; i<passengers.GetNumPersons(); i++)
+				{
+					if (Pcnt == 0)
+					{
+						System::Log("Rappel person 2 found");
+						Pcnt++;
+						float dx = 92.f, dy = -55.f, dz = 0.f;
+						Math::RotateVector(dx, dy, dz, r);
+						Math::EulerToMatrix(270.0f, 0.f, 0.f, childr);
+						Math::MultiplyMatrices(childr, r);
+						//Pos = Pos + Vector(dx, dy, 0);
+						Vector Pos2 = Pos + Vector(dx, dy, 0);
+						v.RemovePassenger(&passengers.GetPerson(i));
+						Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+						passengers.GetPerson(i)->SetPosition(Pos2);
+						passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+						passengers.GetPerson(i)->UpdatePlacement();
+ 						passengers.GetPerson(i)->Hide();
+						passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 3.5f);
+						passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+						if (passengers.GetPerson(i)->HasCommand("DrawWeapon"))
+						{
+							passengers.GetPerson(i)->PushActionEquipWeapon(ACTION_APPEND, true);
+							passengers.GetPerson(i)->AssignCommand("Shoot");
+							passengers.GetPerson(i)->AssignCommand("HolsterWeapon");
+							passengers.GetPerson(i)->RemoveCommand("DrawWeapon");
+							passengers.GetPerson(i)->AssignCommand("PcmdArrest2");
+							passengers.GetPerson(i)->RemoveCommand("Arrest");
+						}
+						else if (passengers.GetPerson(i)->HasCommand("Aim"))
+						{
+							passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+						}
+						else
+						{
+							passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+						}
+					}
+				}
+			} 
+		}
+
+      		if(childID == 4) //set commandable
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(true);
+		}
+	}
+};

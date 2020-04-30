@@ -1,0 +1,32 @@
+object M08StopConvoy : CommandScript
+{
+	M08StopConvoy()
+	{
+		SetCursor("stop");
+		SetIcon("stop");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(700);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return !v.IsPathPaused();
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if (!Caller->IsValid())
+			return false;
+		
+		return !Caller->IsPathPaused();
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->SetPausePath(true);
+	}
+};

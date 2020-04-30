@@ -1,0 +1,261 @@
+//******************************************************************************************
+// #Version 2.4#
+//
+// 		Includes: All Ballistic Shield commands
+//
+//	- PcmdBallisticShieldGet
+//	- PcmdBallisticShieldRemove
+//	- DummyBallisticShield
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_GETSHIELD[]		= "PcmdBallisticShieldGet";
+const char CMD_REMOVESHIELD[]		= "PcmdBallisticShieldRemove";
+const char CMD_DOORS[]			= "OpenCloseDoor";
+const char DUMMY_SHIELD[]		= "DummyBallisticShield";
+const char OBJ_SHIELD[]			= "01 LA Equipment/ballistic_shield.V3O";
+
+const int DummyGroup = 20;
+
+object PcmdBallisticShieldGet : CommandScript
+{
+	
+	PcmdBallisticShieldGet()
+	{
+    		SetIcon("ballisticshield");
+    		SetCursor("ballisticshield");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		//SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFLASHGRENADE);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_FLASHGRENADE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if (p.IsCarryingPerson()||p.IsLinkedWithPerson()|| p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_FLASHGRENADE))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/hummerh2_lasd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck01_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck02_lapd.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_armoured_vehicle.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_truck.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_SHIELD, Target, 1, false);
+	}
+};
+
+object PcmdBallisticShieldRemove : CommandScript
+{
+	
+	PcmdBallisticShieldRemove()
+	{
+    		SetIcon("ballisticshieldremove");
+    		SetCursor("ballisticshieldremove");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFLASHGRENADE);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_FLASHGRENADE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson()||p.IsLinkedWithPerson()|| p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_FLASHGRENADE))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/suv_lapd.e4p") == 0 ||
+
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/hummerh2_lasd.e4p") == 0 ||
+
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck01_lapd.e4p") == 0 ||
+
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/rescue_truck02_lapd.e4p") == 0 ||
+
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_armoured_vehicle.e4p") == 0 ||
+
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/03 LA Police/swat_truck.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_SHIELD, Target, 2, false);
+	}
+};
+
+object DummyBallisticShield : CommandScript
+{
+	DummyBallisticShield()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		return false;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(childID == 1)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_SHIELD);
+			p.SetResistance(INJUREREASON_SHOT, 999.f);
+			p.AssignCommand(CMD_REMOVESHIELD);
+			p.RemoveCommand(CMD_GETSHIELD);
+			p.RemoveCommand("PcmdBarricadeGet");
+			p.RemoveCommand("PcmdTrafficConeGet");
+			p.RemoveCommand("PcmdFlareGet");
+			p.RemoveCommand("PcmdMP5Get");
+			p.RemoveCommand("GetRoadBlock");
+			p.RemoveCommand("Arrest");
+			p.RemoveCommand("ReleaseArrested");
+			p.RemoveCommand("DrawWeapon");
+			p.RemoveCommand("PutInCar");
+			p.RemoveCommand("AskPerson");
+			p.RemoveCommand("Halt");
+			p.RemoveCommand("HaltVehicle");
+			p.RemoveCommand("Redirect");
+			p.RemoveCommand("GetFlashgrenade");
+			p.RemoveCommand("PickUp");
+			p.RemoveCommand("GetExtinguisher");
+			p.RemoveCommand("Lift");
+			p.RemoveCommand("UnloadPerson");
+			if (p.HasCommand("PcmdCallPatrolCar"))
+				p.RemoveCommand("PcmdCallPatrolCar");
+			if (p.HasCommand("PcmdCallAmbulance"))
+				p.RemoveCommand("PcmdCallAmbulance");
+			if (p.HasCommand("PcmdCallPoliceHelicopter"))
+				p.RemoveCommand("PcmdCallPoliceHelicopter");
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+		if(childID == 2)
+		{
+			Person p(Caller);
+			p.RemoveObjectInRightHand();
+			p.PushActionSwitchAnim(ACTION_APPEND, "idle");
+			p.SetResistance(INJUREREASON_SHOT, 100.f);
+			p.RemoveCommand(CMD_REMOVESHIELD);
+			p.AssignCommand(CMD_GETSHIELD);
+			p.AssignCommand("PcmdBarricadeGet"); 
+			p.AssignCommand("PcmdTrafficConeGet");
+			p.AssignCommand("PcmdFlareGet");
+			p.AssignCommand("PcmdMP5Get");
+			p.AssignCommand("GetRoadBlock");
+			p.AssignCommand("Arrest");
+			p.AssignCommand("ReleaseArrested");
+			p.AssignCommand("DrawWeapon");
+			p.AssignCommand("PutInCar");
+			p.AssignCommand("AskPerson");
+			p.AssignCommand("Halt");
+			p.AssignCommand("HaltVehicle");
+			p.AssignCommand("Redirect");
+			p.AssignCommand("GetFlashgrenade");
+			p.AssignCommand("PickUp");
+			p.AssignCommand("GetExtinguisher");
+			p.AssignCommand("Lift");
+			p.AssignCommand("UnloadPerson");
+			p.AssignCommand("PcmdCallPatrolCar");
+			p.AssignCommand("PcmdCallAmbulance");
+			p.AssignCommand("PcmdCallPoliceHelicopter"); 
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+
+	}
+};

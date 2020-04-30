@@ -1,0 +1,251 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Includes: Scripts to open vehicle doors
+//
+//	- OpenDoor
+//	- CloseDoor
+//	- OpenCloseDoor
+//	- OpenDoor2
+//	- CloseDoor2
+//	- OpenCloseDoor2
+//	- OpenDoor3
+//	- CloseDoor3
+//	- OpenCloseDoor3
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_OPENDOOR[] = "OpenDoor";
+const char CMD_CLOSEDOOR[] = "CloseDoor";
+const char CMD_OPENDOOR2[] = "OpenDoor2";
+const char CMD_CLOSEDOOR2[] = "CloseDoor2";
+const char CMD_OPENDOOR3[] = "OpenDoor3";
+const char CMD_CLOSEDOOR3[] = "CloseDoor3";
+
+int DummyGroup = 20;
+
+object OpenDoor : CommandScript
+{
+	OpenDoor()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimOpenDoor(DAT_EQUIPMENT, 0.6f, Caller);
+	}
+};
+
+object CloseDoor : CommandScript
+{
+	CloseDoor()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimCloseDoor(DAT_EQUIPMENT, 0.6f, Caller);
+	}
+};
+
+object OpenCloseDoor : CommandScript
+{
+	OpenCloseDoor()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_OPENDOOR, Caller, 1, false);
+		Caller->PushActionWait(ACTION_APPEND, 0.6f);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_CLOSEDOOR, Caller, 1, false);
+	}
+};
+
+object OpenDoor2 : CommandScript
+{
+	OpenDoor2()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimOpenDoor(DAT_PERSON, 0.8f, Caller);
+		v.SetCommandable(false);
+	}
+};
+
+object CloseDoor2 : CommandScript
+{
+	CloseDoor2()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimCloseDoor(DAT_PERSON, 0.8f, Caller);
+		v.SetCommandable(true);
+	}
+};
+
+object OpenCloseDoor2 : CommandScript
+{
+	OpenCloseDoor2()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_OPENDOOR2, Caller, 1, false);
+		Caller->PushActionWait(ACTION_APPEND, 5.0f);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_CLOSEDOOR2, Caller, 1, false);
+	}
+};
+
+object OpenDoor3 : CommandScript
+{
+	OpenDoor3()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimOpenDoor(DAT_SPECIAL, 0.6f, Caller);
+	}
+};
+
+object CloseDoor3 : CommandScript
+{
+	CloseDoor3()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Target);
+		v.PlayAnimCloseDoor(DAT_SPECIAL, 0.6f, Caller);
+	}
+};
+
+object OpenCloseDoor3 : CommandScript
+{
+	OpenCloseDoor3()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_OPENDOOR3, Caller, 1, false);
+		Caller->PushActionWait(ACTION_APPEND, 0.6f);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, CMD_CLOSEDOOR3, Caller, 1, false);
+	}
+};
+

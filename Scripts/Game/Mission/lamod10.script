@@ -1,0 +1,856 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 8;
+const int MAX_DEATHS = 15;
+const int MAX_INJURIES = 18;
+const int MAX_EVACUATE_PATHS = 30;
+const int MAX_BLOCKED_PERSONS = 5;
+
+const char MISSION10_BURIED[]			= "MISSION10_BURIED";
+const char MISSION10_TRANSPORT[]		= "MISSION10_TRANSPORT";
+const char MISSION10_EXT[]			= "MISSION10_EXT";
+const char MISSION10_ELECTRICITY[]		= "MISSION10_ELECTRICITY";
+const char MISSION10_OIL[]			= "MISSION10_OIL";
+const char HINT_GATE[]				= "MISSION10_HINT01";
+const char HINT_SHOP[]				= "MISSION10_HINT02";
+const char HINT_SPARKS[]			= "MISSION10_HINT03";
+const char HINT_OIL[]				= "MISSION10_HINT04";
+const char HINT_FIRE[]				= "MISSION10_HINT05";
+const char HINT_CAUSE[]				= "MISSION10_HINT06";
+const char HINT_DOGFOUND[]			= "MISSION10_HINT07";
+const char HINT_ALLBURIEDFOUND[]		= "MISSION10_HINT08";
+
+const char NAME_GATE1[]				= "gate1";
+const char NAME_SWITCH1[]			= "switch1";
+const char NAME_AREA1[]				= "area1";
+const char NAME_GATE2[]				= "gate2";
+const char NAME_SWITCH2[]			= "switch2";
+const char NAME_AREA2[]				= "area2";
+const char NAME_TERRAIN[]			= "Road";
+const char NAME_TERMINAL_ROOF[]			= "s2";
+const char NAME_AREA_ROOF[]			= "area roof";
+
+const char TIMER_NAME_AREA1[]			= "t_area1";
+const float TIMER_TIME_AREA1			= 3.f;
+const char TIMER_NAME_AREA2[]			= "t_area2";
+const float TIMER_TIME_AREA2			= 3.f;
+const char TIMER_UPDATE[]			= "t_u_roof";
+const float TIME_UPDATE				= 1.f;
+const char TIMER_ELECTROCUTE[]			= "buzzer";
+const float TIME_ELECTROCUTE			= 2.0f;
+const char TIMER_CAUSE[]			= "cause";
+const float TIME_CAUSE				= 4.0f * 60.0f;
+
+const char NAME_VO_INSIDE_AIRPORT[]		= "vo_inside_airport";
+const char NAME_VO_GATE[]			= "vo_gate";
+const char NAME_EVACUATE_PATHS[]		= "evacuate";
+const char NAME_SHOP[]				= "shop";
+
+const char NAME_SPARKS[]			= "sparks"; //x6
+const char NAME_SPARKSWITCH[]			= "spark_switch";
+const char NAME_OILFIRE[]			= "oil"; //x2
+const char NAME_OILSWITCH[]			= "oil_switch";
+
+const char TRIGGER_SPARKS[]			= "trigger_sparks";
+const char TRIGGER_RUBBLE[]			= "trigger_rubble";
+const char SND_FIRE[]				= "mod:Audio/Fx/misc/fire.wav";
+const char SND_ELECTRICITY[]			= "mod:Audio/Fx/misc/electricity01.wav";
+
+const char NAME_BURIED[]			= "buried";
+const char NAME_BLOCKED1[]			= "blocked1";
+const char NAME_BLOCKED2[]			= "blocked2";
+const char NAME_BLOCKED3[]			= "blocked3";
+const char NAME_BLOCKED4[]			= "blocked4";
+const char NAME_BLOCKED5[]			= "blocked5";
+const char NAME_DEBRIS1[]			= "debris1";
+const char NAME_DEBRIS2[]			= "debris2";
+const char NAME_DEBRIS3[]			= "debris3";
+const char NAME_DEBRIS4[]			= "debris4";
+const char NAME_DEBRIS5[]			= "debris5";
+const char NAME_SMOKE[]				= "smoke";
+
+object Mission10 : MissionScript
+{
+	bool mTooManyVictims;
+	int mHintCounter[MAX_HINTS];
+
+	GameObject mGate1;
+	GameObject mGate2;
+	GameObject mSwitch1;
+	GameObject mSwitch2;
+	GameObject mSwitch3;
+	GameObject mSwitch4;
+	Actor mArea1;
+	Actor mArea2;
+	GameObject mTerminalRoof;
+	const char * mBlockedNames[MAX_BLOCKED_PERSONS];
+	const char * mDebrisNames[MAX_BLOCKED_PERSONS];
+	Person mBlocked[MAX_BLOCKED_PERSONS];
+	GameObject mDebris[MAX_BLOCKED_PERSONS];
+	Vector mOutsideTargetPos;
+	Actor mInsideAirport;
+	Path mEvacuatePaths[MAX_EVACUATE_PATHS];
+	int mEvacuatePathCount;
+	GameObjectList mSparks;
+	GameObjectList mOilfire;
+	int mSoundFire;
+	OpenHouse mShop;
+	int mNumBuried;
+	GameObjectList mSmoke;
+	float mSmokeLevel;
+
+	Mission10()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+			mHintCounter[i] = 0;
+		mTooManyVictims = false;
+		mEvacuatePathCount = 0;
+		mNumBuried = 3;
+		mBlockedNames[0] = NAME_BLOCKED1;
+		mBlockedNames[1] = NAME_BLOCKED2;
+		mBlockedNames[2] = NAME_BLOCKED3;
+		mBlockedNames[3] = NAME_BLOCKED4;
+		mBlockedNames[4] = NAME_BLOCKED5;
+		mDebrisNames[0] = NAME_DEBRIS1;
+		mDebrisNames[1] = NAME_DEBRIS2;
+		mDebrisNames[2] = NAME_DEBRIS3;
+		mDebrisNames[3] = NAME_DEBRIS4;
+		mDebrisNames[4] = NAME_DEBRIS5;
+		mSmokeLevel = 0.9f;
+	}
+	
+	~Mission10()
+	{
+	}
+	
+	void Start()
+	{
+		System::Log("M10 Start");
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->HasName(NAME_GATE1))
+				mGate1 = *obj;
+			else if (obj->HasName(NAME_GATE2))
+				mGate2 = *obj;
+			else if (obj->HasName(NAME_SWITCH1))
+			{
+				mSwitch1 = *obj;
+				mSwitch1.EnableSpecialLights(true);
+				mSwitch1.SetFlag(OF_USABLE);
+			}
+			else if (obj->HasName(NAME_SWITCH2))
+			{
+				mSwitch2 = *obj;
+				mSwitch2.EnableSpecialLights(true);
+				mSwitch2.SetFlag(OF_USABLE);
+			}
+			else if (obj->HasName(NAME_TERMINAL_ROOF))
+				mTerminalRoof = *obj;
+			else if (obj->HasName(NAME_SHOP))
+				mShop = OpenHouse(obj);
+			else if (obj->HasName(NAME_SPARKSWITCH))
+			{
+				mSwitch3 = *obj;
+				mSwitch3.EnableSpecialLights(true);
+				mSwitch3.SetFlag(OF_USABLE);
+			}
+			else if (obj->HasName(NAME_OILSWITCH))
+			{
+				mSwitch4 = *obj;
+				mSwitch4.EnableSpecialLights(true);
+				mSwitch4.SetFlag(OF_USABLE);
+			}
+			else
+			{
+				for(int j = 0; j < MAX_BLOCKED_PERSONS; j++)
+				{
+					if (obj->HasName(mBlockedNames[j]))
+					{
+						mBlocked[j] = Person(obj);
+						mBlocked[j].SetFlag(OF_BLOCKED);
+						break;
+					}
+					else if (obj->HasName(mDebrisNames[j]))
+					{
+						mDebris[j] = Person(obj);
+						break;
+					}
+				}
+			}
+		}
+		//mBlocked[0].SetEnteredHouseID(mShop.GetID());
+		//mBlocked[1].SetEnteredHouseID(mShop.GetID());
+		GameObjectList rubble;
+		if (Game::CollectObstaclesOnTrigger(TRIGGER_RUBBLE, rubble, ACTOR_PERSON))
+		{
+			for (int i=0; i < rubble.GetNumObjects(); i++)
+			{
+				GameObject *obj = rubble.GetObject(i);
+				Person person(obj);
+				person.SetEnteredHouseID(-1);
+				//System::Log("Num persons in trigger: %d", rubble.GetNumObjects());
+				System::Log("M10: Person found in trigger: %d", i);
+			}
+		}
+		mSmoke = Game::GetGameObjects(NAME_SMOKE);
+		for(int i = 0; i < mSmoke.GetNumObjects(); i++)
+		{
+			mSmoke.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+		}		
+		ActorList actList1 = Game::GetActors(ACTOR_PATH);
+		for (int i = 0; i < actList1.GetNumActors(); i++)
+		{
+			Actor *ac = actList1.GetActor(i);
+			if (ac->HasNamePrefix(NAME_EVACUATE_PATHS))
+			{
+				mEvacuatePaths[mEvacuatePathCount] = Path(ac);
+				mEvacuatePathCount++;
+				if (mEvacuatePathCount > MAX_EVACUATE_PATHS)
+					System::Error("M10: Too many evacuate pathes");
+			}
+		}
+		ActorList list1(NAME_AREA1);
+		if (list1.GetNumActors() > 0)
+			mArea1 = *list1.GetActor(0);
+		ActorList list2(NAME_AREA2);
+		if (list2.GetNumActors() > 0)
+			mArea2 = *list2.GetActor(0);
+		ActorList actList1 = Game::GetActors(NAME_VO_INSIDE_AIRPORT);
+		if (actList1.GetNumActors() > 0)
+			mInsideAirport = actList1.GetActor(0);
+		ActorList actList2 = Game::GetActors(NAME_VO_GATE);
+		if (actList2.GetNumActors() > 0)
+			mOutsideTargetPos = actList2.GetActor(0)->GetPosition();
+		PersonList buried(NAME_BURIED);
+		for(int i = 0; i < buried.GetNumPersons(); i++)
+		{
+			if (!buried.GetPerson(i)->IsFlagSet(OF_HIDDEN))
+				buried.GetPerson(i)->SetFlag(OF_HIDDEN);
+			if (!buried.GetPerson(i)->IsFlagSet(OF_BLOCKED))
+				buried.GetPerson(i)->SetFlag(OF_BLOCKED);
+		}
+
+		mSparks = Game::GetGameObjects(NAME_SPARKS);
+		mOilfire = Game::GetGameObjects(NAME_OILFIRE);
+		mSoundFire = Audio::PlaySample3D(SND_FIRE, mOilfire.GetObject(0)->GetPosition(), true);
+
+		Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);
+		Mission::StartSingleTimer(TIMER_CAUSE, TIME_CAUSE);
+		Mission::AddObjective(MISSION10_BURIED);
+		Mission::AddObjective(MISSION10_TRANSPORT);
+		Mission::AddObjective(MISSION10_EXT);
+		Mission::AddObjective(MISSION10_ELECTRICITY);
+		Mission::AddObjective(MISSION10_OIL);
+		Audio::PlaySoundtrack("35", 0.0f);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+		if (v->HasCommand("Evacuate"))
+		{
+			v->RemoveCommand("Evacuate");
+			v->AssignCommand("M11EvacuateStation");
+			v->SetIgnoreUserData(1);
+		}
+	}
+
+	void OnSquadArrived(Person *p)
+	{
+		if (p->HasCommand("EnterHouse"))
+		{
+			p->AssignCommand("M11EnterStation");
+			p->RemoveCommand("EnterHouse");
+		}
+		if (p->IsRescueDog())
+		{
+			p->SetDogPerceptionRange(3000.f);
+			Mission::PlayHint("dog");
+		}
+	}
+
+	void OnTimer(const char* timer, float time)
+	{
+		switch(timer)
+		{
+			case TIMER_NAME_AREA1 :
+			{
+				mArea1.SetVirtualObjectTerrain(NAME_TERRAIN);
+			}
+			break;
+
+			case TIMER_NAME_AREA2 :
+			{
+				mArea2.SetVirtualObjectTerrain(NAME_TERRAIN);
+			}
+			break;
+
+			case TIMER_UPDATE :
+			{
+				GameObjectList list;
+				Game::CollectObstaclesOnVirtualObject(NAME_AREA_ROOF, list, ACTOR_PERSON);
+				if (list.ContainsSquad())
+					mTerminalRoof.Hide();
+				else
+					mTerminalRoof.Show();
+
+				if (!Mission::IsObjectiveAccomplished(MISSION10_OIL))
+				{
+					GameObjectList l1;
+					Game::CollectObstaclesOnTrigger(TRIGGER_RUBBLE, l1, ACTOR_PERSON);
+					for(int i = 0; i < l1.GetNumObjects(); i++)
+					{
+						Person p(l1.GetObject(i));
+						if (!p.IsDead() && !p.IsInjured())
+						{
+							if (p.GetPersonType() != PT_FIREFIGHTER_MASK && p.GetHealth() > 0.2f * p.GetMaxHealth())
+							{
+								p.Hurt(INJUREREASON_ENERGY, 0.10f * p.GetMaxHealth());
+								System::Log("no mask injure");
+							} 
+							else if (p.GetPersonType() == PT_FIREFIGHTER_MASK && p.GetHealth() > 0.1f * p.GetMaxHealth())
+							{
+								p.Hurt(INJUREREASON_ENERGY, 0.04f * p.GetMaxHealth());
+								System::Log("Mask injure");
+							} else
+							{
+								p.Kill(INJUREREASON_FIRE);
+								System::Log("Kill");
+							}
+						}
+					}
+				}
+
+				if (mSmokeLevel > 0.f)
+				{	
+					mSmokeLevel -= 0.1f;
+					for(int i = 0; i < mSmoke.GetNumObjects(); i++)
+					{
+						mSmoke.GetObject(i)->SetParticleEffectStrength(mSmokeLevel);
+					}
+					System::Log("M10: Smoke level: %d", mSmokeLevel);
+				}
+			}
+			break;
+
+			case TIMER_ELECTROCUTE :
+			{
+				if (!Mission::IsObjectiveAccomplished(MISSION10_ELECTRICITY))
+				{
+					GameObjectList l1;
+					Game::CollectObstaclesOnTrigger(TRIGGER_SPARKS, l1, ACTOR_PERSON);
+					for(int i = 0; i < l1.GetNumObjects(); i++)
+					{
+						Person p(l1.GetObject(i));
+						if (!p.IsDead() && !p.IsInjured())
+						{
+							p.Kill(INJUREREASON_ENERGY);
+						}
+					}
+				}
+			}
+			break;
+
+			case TIMER_CAUSE :
+			{
+				if (mHintCounter[5] == 0)
+					ShowHint(5);
+			}
+			break;
+		}
+	}
+
+	void StartEvacuation()
+	{
+		System::Log("M10: Evacuation started.");
+		GameObjectList civilians;
+		Game::CollectObstaclesOnVirtualObject(NAME_AREA_ROOF, civilians);
+		for(int i = 0; i < civilians.GetNumObjects(); ++i)
+		{
+			GameObject *obj = civilians.GetObject(i);
+			Person person(obj);
+			EvacuatePerson(person);
+		}		
+	}
+
+	void EvacuatePerson(Person &person)
+	{
+		if (person.IsValid() && !person.IsFlagSet(OF_HIDDEN) && !person.IsInjured() && (person.GetRole()==ROLE_CIVILIAN) && !person.IsArrested() && !person.IsCarried())
+		{
+			Vector pos =  person.GetPosition();
+			int pathNum = -1;
+			float maxDist = 1e30f;
+			for(int j = 0; j < mEvacuatePathCount; ++j)
+			{
+				if(!mEvacuatePaths[j].IsValid())
+				{
+					System::Log("M10: evacuation path %i is not valid.", j+1);
+					continue;
+				}
+				float dist = mEvacuatePaths[j].GetDistance(pos);
+				if (dist < maxDist)
+				{
+					pathNum = j;
+					maxDist = dist;
+				}
+			}
+			if (pathNum == -1)
+			{
+				System::Log("M10: no nearest evacuation path found.");
+				continue;
+			}
+			float time = (Math::rand() % 2) + (maxDist / 50.0f);
+			person.PushActionWait(ACTION_NEWLIST, time);			
+			//person.SetStandardPath(mEvacuatePathName[pathNum]);
+			person.SetObjectPath(&mEvacuatePaths[pathNum]);
+			person.SetBehaviour(BEHAVIOUR_CIVILIAN_GAZER);
+			person.SetFleeing(true);
+			person.SetNeverResort(true);
+			System::Log("M10: Set person on evacuate path %i",pathNum);
+		}
+	}
+
+	bool OnPostCommand(const char *Cmd, GameObject *Caller, Actor *Target)
+	{
+		if (Cmd == "MoveTo")
+		{
+			if (mSwitch1.IsFlagSet(OF_USABLE) && mSwitch2.IsFlagSet(OF_USABLE))
+			{
+				if (mInsideAirport.IsInsideVirtualObject(Game::GetCommandPos()))
+				{
+					System::Log("Clicked inside airport");
+					Caller->ClearActions();
+					Caller->PushActionMove(ACTION_NEWLIST, mOutsideTargetPos);
+				}
+			}
+			return;
+		}
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data)
+	{
+		switch(Action)
+		{
+			case "EActionEvacuate":
+			{
+				if (Data->Parameters[0].iValue == -1)
+				{
+					System::Log("M10: Evacuate");
+					StartEvacuation();
+					Mission::PlayHint("ID_EVACUATE");
+					return ACTION_SKIP;
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+	
+	PathFinishedAction OnPathFinished(const char *Path, GameObject *Obj)
+	{
+		if (Game::HasNamePrefix(Path, NAME_EVACUATE_PATHS))
+		{
+			Person person(Obj);
+			person.SetStandardPath("");
+			person.SetEscapePath("");
+			person.SetFleeing(false);
+			person.SetBehaviour(BEHAVIOUR_CIVILIAN_NORMAL);
+			person.SetNeverResort(false);
+			return PATH_STOP;
+		}
+		return PATH_DEFAULT;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data)
+	{
+		switch(Action)
+		{
+			case "EActionUse" :
+			{
+				if(Data->Parameters[0].iValue == mSwitch1.GetID())
+				{
+					mSwitch1.ClearFlag(OF_USABLE);
+					mSwitch1.EnableSpecialLights(false);
+					if (mHintCounter[0] == 0)
+						ShowHint(0);
+					mGate1.SetAnimation("open");
+					Mission::StartSingleTimer(TIMER_NAME_AREA1, TIMER_TIME_AREA1);
+				}
+				else if(Data->Parameters[0].iValue == mSwitch2.GetID())
+				{
+					mSwitch2.ClearFlag(OF_USABLE);
+					mSwitch2.EnableSpecialLights(false);
+					if (mHintCounter[0] == 0)
+						ShowHint(0);
+					mGate2.SetAnimation("open");
+					Mission::StartSingleTimer(TIMER_NAME_AREA2, TIMER_TIME_AREA2);
+				}
+				if(Data->Parameters[0].iValue == mSwitch3.GetID())
+				{
+					mSwitch3.ClearFlag(OF_USABLE);
+					mSwitch3.EnableSpecialLights(false);
+					for (int i = 0; i < mSparks.GetNumObjects(); i++)
+					{
+						mSparks.GetObject(i)->SetParticleEffectStrength(0.0f);
+					}
+					Game::DeactivateTrigger(TRIGGER_SPARKS);
+					if (!Mission::IsObjectiveAccomplished(MISSION10_ELECTRICITY))
+						Mission::SetObjectiveAccomplished(MISSION10_ELECTRICITY, true);
+					if (mHintCounter[2] == 0)
+						ShowHint(2);
+				}
+				else if(Data->Parameters[0].iValue == mSwitch4.GetID())
+				{
+					mSwitch4.ClearFlag(OF_USABLE);
+					mSwitch4.EnableSpecialLights(false);
+					for (int i = 0; i < mOilfire.GetNumObjects(); i++)
+					{
+						mOilfire.GetObject(i)->SetParticleEffectStrength(0.0f);
+					}
+					Audio::StopSample(mSoundFire);
+					Game::DeactivateTrigger(TRIGGER_RUBBLE);
+					if (!Mission::IsObjectiveAccomplished(MISSION10_OIL))
+						Mission::SetObjectiveAccomplished(MISSION10_OIL, true);
+					if (mHintCounter[3] == 0)
+						ShowHint(3);
+				}
+			}
+			break;
+
+			case "EActionEnterHouse" :
+			{
+				Actor target = Game::GetActor(Data->Parameters[0].iValue);
+				if (target.HasName(NAME_SHOP))
+				{
+					if (mHintCounter[1] == 0 && mSwitch3.IsFlagSet(OF_USABLE))
+						ShowHint(1);
+				}
+			}
+			break;
+
+			case "EActionDogDig" :
+			{
+				if (Data->Owner->GetType() == ACTOR_PERSON)
+				{
+					Person p(Data->Owner);
+					GameObject n = p.GetClosestObjectInRange(10.f, ACTOR_PERSON);
+					if (n.IsValid())
+					{
+						if (n.GetType() == ACTOR_PERSON && n.HasName(NAME_BURIED) && n.IsFlagSet(OF_BLOCKED))
+						{
+							n.ClearFlag(OF_BLOCKED);
+							if (n.IsFlagSet(OF_HIDDEN))
+								n.ClearFlag(OF_HIDDEN);
+							n.ClearFlag(OF_BLOCKED);
+							mNumBuried--;
+							if (mNumBuried > 0)
+								ShowHint(6);
+							else
+								ShowHint(7);
+						}
+					}
+
+					/*GameObjectList list = p.GetObjectsInRange(10.f, ACTOR_PERSON);
+					for(int i = 0; i < list.GetNumObjects(); i++)
+					{
+						if (list.GetObject(i)->HasName(NAME_BURIED) && list.GetObject(i)->IsFlagSet(OF_BLOCKED))
+						{
+							Person n(list.GetObject(i));
+							n.ClearFlag(OF_BLOCKED);
+							if (n.IsFlagSet(OF_HIDDEN))
+								n.ClearFlag(OF_HIDDEN);
+							n.ClearFlag(OF_BLOCKED);
+							ShowHint(6);
+							mNumBuried--;
+						}
+					}*/
+				}
+			}
+			break;
+
+			case "EActionLiftWithCrane":
+			case "EActionPull":
+			{
+				Actor target = Game::GetActor(Data->Parameters[0].iValue);
+				if (target.IsValid() && target.GetType() == ACTOR_OBJECT)
+				{
+					for(int i = 0; i < MAX_BLOCKED_PERSONS; i++)
+					{
+						if (target.GetID() == mDebris[i].GetID())
+						{
+							mBlocked[i].ClearFlag(OF_BLOCKED);
+							break;
+						}
+					}
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+	
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_SPARKS :
+			{
+				if (Collider->GetType() == ACTOR_PERSON)
+				{
+					Person p(Collider);
+					if (!p.IsDead() && !p.IsInjured())
+					{
+						if (!Mission::TimerIsStarted(TIMER_ELECTROCUTE))
+						{
+							Audio::PlaySample3D(SND_ELECTRICITY, Collider->GetPosition(), false);
+							Mission::StartSingleTimer(TIMER_ELECTROCUTE, TIME_ELECTROCUTE);
+						}
+					}
+				}
+			}
+			break;
+
+			case TRIGGER_RUBBLE :
+			{
+				if (Collider->GetType() == ACTOR_PERSON)
+				{
+					Person p(Collider);
+					if (!p.IsDead() && !p.IsInjured())
+					{
+						if (mHintCounter[4] == 0)
+							ShowHint(4);
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M10: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_GATE);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_SHOP);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_SPARKS);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_OIL);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_FIRE);
+				break;
+			case 5:
+				Mission::PlayHint(HINT_CAUSE);
+				break;
+			case 6:
+				Mission::PlayHint(HINT_DOGFOUND);
+				break;
+			case 7:
+				Mission::PlayHint(HINT_ALLBURIEDFOUND);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION10_TRANSPORT))
+             			Mission::SetObjectiveAccomplished(MISSION10_TRANSPORT, true);
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION10_TRANSPORT))
+				Mission::SetObjectiveAccomplished(MISSION10_TRANSPORT, false);
+		}
+
+		if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION10_EXT))
+				Mission::SetObjectiveAccomplished(MISSION10_EXT, true);
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION10_EXT))
+				Mission::SetObjectiveAccomplished(MISSION10_EXT, false);
+		}
+
+		if (mNumBuried == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION10_BURIED))
+				Mission::SetObjectiveAccomplished(MISSION10_BURIED, true);
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::IsDefaultLogicNegative())
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished())
+		{
+			Audio::SetMusicLevel(0.6f);
+			return MISSION_SUCCEEDED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION10_01";
+		else if (scoring->Efficiency < 0.8f && scoring->Efficiency >= 0.5f)
+			return "SUPERV_MISSION10_02";
+		else if (scoring->Efficiency < 0.5f)
+			return "SUPERV_MISSION10_03";
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mGate1);
+		Serializer->Write(mGate2);
+		Serializer->Write(mSwitch1);
+		Serializer->Write(mSwitch2);
+		Serializer->Write(mSwitch3);
+		Serializer->Write(mSwitch4);
+		Serializer->Write(mArea1);
+		Serializer->Write(mArea2);
+		Serializer->Write(mTerminalRoof);
+		Serializer->Write(mOilfire);
+		Serializer->Write(mSparks);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mEvacuatePathCount);
+		Serializer->Write(mSoundFire);
+		for(int i = 0; i < mEvacuatePathCount; i++)
+			Serializer->Write(mEvacuatePaths[i]);
+		Serializer->Write(mShop);
+		Serializer->Write((int)MAX_BLOCKED_PERSONS);
+		for(int i = 0; i < MAX_BLOCKED_PERSONS; i++)
+		{
+			Serializer->Write(mBlocked[i]);
+			Serializer->Write(mDebris[i]);
+		}
+		Serializer->Write(mSmoke);
+		Serializer->Write(mSmokeLevel);	
+
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mGate1);
+		Serializer->Read(mGate2);
+		Serializer->Read(mSwitch1);
+		Serializer->Read(mSwitch2);
+		Serializer->Read(mSwitch3);
+		Serializer->Read(mSwitch4);
+		Serializer->Read(mArea1);
+		Serializer->Read(mArea2);
+		Serializer->Read(mTerminalRoof);
+		Serializer->Read(mOilfire);
+		Serializer->Read(mSparks);
+		Serializer->Read(mSoundFire);
+		mTooManyVictims = Serializer->ReadBool();
+		Serializer->Read(mEvacuatePathCount);
+		for(int i = 0; i < mEvacuatePathCount; i++)
+			Serializer->Read(mEvacuatePaths[i]);
+		Serializer->Read(mShop);
+		Serializer->Read((int)MAX_BLOCKED_PERSONS);
+		for(int i = 0; i < MAX_BLOCKED_PERSONS; i++)
+		{
+			Serializer->Read(mBlocked[i]);
+			Serializer->Read(mDebris[i]);
+		}
+		Serializer->Read(mSmoke);
+		Serializer->Read(mSmokeLevel);	
+
+		return true;
+	}
+};

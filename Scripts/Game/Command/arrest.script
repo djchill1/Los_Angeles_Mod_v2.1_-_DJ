@@ -1,0 +1,141 @@
+//**************************************************************************************************
+// #Version 1.2#										
+//												
+// 		Adds: - Priority added.
+//			  - Radio commands added.				
+//												
+//**************************************************************************************************
+
+const char SND_FOOTPURSUIT1[]				= "mod:Audio/FX/radio/pd_footpursuit1.wav";
+const char SND_FOOTPURSUIT2[]				= "mod:Audio/FX/radio/pd_footpursuit2.wav";
+const char SND_CUSTODY[]					= "mod:Audio/FX/radio/pd_custody.wav";
+
+object Arrest : CommandScript
+{
+	Arrest()
+	{
+		SetValidTargets(ACTOR_PERSON);
+		SetGroupID(CGROUP_ARREST);
+		SetPossibleEquipment(EQUIP_NONE);
+		SetRestrictions(RESTRICT_NOTINJURED | RESTRICT_NOTARRESTED | RESTRICT_NOTLINKED);
+		SetGroupLeader(true);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPossibleExists(CPE_NONIJURED_PERSON);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		/*if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;*/
+		Person p(Caller);
+		if(!p.IsValid() || p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.GetEnteredCarID() != -1 || p.IsPhysicsSimulationEnabled())
+			return false;
+
+		return true;
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		return !p.IsLinkedWithPerson();
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() ||  Caller->IsEquipped() || !Target->IsValid() || Target->GetID() == Caller->GetID() )
+			return false;
+
+		Person p(Caller);
+		if(!p.IsValid() || p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.GetEnteredCarID() != -1)
+			return false;
+
+		Person t(Target);
+		if(!t.IsValid() || t.GetState() != PERSONSTATE_NORMAL)
+			return false;
+
+		if(t.GetRole() == ROLE_GANGSTER)
+			SetPriority(800);
+
+		return (t.GetRole() != ROLE_ANIMAL && t.GetRole() != ROLE_SQUAD);
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (childID == 0)
+		{
+			Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_FOLLOW);
+			Person t(Target);
+			bool fight = (t.GetRole() == ROLE_GANGSTER);
+			if (fight && t.IsFleeing() && t.IsMoving() && !t.IsArrested() && !t.IsInjured() && t.IsValid())
+			{
+				if (rand()%2 == 0)
+					Audio::PlaySample3D(SND_FOOTPURSUIT1, Caller->GetPosition());
+				else
+					Audio::PlaySample3D(SND_FOOTPURSUIT2, Caller->GetPosition());				
+			}
+			if (t.HasName("mike") && t.GetUserData() == 0)
+			{
+				Caller->PushActionExecuteCommand(ACTION_APPEND, "Arrest", Target, 1, false);
+				fight = true;
+			}
+			if (t.HasName("voodoo") && t.GetUserData() == 0)
+				Caller->PushActionExecuteCommand(ACTION_APPEND, "Arrest", Target, 3, false);
+			if (t.HasName("mikesphotos") && t.GetUserData() == 0)
+				Caller->PushActionExecuteCommand(ACTION_APPEND, "Arrest", Target, 4, false);
+			Caller->PushActionArrest(ACTION_APPEND, Target, fight);
+			if (fight)
+			{
+				Caller->PushActionWait(ACTION_APPEND, 1.f);
+				Caller->PushActionExecuteCommand(ACTION_APPEND, "Arrest", Target, 5, false);
+			}
+		}
+		if (childID == 1)
+		{
+			Person t(Target);
+			t.SetUserData(1);
+			t.SetRole(ROLE_GANGSTER);
+			t.SetBehaviour(BEHAVIOUR_GANGSTER_FISTFIGHT);
+			VehicleList list("mikecar");
+			if(list.GetNumVehicles() > 0)
+			{
+				Vehicle v = list.GetVehicle(0);
+				if (v.IsValid() && !v.IsDestroyed() && v.GetEnergy() >= 0.1f * v.GetMaxEnergy() && !v.IsSmoking() && !v.IsCarried())
+				{
+					Mission::PlayHint("You have found MikeyPI. A vehicle will be destroyed!");
+					v.PushActionWait(ACTION_NEWLIST, 3.f);
+					v.PushActionExecuteCommand(ACTION_APPEND, "Arrest", &v, 2, false);
+				} else
+					Mission::PlayHint("You have found MikeyPI!");
+			}
+		}
+		if (childID == 2)
+		{
+			Vehicle v(Caller);
+			v.SetSmoking(true);
+		}
+		if (childID == 3)
+		{
+			Target->SetUserData(1);
+			Mission::PlayHint("You have found Voodoo_Operator. Leave him alone, he's busy making the same model for the last 3 years.");
+		}
+		if (childID == 4)
+		{
+			Person t(Target);
+			Target->SetUserData(1);
+			Mission::PlayHint("MikesPhotos: Stop with the Misinformation now!");
+			//t.PushActionRemoveEquipment(ACTION_NEWLIST);
+			t.PushActionGetEquipment(ACTION_NEWLIST, Caller, EQUIP_NONE);
+			t.PushActionSwitchAnim(ACTION_APPEND, "demonstrate");
+			t.PlaceObjectInRightHand("Equipment/demosign01.V3O");
+		}
+		if (childID == 5)
+		{
+			Person p(Caller);
+			Person t(Target);
+			if (p.IsValid() && p.IsLinkedWithPerson() && t.GetRole() == ROLE_GANGSTER && t.IsValid() && t.IsArrested())
+				Audio::PlaySample3D(SND_CUSTODY, p.GetPosition());	
+		}
+	}	
+};

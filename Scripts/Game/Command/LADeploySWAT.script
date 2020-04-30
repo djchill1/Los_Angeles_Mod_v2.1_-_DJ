@@ -1,0 +1,259 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: Includes command to rapidly deploy a SWAT team
+//
+//	- VcmdDeploySWAT
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_DEPLOYSWAT[] 		= "VcmdDeploySWAT";
+const char CMD_DRAWGUN[] 		= "DrawWeapon";
+const char CMD_GETMP5[]			= "PcmdMP5Get";
+const char DUMMY_MP5[]			= "DummyMP5";
+const char CMD_GETSHIELD[]		= "PcmdBallisticShieldGet";
+const char DUMMY_SHIELD[]		= "DummyBallisticShield";
+
+int DummyGroup = 29;
+
+object VcmdDeploySWAT : CommandScript
+{
+	VcmdDeploySWAT()
+	{
+		SetIcon("deployswat");
+		SetCursor("emptycar");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(90);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (Caller->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			if(v.GetNumPassengers() == 0)
+				return false;
+		}
+
+		return true;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		if (Caller->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			if(v.GetNumPassengers() == 0)
+				return false;
+		}
+
+		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		PersonList passengers = v.GetPassengers();
+      		if(childID == 0)
+		{
+			v.PushActionWait(ACTION_NEWLIST, 0.1f);
+			v.SetCommandable(false);
+			v.PlayAnimOpenDoor(DAT_PERSON, 1.5f, Caller);
+			if (passengers.GetNumPersons() == 1)
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 1, false);
+			if (passengers.GetNumPersons() == 2)
+			{
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 1, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 2, false);
+			}
+			if (passengers.GetNumPersons() == 3)
+			{
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 1, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 2, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 3, false);
+			}
+			if (passengers.GetNumPersons() >= 4)
+			{
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 1, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 2, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 3, false);
+				v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 4, false);
+			}
+			v.PushActionWait(ACTION_APPEND, 2.0f);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DEPLOYSWAT, Caller, 5, false);
+		}
+		if(childID == 1)
+		{
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			int Pcnt = 0;
+			for(int i=0; i<passengers.GetNumPersons(); i++)
+			{
+				if (Pcnt == 0)
+				{
+					System::Log("SWAT person 1 found");
+					Pcnt++;
+					float dx = -190.f, dy = -27.f, dz = 0.f;
+					Math::RotateVector(dx, dy, dz, r);
+					Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+					Math::MultiplyMatrices(childr, r);
+					Pos = Pos + Vector(dx, dy, 0);
+					v.RemovePassenger(&passengers.GetPerson(i));
+					Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+					passengers.GetPerson(i)->SetPosition(Pos);
+					passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+					passengers.GetPerson(i)->UpdatePlacement();
+ 					passengers.GetPerson(i)->Hide();
+					passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 1.5f);
+					passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+					if (passengers.GetPerson(i)->GetEquipment() == EQUIP_RIFLE)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+					else if (passengers.GetPerson(i)->GetEquipment() == EQUIP_PISTOL)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+					else if (passengers.GetPerson(i)->HasCommand(CMD_GETMP5) && !passengers.GetPerson(i)->IsEquipped())
+					{
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+						passengers.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, DUMMY_MP5, Caller, 1, false);
+					} else
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+				}
+			}
+		}
+		if(childID == 2)
+		{
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			int Pcnt = 0;
+			for(int i=0; i<passengers.GetNumPersons(); i++)
+			{
+				if (Pcnt == 0)
+				{
+					System::Log("SWAT person 2 found");
+					Pcnt++;
+					float dx = -190.f, dy = 27.f, dz = 0.f;
+					Math::RotateVector(dx, dy, dz, r);
+					Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+					Math::MultiplyMatrices(childr, r);
+					Pos = Pos + Vector(dx, dy, 0);
+					v.RemovePassenger(&passengers.GetPerson(i));
+					Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+					passengers.GetPerson(i)->SetPosition(Pos);
+					passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+					passengers.GetPerson(i)->UpdatePlacement();
+ 					passengers.GetPerson(i)->Hide();
+					passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 1.5f);
+					passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+					if (passengers.GetPerson(i)->GetEquipment() == EQUIP_RIFLE)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+					else if (passengers.GetPerson(i)->GetEquipment() == EQUIP_PISTOL)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+					else if (passengers.GetPerson(i)->HasCommand(CMD_GETMP5) && !passengers.GetPerson(i)->IsEquipped())
+					{
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+						passengers.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, DUMMY_MP5, Caller, 1, false);
+					} else
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+				}
+			}
+		}
+		if(childID == 3)
+		{
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			int Pcnt = 0;
+			for(int i=0; i<passengers.GetNumPersons(); i++)
+			{
+				if (Pcnt == 0)
+				{
+					System::Log("SWAT person 3 found");
+					Pcnt++;
+					float dx = -150.f, dy = 27.f, dz = 0.f;
+					Math::RotateVector(dx, dy, dz, r);
+					Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+					Math::MultiplyMatrices(childr, r);
+					Pos = Pos + Vector(dx, dy, 0);
+					v.RemovePassenger(&passengers.GetPerson(i));
+					Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+					passengers.GetPerson(i)->SetPosition(Pos);
+					passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+					passengers.GetPerson(i)->UpdatePlacement();
+ 					passengers.GetPerson(i)->Hide();
+					passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 1.5f);
+					passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+					if (passengers.GetPerson(i)->GetEquipment() == EQUIP_RIFLE)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+					else if (passengers.GetPerson(i)->GetEquipment() == EQUIP_PISTOL)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+					else if (passengers.GetPerson(i)->HasCommand(CMD_GETSHIELD) && !passengers.GetPerson(i)->IsEquipped())
+					{
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+						passengers.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, DUMMY_SHIELD, Caller, 1, false);
+					} else
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+				}
+			}
+		}
+		if(childID == 4)
+		{
+			Vector Pos = v.GetPosition();
+			float r[9];
+			float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			int Pcnt = 0;
+			for(int i=0; i<passengers.GetNumPersons(); i++)
+			{
+				if (Pcnt == 0)
+				{
+					System::Log("SWAT person 4 found");
+					Pcnt++;
+					float dx = -150.f, dy = -27.f, dz = 0.f;
+					Math::RotateVector(dx, dy, dz, r);
+					Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+					Math::MultiplyMatrices(childr, r);
+					Pos = Pos + Vector(dx, dy, 0);
+					v.RemovePassenger(&passengers.GetPerson(i));
+					Game::FindFreePosition(&passengers.GetPerson(i), Pos, 100);
+					passengers.GetPerson(i)->SetPosition(Pos);
+					passengers.GetPerson(i)->SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+					passengers.GetPerson(i)->UpdatePlacement();
+ 					passengers.GetPerson(i)->Hide();
+					passengers.GetPerson(i)->PushActionWait(ACTION_APPEND, 1.5f);
+					passengers.GetPerson(i)->PushActionShowHide(ACTION_APPEND, false);
+					if (passengers.GetPerson(i)->GetEquipment() == EQUIP_RIFLE)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlerifle");
+					else if (passengers.GetPerson(i)->GetEquipment() == EQUIP_PISTOL)
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+					else if (passengers.GetPerson(i)->HasCommand(CMD_DRAWGUN) && !passengers.GetPerson(i)->IsEquipped())
+					{
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idlegun");
+						passengers.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, CMD_DRAWGUN, Caller, 0, false);
+					} else
+						passengers.GetPerson(i)->PushActionSwitchAnim(ACTION_APPEND, "idle");
+				}
+			}
+		}
+		if(childID == 5)
+		{
+			v.PlayAnimCloseDoor(DAT_PERSON, 1.5f, Caller);
+			v.SetCommandable(true);
+		}		
+	}
+};

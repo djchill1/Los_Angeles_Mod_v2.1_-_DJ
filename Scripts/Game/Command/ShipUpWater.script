@@ -1,0 +1,116 @@
+//******************************************************************************************
+// #Version 1.1#
+//
+// 		Changes: - Cannot upload if motorboat does not have ShipUpWater
+//
+//******************************************************************************************
+
+object ShipUpWater : CommandScript
+{
+	// Motorboot-Transporter anlegen lassen 
+	// (Es wird auf Motorboot geklickt (NB) oder mit Motorboot auf Transporter)
+	int UnloadPointID;
+	bool rolesSwaped;
+
+	ShipUpWater()
+	{
+		SetValidTargets(ACTOR_VEHICLE);
+		SetGroupID(CGROUP_SHIPDROP);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		if (v.GetVehicleType() == VT_FIREFIGHTERS_TFMB)
+			return !v.HasBoatUploaded();
+		else if (v.GetVehicleType() == VT_FIREFIGHTERS_FMB)
+			return true;
+		return false;
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		if (v.GetVehicleType() == VT_FIREFIGHTERS_TFMB)
+			return Game::ExistsFreeFMB();
+		else if (v.GetVehicleType() == VT_FIREFIGHTERS_FMB)
+			return Game::ExistsFreeTFMB();
+		return false;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || (Caller->GetID()==Target->GetID()))
+			return false;
+		
+		Vector TargetPos = Game::GetCommandPos();
+		// (uw) code for tmfb (Motorboot-Transporter) 
+		if (Caller->IsValid() && Caller->GetObjectType()==TYPE_VEHICLE)
+		{
+			Vehicle vehi(Caller);
+			Vehicle vTarget(Target);
+			if (vehi.GetVehicleType() == VT_FIREFIGHTERS_TFMB)
+			{
+				if (!Game::IsWater(TargetPos) || !vehi.IsValid() || !vTarget.IsValid() || vTarget.IsDestroyed() || vTarget.GetVehicleType() != VT_FIREFIGHTERS_FMB)
+					return false;
+				// Noch nichts installiert
+				if (vehi.HasBoatUploaded())
+					return false;
+				// nur wenn Motorboot unbeladen 
+				GameObjectList ol = Caller->GetCarriedObjects();
+				if (ol.GetNumObjects() > 0)
+					return false;
+				// nur wenn Motorboot keine Passagiere/Transporte
+				if ((vTarget.GetNumPassengers() > 0) || (vTarget.GetNumTransported() > 0))
+					return false;
+				if (!vTarget.HasCommand("ShipUpWater"))
+					return false;
+				// Target im Andockbereich? (Hier wird TargetPos auf Zielposition gesetzt)
+				UnloadPointID = vTarget.IsInLandingStage(true,TargetPos,-0.7f);
+				rolesSwaped = false;
+				if (UnloadPointID >= 0)
+					return true;
+			}
+			else if (vehi.GetVehicleType() == VT_FIREFIGHTERS_FMB)
+			{
+				if (!vTarget.IsValid() || !vehi.IsValid() || vehi.IsDestroyed() || vTarget.GetVehicleType() != VT_FIREFIGHTERS_TFMB)
+					return false;
+				// Noch nichts installiert
+				if (vTarget.HasBoatUploaded())
+					return false;
+				// nur wenn Motorboot unbeladen 
+				GameObjectList ol = vehi.GetCarriedObjects();
+				if (ol.GetNumObjects() > 0)
+					return false;
+				// nur wenn Motorboot keine Passagiere/Transporte
+				if ((vehi.GetNumPassengers() > 0) || (vehi.GetNumTransported() > 0))
+					return false;
+				// Motorboot im Andockbereich? (Hier wird TargetPos auf Zielposition gesetzt)
+				UnloadPointID = vehi.IsInLandingStage(true,TargetPos,-0.7f);
+				rolesSwaped = true;
+				if (UnloadPointID >= 0)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!rolesSwaped)
+		{
+			Caller->PushActionMove(ACTION_NEWLIST, UnloadPointID, TARGET_UNLOAD_TFMB);
+			Caller->PushActionLoadUp(ACTION_APPEND, Target);
+		}
+		else
+		{
+			GameObject gobj(Target);
+			gobj.PushActionMove(ACTION_NEWLIST, UnloadPointID, TARGET_UNLOAD_TFMB);
+			gobj.PushActionLoadUp(ACTION_APPEND, Caller);
+		}
+	}
+};

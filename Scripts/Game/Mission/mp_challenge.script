@@ -1,0 +1,28 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+bool OnLoad()
+{
+	start();
+	System::SetEnv("e4_doocclusion", 0);
+	Process::Kill();
+	return true;
+}
+
+void start()
+{
+	GameObjectList l2("spawn_check");
+	if (l2.GetNumObjects() > 0)
+	{
+		GameObject obj = l2.GetObject(0);
+		Game::ExecuteCommand("VcmdTillerCheck", &obj);
+		obj.SetSelectable(false);
+	} else
+		System::Error("Spawn_check not found!");
+};

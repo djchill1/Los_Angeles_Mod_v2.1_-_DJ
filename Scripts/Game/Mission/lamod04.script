@@ -1,0 +1,744 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 5;
+const int MAX_DEATHS = 4;
+
+const char HINT_START[]				= "MISSION04_HINT01";
+const char HINT_OPERATOR[]			= "MISSION04_HINT02";
+const char HINT_PIT[]				= "MISSION04_HINT03";
+const char HINT_BARRIERS[]			= "MISSION04_HINT04";
+const char HINT_DEBRIS[]			= "MISSION04_HINT05";
+
+const char TIMER_CUTSCENE01[] 		= "cutscene01";
+const float TIME_CUTSCENE01			= 3.0f * 60.0f;
+const char TIMER_CUTSCENE02[] 		= "cutscene02";
+const float TIME_CUTSCENE02			= 3.0f;
+const char TIMER_CUTSCENE03[] 		= "cutscene03";
+const float TIME_CUTSCENE03			= 7.0f;
+const char TIMER_CUTSCENE04[] 		= "cutscene04";
+const float TIME_CUTSCENE04			= 5.0f;
+const char TIMER_CUTSCENE05[] 		= "cutscene05";
+const float TIME_CUTSCENE05			= 8.0f;
+const char TIMER_CUTSCENE06[] 		= "cutscene06";
+const float TIME_CUTSCENE06			= 3.5f;
+const char TIMER_CHECKDEBRIS[] 		= "debristimer";
+const float TIME_CHECKDEBRIS			= 1.0f;
+const char TIMER_RACESOUNDS[] 		= "racesoundsambient";
+const float TIME_RACESOUNDS			= 45.0f;
+
+const char TRIGGER_01[]				= "m04_trigger01";
+const char TRIGGER_02[]				= "m04_trigger02";
+const char TRIGGER_03[]				= "m04_trigger03";
+const char TRIGGER_BARRIERHINT[]		= "m04_barrierhint";
+const char VO_RACE_TRACK[]			= "m04_race_track";
+const char SND_CARS[]				= "mod:Audio/Fx/misc/formula1.wav";
+const char SND_RACE[]				= "mod:Audio/Fx/misc/formula1_ambient.wav";
+const char NAME_CS1_TRANSITION[]		= "cs1";
+const char NAME_CS2_TRANSITION[]		= "cs2";
+const char NAME_CS3_TRANSITION[]		= "cs3";
+
+const char NAME_DEBRIS[]			= "m04_debris";
+const char NAME_SAFETY_CAR[]			= "m04_safety_car";
+const char NAME_WRECK01[]			= "m04_wreck01";
+const char NAME_WRECK02[]			= "m04_wreck02";
+const char NAME_WRECK03[]			= "m04_wreck03";
+const char NAME_WRECK04[]			= "m04_wreck04";
+const char NAME_RACECAR01[]			= "m04_car01";
+const char NAME_RACECAR02[]			= "m04_car02";
+const char NAME_RACECAR03[]			= "m04_car03";
+
+const char NAME_PARTICLE01[]			= "m04_particle01";
+const char NAME_PARTICLE02[]			= "m04_particle02";
+
+const char PATH_SAFETY_CAR[]			= "m04_safety_car";
+const char PATH_CAR01[]				= "m04_car01";
+const char PATH_CAR02[]				= "m04_car02";
+const char PATH_CAR03[]				= "m04_car03";
+const char PATH_CARCRASH01[]			= "m04_carcrash01";
+
+const char NAME_CIVILBLOCKED01[]		= "m04_civilblocked01";
+const char NAME_CIVILBLOCKED02[]		= "m04_civilblocked02";
+const char NAME_CIVILBLOCKED03[]		= "m04_civilblocked03";
+const char NAME_BLOCKINGOBJECT[]		= "m04_blockobject01";
+
+const char NAME_MARSHAL[]			= "m04_marshal";
+const char NAME_FLAGMAN[]			= "m04_flagman";
+const char NAME_LIGHTS[]			= "m04_lights";
+const char NAME_RACESOUNDS[]			= "m04_racesounds";
+
+const char MISSION04_CANCEL[]			= "MISSION04_CANCEL";
+const char MISSION04_WRECKS[]			= "MISSION04_WRECKS";
+const char MISSION04_EXT[]			= "MISSION04_EXT";
+const char MISSION04_TRANSPORT[]		= "MISSION04_TRANSPORT";
+const char MISSION04_DEBRIS[]			= "MISSION04_DEBRIS";
+
+const char NAME_CAMERAMAN[]			= "m04_cameraman";
+const char ANI_CAMERA[]				= "holdcam";
+
+object Mission04 : MissionScript
+{
+	int mNumWrecksTow, mHintCounter[MAX_HINTS];
+	bool mTooManyVictims, mCrashCutScene, mCrash, mTalked, mRaceStopped;
+	GameObject mWreck01, mWreck02, mWreck03, mWreck04, mParticle01, mParticle02, mLights, mBlockingObject, mRaceSounds;
+	Vehicle mSafetyCar, mRaceCar01, mRaceCar02, mRaceCar03;
+	Person mCivilBlocked01, mCivilBlocked02, mCivilBlocked03, mMarshal, mFlagman;
+	Actor mRaceTrack;
+
+	Mission04()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mTooManyVictims = false;
+		mCrashCutScene = false;
+		mCrash = false;
+		mTalked = false;
+		mRaceStopped = false;
+		mNumWrecksTow = 4;
+	}
+	
+	~Mission04()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList l1 = Game::GetGameObjects();
+		for(int i = 0; i < l1.GetNumObjects(); i++)
+		{
+			GameObject *obj = l1.GetObject(i);
+
+			if (obj->HasName(NAME_WRECK01))
+			{
+				mWreck01 = obj;
+				mWreck01.SetFlag(OF_RECOVERABLE);
+			}
+			if (obj->HasName(NAME_WRECK02))
+			{
+				mWreck02 = obj;
+				mWreck02.SetFlag(OF_RECOVERABLE);
+				mWreck02.SetFlag(OF_TRANSPORTABLE);
+			}
+			if (obj->HasName(NAME_WRECK03))
+			{
+				mWreck03 = obj;
+				mWreck03.SetFlag(OF_RECOVERABLE);
+				mWreck03.SetFlag(OF_TRANSPORTABLE);
+			}
+			if (obj->HasName(NAME_WRECK04))
+			{
+				mWreck04 = obj;
+				mWreck04.SetFlag(OF_RECOVERABLE);
+			}
+			if (obj->HasName(NAME_LIGHTS))
+			{
+				mLights = obj;
+				mLights.EnableTrafficLight(TLT_GREEN); 
+			}
+			if (obj->HasName(NAME_PARTICLE01))
+			{
+				mParticle01 = obj;
+				mParticle01.StopParticleEffect();
+			}
+			if (obj->HasName(NAME_PARTICLE02))
+			{
+				mParticle02 = obj;
+				mParticle02.StopParticleEffect();
+			}
+			if (obj->HasName(NAME_BLOCKINGOBJECT))
+			{
+				mBlockingObject = obj;
+				mBlockingObject.SetFlag(OF_PULLABLE);
+			}
+			if (obj->HasName(NAME_SAFETY_CAR))
+			{
+				mSafetyCar = Vehicle(obj);
+			}
+			if (obj->HasName(NAME_RACECAR01))
+			{
+				mRaceCar01 = Vehicle(obj);
+			}
+			if (obj->HasName(NAME_RACECAR02))
+			{
+				mRaceCar02 = Vehicle(obj);
+			}
+			if (obj->HasName(NAME_RACECAR03))
+			{
+				mRaceCar03 = Vehicle(obj);
+			}
+			if (obj->HasName(NAME_CIVILBLOCKED01))
+			{
+				mCivilBlocked01 = Person(obj);
+				mCivilBlocked01.SetFlag(OF_BLOCKED);
+			}
+			if (obj->HasName(NAME_CIVILBLOCKED02))
+			{
+				mCivilBlocked02 = Person(obj);
+				mCivilBlocked02.SetFlag(OF_BLOCKED);
+			}
+			if (obj->HasName(NAME_CIVILBLOCKED03))
+			{
+				mCivilBlocked03 = Person(obj);
+				mCivilBlocked03.SetFlag(OF_BLOCKED);
+			}
+			if (obj->HasName(NAME_MARSHAL))
+			{
+				mMarshal = Person(obj);
+			}
+			if (obj->HasName(NAME_FLAGMAN))
+			{
+				mFlagman = Person(obj);
+			}
+			if (obj->HasName(NAME_RACESOUNDS))
+			{
+				mRaceSounds = obj;
+			}
+		}
+		PersonList l2(NAME_CAMERAMAN);
+		for(int i = 0; i < l2.GetNumPersons(); i++)
+		{
+			l2.GetPerson(i)->SetEquipment(EQUIP_TVCAMERA);
+			l2.GetPerson(i)->SetAnimation(ANI_CAMERA);
+		}
+		ActorList actors = Game::GetActors(VO_RACE_TRACK);
+		if (actors.GetNumActors())
+		{
+			mRaceTrack = *actors.GetActor(0);
+		}
+
+		Audio::PlaySample3D(SND_RACE, mRaceSounds.GetPosition(), false);
+		Mission::StartSingleTimer(TIMER_CUTSCENE01, TIME_CUTSCENE01);
+		Mission::StartIntervalTimer(TIMER_RACESOUNDS, TIME_RACESOUNDS);
+		Mission::AddObjective(MISSION04_CANCEL);
+		Audio::PlaySoundtrack("29", 0.0f);
+		ShowHint(0);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (mHintCounter[1] == 0)
+			ShowHint(1);
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	void OnTimer(const char* Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_CUTSCENE01 :
+			{
+				mRaceTrack.SetVirtualObjectTerrain("Freely Accessible");
+				mCrashCutScene = true;
+				Audio::SetMusicLevel(0.4f);
+				mRaceCar02.SetObjectPath(PATH_CARCRASH01, 33.0f);
+				Mission::StartSingleTimer(TIMER_CUTSCENE02, TIME_CUTSCENE02);
+			}
+			break;
+
+			case TIMER_CUTSCENE02 :
+			{
+				Mission::StartCutScene();
+				Mission::ShowBlackBars();
+				Camera::StartTransition(NAME_CS1_TRANSITION, 2.0f);
+				Audio::PlaySample(SND_CARS);
+			}
+			break;
+
+			case TIMER_CUTSCENE03 :
+			{
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+				mCrash = true;
+			}
+			break;
+
+			case TIMER_CUTSCENE04 :
+			{
+				Mission::StartCutScene();
+				Mission::ShowBlackBars();
+				Camera::StartTransition(NAME_CS2_TRANSITION, 3.0f);
+				Mission::StartSingleTimer(TIMER_CUTSCENE05, TIME_CUTSCENE05);
+				mRaceTrack.SetVirtualObjectTerrain("Freely Accessible");
+				mSafetyCar.SetObjectPath(PATH_SAFETY_CAR, 14.0f);
+				mRaceCar01.SetObjectPath(PATH_CAR01, 14.0f);
+				mRaceCar02.SetObjectPath(PATH_CAR02, 14.0f);
+				mRaceCar03.SetObjectPath(PATH_CAR03, 14.0f);
+			}
+			break;
+
+			case TIMER_CUTSCENE05 :
+			{
+				Camera::StartTransition(NAME_CS3_TRANSITION, 3.0f);
+			}
+			break;
+
+			case TIMER_CUTSCENE06 :
+			{
+				Vector pos;
+				Camera::FollowTarget(&mRaceCar02, pos, true);
+				Camera::LookAtTarget(&mRaceCar02, true, 0.0f, 1.0f);
+				Camera::Rotate(-10000, 0, 0, -5);
+			}
+			break;
+
+			case TIMER_CHECKDEBRIS :
+			{
+				if (DebrisOnTrack())
+				{
+					if (Mission::IsObjectiveAccomplished(MISSION04_DEBRIS))
+						Mission::SetObjectiveAccomplished(MISSION04_DEBRIS, false);
+				} else
+				{
+					if (!Mission::IsObjectiveAccomplished(MISSION04_DEBRIS))
+						Mission::SetObjectiveAccomplished(MISSION04_DEBRIS, true);
+				}
+			}
+			break;
+
+			case TIMER_RACESOUNDS :
+			{
+				if (!mCrashCutScene && !mTalked)
+					Audio::PlaySample3D(SND_RACE, mSafetyCar.GetPosition(), false);
+			}
+			break;
+		}
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_01 :
+			{
+				if (Collider->GetID() == mRaceCar02.GetID())
+				{
+					if (mCrashCutScene)
+					{
+						Game::DeactivateTrigger(TRIGGER_01);
+						mRaceCar02.SetCurrentPathSpeed(27.0f);
+					}
+				}
+			}
+			break;
+
+			case TRIGGER_02 :
+			{
+				if (Collider->GetID() == mSafetyCar.GetID())
+				{
+					Game::DeactivateTrigger(TRIGGER_02);
+					Mission::StartSingleTimer(TIMER_CUTSCENE06, TIME_CUTSCENE06);
+					Vector pos;
+					Camera::FollowTarget(&mSafetyCar, pos, true);
+					Camera::LookAtTarget(&mSafetyCar, true, 0.0f, 1.0f);
+					Camera::Rotate(-10000, 0, 0, -2);
+				}
+				if (Collider->GetID() == mRaceCar02.GetID())
+				{
+					if (mCrashCutScene)
+					{
+						Game::DeactivateTrigger(TRIGGER_02);
+						mRaceCar02.SetCurrentPathSpeed(33.0f);
+						Vector pos;
+						Camera::FollowTarget(&mRaceCar02, pos, true);
+						Camera::LookAtTarget(&mRaceCar02, true, 0.0f, 1.0f);
+						Camera::Rotate(-10000, 0, 0, -2);
+					}
+				}
+
+			}
+			break;
+
+			case TRIGGER_03 :
+			{
+				if (Collider->GetID() == mRaceCar02.GetID())
+				{
+					Game::DeactivateTrigger(TRIGGER_03);
+					Audio::PlaySample("mod:Audio/Fx/Vehicles/Tyresqueal02.wav");
+					Mission::StartSingleTimer(TIMER_CUTSCENE03, TIME_CUTSCENE03);
+				}
+			}
+			break;
+
+			case TRIGGER_BARRIERHINT :
+			{
+				Game::DeactivateTrigger(TRIGGER_BARRIERHINT);
+				if (mHintCounter[3] == 0)
+					ShowHint(3);
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_CARCRASH01 :
+			{
+				mRaceCar02.Explode();
+				mParticle02.StartParticleEffect();
+				Audio::PlaySample("mod:Audio/Fx/destruction/Explosion05.wav");
+				mParticle01.StartParticleEffect();
+			}
+			break;
+
+			case PATH_SAFETY_CAR :
+			{
+				mFlagman.RemoveEquipment();
+				mFlagman.PushActionSwitchAnim(ACTION_NEWLIST, "idle");
+				if (mHintCounter[2] == 0)
+					ShowHint(2);
+			}
+			break;
+
+			case PATH_CAR01 :
+			{
+				mRaceStopped = true;
+				Mission::EndCutScene();
+				Mission::HideBlackBars();
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	bool DebrisOnTrack()
+	{
+		GameObjectList list;
+		Game::CollectObstaclesOnVirtualObject(VO_RACE_TRACK, list, ACTOR_OBJECT);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			if (list.GetObject(i)->HasName(NAME_DEBRIS) || list.GetObject(i)->HasName(NAME_WRECK01) || list.GetObject(i)->HasName(NAME_WRECK02) || list.GetObject(i)->HasName(NAME_WRECK03))
+				return true;
+		}
+		return false;
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionAskPerson" :
+			{
+				if(Data_->Parameters[0].iValue == mMarshal.GetID())
+				{
+					if(mTalked)
+					{
+						return ACTION_SKIP;
+					}
+				}
+			}
+		}
+		return ACTION_CONTINUE;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionAskPerson" :
+			{
+				if(Data_->Parameters[0].iValue == mMarshal.GetID())
+				{
+					if (!mCrashCutScene && !mTalked)
+					{
+						mTalked = true;
+						Mission::StopTimer(TIMER_CUTSCENE01);
+						Mission::StartIntervalTimer(TIMER_CHECKDEBRIS, TIME_CHECKDEBRIS);
+						Mission::StartSingleTimer(TIMER_CUTSCENE04, TIME_CUTSCENE04);
+						Mission::SetObjectiveAccomplished(MISSION04_CANCEL, true);
+						Mission::AddObjective(MISSION04_TRANSPORT);
+						Mission::AddObjective(MISSION04_EXT);
+						Mission::AddObjective(MISSION04_WRECKS);
+						Mission::AddObjective(MISSION04_DEBRIS);
+						mLights.EnableTrafficLight(TLT_NONE); 
+						mLights.EnableTrafficLight(TLT_RED);
+						mFlagman.SetEquipment(EQUIP_STARTERFLAG);
+						mFlagman.PushActionSwitchAnim(ACTION_NEWLIST, "waveflag");
+						SoundNewObjective();
+					}
+				}
+			}			
+			break;
+
+			case "EActionPull" :
+			{
+				if(Data_->Parameters[0].iValue == mBlockingObject.GetID())
+				{
+					if (mCivilBlocked02.IsFlagSet(OF_BLOCKED))
+						mCivilBlocked02.ClearFlag(OF_BLOCKED);
+				}
+
+				if (mHintCounter[4] == 0)
+				{
+					Actor target = Game::GetActor(Data_->Parameters[0].iValue);
+					if (target.HasName(NAME_DEBRIS))
+						ShowHint(4);
+				}
+			}
+			break;
+
+			case "EActionLoadUp" :
+			case "EActionLiftWithCrane" :
+			{
+				if(Data_->Parameters[0].iValue == mWreck01.GetID())
+				{
+					if (!mWreck01.IsFlagSet(OF_TRANSPORTABLE))
+						mWreck01.SetFlag(OF_TRANSPORTABLE);
+					if (mCivilBlocked03.IsFlagSet(OF_BLOCKED))
+						mCivilBlocked03.ClearFlag(OF_BLOCKED);
+				}
+				else if(Data_->Parameters[0].iValue == mWreck04.GetID())
+				{
+					if (!mWreck01.IsFlagSet(OF_TRANSPORTABLE))
+						mWreck01.SetFlag(OF_TRANSPORTABLE);
+					if (mCivilBlocked01.IsFlagSet(OF_BLOCKED))
+						mCivilBlocked01.ClearFlag(OF_BLOCKED);
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->GetID() == mWreck01.GetID() || Obj->GetID() == mWreck02.GetID() || Obj->GetID() == mWreck03.GetID() || Obj->GetID() == mWreck04.GetID())
+		{
+			mNumWrecksTow--;
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void SoundNewObjective()
+	{
+		Audio::PlaySample("mod:Audio/FX/misc/newobjective.wav");
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M04: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_START);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_OPERATOR);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_PIT);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_BARRIERS);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_DEBRIS);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION04_EXT))
+			{
+				if (Mission::HasObjective(MISSION04_EXT))
+					Mission::SetObjectiveAccomplished(MISSION04_EXT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION04_EXT))
+			{
+				if (Mission::HasObjective(MISSION04_EXT))
+					Mission::SetObjectiveAccomplished(MISSION04_EXT, false);
+			}
+		}
+
+		if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION04_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION04_TRANSPORT))
+             			Mission::SetObjectiveAccomplished(MISSION04_TRANSPORT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION04_TRANSPORT))
+			{
+				if (Mission::HasObjective(MISSION04_TRANSPORT))
+					Mission::SetObjectiveAccomplished(MISSION04_TRANSPORT, false);
+			}
+		}
+
+		if (mNumWrecksTow == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION04_WRECKS))
+				Mission::SetObjectiveAccomplished(MISSION04_WRECKS, true);
+		}
+
+		if(Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.6f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		if (mCrash)
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mCrash)
+			return "M04_CRASH_REASON";
+
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mCrash)
+			return "M04_CRASH_COMMENT";
+
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION04_01";
+		else if (scoring->Efficiency < 0.8f && scoring->Efficiency >= 0.5f)
+			return "SUPERV_MISSION04_02";
+		else if (scoring->Efficiency < 0.5f)
+			return "SUPERV_MISSION04_03";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mCrashCutScene);
+		Serializer->Write(mCrash);
+		Serializer->Write(mTalked);
+		Serializer->Write(mRaceStopped);
+		Serializer->Write(mRaceTrack);
+		Serializer->Write(mNumWrecksTow);
+		Serializer->Write(mWreck01);
+		Serializer->Write(mWreck02);
+		Serializer->Write(mWreck03);
+		Serializer->Write(mWreck04);
+		Serializer->Write(mLights);
+		Serializer->Write(mParticle01);
+		Serializer->Write(mParticle02);
+		Serializer->Write(mBlockingObject);
+		Serializer->Write(mSafetyCar);
+		Serializer->Write(mCar01);
+		Serializer->Write(mCar02);
+		Serializer->Write(mCar03);
+		Serializer->Write(mCivilBlocked01);
+		Serializer->Write(mCivilBlocked02);
+		Serializer->Write(mCivilBlocked03);
+		Serializer->Write(mMarshal);
+		Serializer->Write(mFlagman);
+		Serializer->Write(mRaceSounds);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+
+		Serializer->Read(mTooManyVictims);
+		Serializer->Read(mCrashCutScene);
+		Serializer->Read(mCrash);
+		Serializer->Read(mTalked);
+		Serializer->Read(mRaceStopped);
+		Serializer->Read(mRaceTrack);
+		Serializer->Read(mNumWrecksTow);
+		Serializer->Read(mWreck01);
+		Serializer->Read(mWreck02);
+		Serializer->Read(mWreck03);
+		Serializer->Read(mWreck04);
+		Serializer->Read(mLights);
+		Serializer->Read(mParticle01);
+		Serializer->Read(mParticle02);
+		Serializer->Read(mBlockingObject);
+		Serializer->Read(mSafetyCar);
+		Serializer->Read(mCar01);
+		Serializer->Read(mCar02);
+		Serializer->Read(mCar03);
+		Serializer->Read(mCivilBlocked01);
+		Serializer->Read(mCivilBlocked02);
+		Serializer->Read(mCivilBlocked03);
+		Serializer->Read(mMarshal);
+		Serializer->Read(mFlagman);
+		Serializer->Read(mRaceSounds);
+
+		return true;
+	}
+};
+

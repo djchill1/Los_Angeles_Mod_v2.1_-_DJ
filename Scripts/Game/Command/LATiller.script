@@ -1,0 +1,794 @@
+//******************************************************************************************
+// #Version 1.0#										
+//												
+// 		Includes: All commands for the LAFD Tiller Truck							
+//												
+//	- VcmdInstallTiller										
+//	- VcmdDeinstallTiller									
+//	- DummyTiller									
+//	- VcmdGetTiller								
+//	- DummyGetTiller
+//	- VcmdTillerBasketUp
+// 	- VcmdTillerBasketDown									
+//												
+//
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//		Credits go to Bass-ti for his trailer logic scripts (VcmdGetTiller & DummyGetTiller)																		
+//												
+//******************************************************************************************
+
+const float TIME					= 0.5f;
+const char CMD_STANDBY_ON[]			= "VcmdStandbyOn";
+const char CMD_STANDBY_OFF[]		= "VcmdStandbyOff";
+const char CMD_TILLERCHECK[]		= "VcmdTillerCheck";
+const char DUMMY_TILLERCHECK[]		= "DummyTillerCheck";
+const char DUMMY_TILLERGOHOME[]		= "DummyTillerGoHome";
+const char DUMMY_GETTIL[] 			= "DummyGetTiller";
+const char DUMMY_TILLER[] 			= "DummyTiller";
+const char DUMMY_ISTRAILED[] 		= "DummyIsTrailed";
+const char DUMMY_TILLERGOHOME[]		= "DummyTillerGoHome";
+const char DUMMY_HASSIREN[] 		= "DummyHasSiren";
+const char DUMMY_DISABLE[] 			= "DummyDisableSiren";
+const char NAME_TILLER_REVERSED[]	= "tiller_installed";
+const char NAME_TRAILER[] 			= "tiller_trailer";
+const char CHILD_TRAILERHOOK[] 		= "trailer_coupling";
+const char OBJ_TILLER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
+const char OBJ_TILLER_TRAILER[]		= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_trailer.e4p";
+const char OBJ_TILLER_REVERSED[]	= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_trailer_installed.e4p";
+const char VO_TILLER[]				= "spawn_check";
+
+int DummyGroup = 20;
+
+object VcmdInstallTiller : CommandScript
+{
+	Vector TargetPos;
+
+	VcmdInstallTiller()
+	{
+		SetIcon("install");
+		SetCursor("install");
+		SetValidTargets(ACTOR_VEHICLE|ACTOR_OPEN_HOUSE|ACTOR_FLOOR);
+		SetGroupID(CGROUP_INSTALL);
+		SetGroupLeader(true);
+		SetPriority(50);		
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return !v.HasCommand(DUMMY_TILLER);
+	}
+	
+	bool CheckPossible(GameObject *Caller)
+ 	{
+		Vehicle v(Caller);
+      	if (!v.HasCommand(DUMMY_ISTRAILED))
+			return false;
+			
+		return true;
+ 	} 
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+
+		Vehicle v(Caller);
+		int VecID = v.GetID();
+		VehicleList list(NAME_TRAILER);
+		for(int i = 0; i < list.GetNumVehicles(); i++)
+		{
+			Vehicle Trailer = list.GetVehicle(i);
+			if (Trailer.GetUserData() == VecID)
+			{
+				if (!Target->IsValid() || Trailer.IsUplifting())
+					return false;
+				if(Target->GetType() == ACTOR_OPEN_HOUSE)
+				{
+					OpenHouse targetHouse(Target);
+					if (!targetHouse.IsValid() || targetHouse.HasGroundEntrance() || !targetHouse.IsFlagSet(OF_ACCESSIBLE) || Trailer.GetInstallTargetID() == Target->GetID())
+						return false;
+
+					return true;
+				}
+				if(Caller->GetID() == Target->GetID() && !Trailer.IsInstalled() && !Trailer.IsUplifted())
+				{
+					return true;
+				}		
+			}
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (v.HasCommand(CMD_STANDBY_OFF))
+		{
+				v.RemoveCommand(CMD_STANDBY_OFF);
+				v.AssignCommand(CMD_STANDBY_ON);
+		}
+		if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		if (v.HasCommand(DUMMY_TILLERGOHOME))
+			v.RemoveCommand(DUMMY_TILLERGOHOME);
+		if (Target->GetType() == ACTOR_OPEN_HOUSE)
+		{
+			TargetPos = Target->GetTargetPoint(Caller, TARGET_ENTRY_WINDOW_PARKING);
+
+			v.PushActionMove(ACTION_NEWLIST, TargetPos);
+			v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_TILLER, Target, 1, false);
+		} else
+		{
+			v.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_TILLER, Target, 1, false);
+		}
+	}
+};
+
+object VcmdDeinstallTiller : CommandScript
+{
+	VcmdDeinstallTiller()
+	{
+		SetIcon("deinstall");
+		SetCursor("deinstall");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetGroupID(CGROUP_INSTALL);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(90);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		Vehicle v(Caller);
+		return v.HasCommand(DUMMY_TILLER);
+	}
+	
+	bool CheckPossible(GameObject *Caller)
+ 	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+
+		if (!Caller->HasCommand(DUMMY_TILLER))
+			return false;
+
+		return true;
+ 	} 
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		Vehicle v(Caller);
+      	//if (v.HasName(NAME_TILLER_REVERSED))
+		//{
+		//	if (!v.IsInstalled() || v.IsUplifted() || v.IsUplifting() || !v.IsBasketEmpty())
+		//		return false;
+		//}
+		if (StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0)
+		{
+			int VecID = v.GetID();
+			VehicleList list2(NAME_TILLER_REVERSED);
+			for(int i = 0; i < list2.GetNumVehicles(); i++)
+			{
+				Vehicle c = list2.GetVehicle(i);
+				if (c.GetUserData() == VecID)
+				{
+					if (c.IsUplifted() || c.IsUplifting() || !c.IsBasketEmpty())
+						return false;
+				}
+			}
+
+		}
+
+		return true;
+ 	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		v.SetCommandable(false);
+		v.PushActionWait(ACTION_NEWLIST, 2.3f);
+		v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_TILLER, Target, 2, false);
+		int VecID = v.GetID();
+		VehicleList list(NAME_TILLER_REVERSED);
+		for(int i = 0; i < list.GetNumVehicles(); i++)
+		{
+			Vehicle c = list.GetVehicle(i);
+			if (c.GetUserData() == VecID)
+			{
+				System::Log("Tiller to be deleted found");
+				c.PushActionDeinstall(ACTION_NEWLIST);
+				c.PushActionWait(ACTION_APPEND, 2.0f);
+				c.PushActionDeleteOwner(ACTION_APPEND);
+			}
+		}
+	}
+};
+
+object DummyTiller : CommandScript
+{
+	DummyTiller()
+	{
+		SetGroupID(20);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (childID == 1)
+		{
+			v.RemoveCommand("MoveTo");
+			v.RemoveCommand("GoHome");
+			v.AssignCommand("VcmdDeinstallTiller");
+			v.AssignCommand(DUMMY_TILLER);
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+			int VecID = v.GetID();
+			GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject Trailer = list.GetObject(i);
+				if (Trailer.GetUserData() == VecID)
+				{
+					Vector Pos = Trailer.GetPosition();
+						float r[9];
+						float childr[9];
+					Trailer.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+					Vehicle m = Game::CreateVehicle(OBJ_TILLER_REVERSED, NAME_TILLER_REVERSED);
+					m.SetUserData(Trailer.GetUserData());
+					m.SetPlayerMP(Trailer.GetPlayerMP());
+					m.SetPosition(Pos);
+					Math::EulerToMatrix(180.0f, 0.f, 0.f, childr);
+					Math::MultiplyMatrices(childr, r);
+					m.SetRotation(childr[0], childr[1], childr[2], childr[3], childr[4], childr[5], childr[6], childr[7], childr[8]);
+					m.PushActionInstall(ACTION_NEWLIST, &m);
+
+					Trailer.SetPlacement(PLACEMENT_NONE);
+					Trailer.SetPosition(Trailer.GetPosition() + Vector(0.f, 0.f, -200.f));
+					Trailer.SetSelectable(false);
+					System::Log("Hide trailer");
+				}
+			}
+		}
+		if (childID == 2)
+		{
+			v.SetCommandable(true);
+			v.AssignCommand("MoveTo");
+			v.AssignCommand("GoHome");
+			v.AssignCommand("VcmdInstallTiller");
+			v.RemoveCommand("VcmdDeinstallTiller");
+			v.RemoveCommand(DUMMY_TILLER);
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+			int VecID = v.GetID();
+			GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject Trailer = list.GetObject(i);
+				if (Trailer.GetUserData() == VecID)
+				{
+					Trailer.SetPosition(Trailer.GetPosition() + Vector(0.f, 0.f, 200.f));
+					Trailer.SetPlacement(PLACEMENT_CUSTOM_PLACEMENT);
+					Trailer.SetSelectable(true);
+				}
+			}
+		}
+		if (childID == 3) //To position the trailer correctly at the fire station
+		{
+			int VecID = v.GetID();
+			GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject Trailer = list.GetObject(i);
+				if (Trailer.GetUserData() == VecID)
+				{
+						float rot[9];
+					v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+					Trailer.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+					Vector HookPos = v.GetChildPosition(CHILD_TRAILERHOOK);
+					Trailer.SetPosition(HookPos);
+				}
+			}
+		}
+	}
+};
+
+object VcmdGetTiller : CommandScript
+{
+	VcmdGetTiller()
+	{
+		SetIcon("trailer");
+		SetCursor("trailer");
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (Caller->HasCommand(DUMMY_TILLER))
+			return false;
+
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid())
+			return false;
+
+		Vehicle v(Caller);
+		if (Caller->GetID() == Target->GetID())
+		{
+			if (v.HasCommand(DUMMY_ISTRAILED))
+				return true;
+				
+			return false;
+		}
+
+		if (Target->HasName(NAME_TRAILER))
+		{
+			GameObject t(Target);
+			if (!t.HasCommand(DUMMY_ISTRAILED) && !t.HasCommand(DUMMY_ISTRAILED))
+			{
+				SetPriority(200);
+				return true;
+			}
+
+			return false;
+		}
+		
+		return false;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_TILLERGOHOME))
+			v.RemoveCommand(DUMMY_TILLERGOHOME);
+		if (v.HasCommand(DUMMY_HASSIREN))
+			Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		if (!v.HasCommand(DUMMY_ISTRAILED))
+		{
+			if (!v.IsChildEnabled(CHILD_TRAILERHOOK))
+				v.SetChildEnabled(CHILD_TRAILERHOOK, true);
+
+			Vector TarPos = Target->GetPosition();
+			float dx = 250.f, dy = 0.f, dz = 0.f;
+				float r[9];
+				float childr[9];
+			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			Math::RotateVector(dx, dy, dz, r);
+			Math::EulerToMatrix(0.0f, 0.f, 0.f, childr);
+			Math::MultiplyMatrices(childr, r);
+			TarPos = TarPos + Vector(dx, dy, 0);
+
+			Caller->PushActionMove(ACTION_NEWLIST, TarPos, true);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTIL, Target, 1, false);
+		} else
+		  {
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTIL, Caller, 2, false);
+		  }
+	}
+};
+
+object DummyGetTiller : CommandScript
+{
+	DummyGetTiller()
+	{
+		SetGroupID(20);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (childID == 1)
+		{
+			Vehicle v(Caller);
+			GameObject t(Target);
+			
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+			
+			Vector HookPos = v.GetChildPosition(CHILD_TRAILERHOOK);
+
+			float rot[9];
+			v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			t.SetPosition(HookPos);
+			t.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			int VecID = v.GetID();
+			v.SetUserData(VecID);
+			t.SetUserData(VecID);
+
+			if (!t.HasCommand(DUMMY_ISTRAILED))
+				t.AssignCommand(DUMMY_ISTRAILED);
+
+			if (!v.HasCommand(DUMMY_ISTRAILED))
+				v.AssignCommand(DUMMY_ISTRAILED);
+
+			v.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_GETTIL, Target, 3, false);
+			v.PushActionWait(ACTION_APPEND, 2.f);
+			v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTIL, Target, 4, false);
+			v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTIL, Target, 5, false);
+		}
+		if (childID == 2)
+		{
+			Vehicle v(Caller);
+			int VecID = v.GetID();
+			
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+				
+			GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject Trailer = list.GetObject(i);
+				if (Trailer.GetUserData() == VecID)
+				{
+					v.RemoveTrainWaggon(&Trailer);
+
+					int TrailerID = Trailer.GetID();
+					Trailer.SetUserData(TrailerID);
+
+					if (Trailer.HasCommand(DUMMY_ISTRAILED))
+						Trailer.RemoveCommand(DUMMY_ISTRAILED);
+
+					if (v.HasCommand(DUMMY_ISTRAILED))
+						v.RemoveCommand(DUMMY_ISTRAILED);
+				}
+			}
+		}
+		if (childID == 3)
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(false);
+		}
+		if (childID == 4)
+		{
+			float rot[9];
+			Vehicle v(Caller);GameObject obj(Target);
+			
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);			
+			
+			v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			float ident[9];
+			Math::EulerToMatrix(0.f, 0.f, 0.f, ident);
+			v.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+			obj.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+
+			Vector HookPos1 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			obj.SetPosition(HookPos1);
+
+			v.AddTrainWaggon(&obj);
+
+			v.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+			obj.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			Vector HookPos2 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			obj.SetPosition(HookPos2);
+		}
+		if (childID == 5)
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(true);
+		}
+	}
+};
+
+object VcmdTillerBasketUp: CommandScript
+{
+	VcmdTillerBasketUp()
+	{
+		SetIcon("basketup");
+		SetCursor("basketup");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetDoubleClickable(true);
+		//SetGroupID(CGROUP_DLK_BASKET);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if (Caller->GetType() == ACTOR_PERSON)
+		{
+			Person p(Caller);
+			return p.IsInDLKBasket() && !p.CanLeaveDLK();
+		}
+		else if (Caller->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			return !v.IsUplifted();
+		}
+		return false;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+			return false;
+		Vehicle v(Target);
+		if (!v.IsInstalled() || v.IsUplifted() || v.IsUplifting())
+			return false;
+		if (v.GetInstallTargetID() != -1 && v.IsCannonInUse() || v.GetInstallTargetID() == -1)
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionBasketUp(ACTION_NEWLIST);
+	}
+};
+
+object VcmdTillerBasketDown: CommandScript
+{
+	VcmdTillerBasketDown()
+	{
+		SetIcon("basketdown");
+		SetCursor("basketdown");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_FLOOR);
+		SetDoubleClickable(true);
+		//SetGroupID(CGROUP_DLK_BASKET);
+		//SetPriority(80);
+	}
+
+	bool CheckGroupVisibility(GameObject *Caller)
+	{
+		if(!Caller->IsValid())
+			return false;
+		if (Caller->GetType() == ACTOR_PERSON)
+		{
+			Person p(Caller);
+			return p.IsInDLKBasket() && p.CanLeaveDLK();
+		}
+		else if (Caller->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			return v.IsUplifted();
+		}
+		return false;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid())
+			return false;
+		if(Caller->GetType() == ACTOR_VEHICLE)
+		{
+			if (!Target->IsValid() || Target->GetID() != Caller->GetID())
+			   	return false;
+			Vehicle v(Caller);
+			if (!v.IsInstalled() || !v.IsUplifted() || v.IsUplifting())
+				return false;
+			if (v.GetInstallTargetID() != -1 && v.IsCannonInUse())
+				return false;
+			return true;
+		}
+		else if(Caller->GetType() == ACTOR_PERSON && !Target->IsValid())
+		{
+			Person p(Caller);
+			return p.CanLeaveDLK();
+		}
+
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector Pos = Game::GetCommandPos();
+		Caller->PushActionBasketDown(ACTION_NEWLIST, Pos);
+	}
+};
+
+object VcmdTillerCheck : CommandScript
+{
+	VcmdTillerCheck()
+	{
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Caller);
+		if (!v.IsDestroyed() && v.IsValid())
+		{
+			v.PushActionWait(ACTION_NEWLIST, TIME);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_TILLERCHECK, Caller, ChildID, false);
+			
+			GameObjectList l1;
+ 			Game::CollectObstaclesOnVirtualObject(VO_TILLER, l1, ACTOR_VEHICLE);
+			if (l1.ContainsSquad())	
+			{
+				Vehicle c = l1.GetObject(0);
+				if (c.HasCommand(DUMMY_TILLERCHECK) && !c.HasCommand(DUMMY_TILLERGOHOME) && StrCompare(c.GetPrototypeFileName(), OBJ_TILLER) == 0)
+				{
+					if (c.HasCommand(DUMMY_TILLERCHECK))
+						c.RemoveCommand(DUMMY_TILLERCHECK);
+
+					if (c.HasCommand(DUMMY_HASSIREN))
+						Game::ExecuteCommand(DUMMY_DISABLE, &c, &c);						
+						
+					System::Log("Attach trailer!");
+					Vehicle m = Game::CreateVehicle(OBJ_TILLER_TRAILER, NAME_TRAILER);
+					
+					int VecID = c.GetID();
+					c.SetUserData(VecID);
+					m.SetUserData(VecID);
+					m.SetPlayerMP(c.GetPlayerMP());
+
+						float rot[9];
+					c.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+						float ident[9];
+					Math::EulerToMatrix(0.f, 0.f, 0.f, ident);
+					c.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+					m.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+
+					Vector HookPos1 = c.GetChildPosition(CHILD_TRAILERHOOK);
+					m.SetPosition(HookPos1);
+
+					c.AddTrainWaggon(&m);
+							
+					c.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+					c.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+					m.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+					Vector HookPos2 = c.GetChildPosition(CHILD_TRAILERHOOK);
+					m.SetPosition(HookPos2);
+
+					if (!m.HasCommand(DUMMY_ISTRAILED))
+						m.AssignCommand(DUMMY_ISTRAILED);
+
+					if (!c.HasCommand(DUMMY_ISTRAILED))
+						c.AssignCommand(DUMMY_ISTRAILED);		
+				}
+				if (c.HasCommand(DUMMY_TILLERGOHOME) && c.IsValid() && !c.IsDestroyed() && StrCompare(c.GetPrototypeFileName(), OBJ_TILLER) == 0)
+				{
+					System::Log("Detach and delete trailer!");
+					if (c.HasCommand(DUMMY_HASSIREN))
+						Game::ExecuteCommand(DUMMY_DISABLE, &c, &c);
+				
+					int VecID = c.GetID();
+					GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+					for(int i = 0; i < list.GetNumObjects(); i++)
+					{
+						GameObject Trailer = list.GetObject(i);
+						if (Trailer.GetUserData() == VecID)
+						{
+							c.RemoveTrainWaggon(&Trailer);
+							Trailer.PushActionDeleteOwner(ACTION_NEWLIST);
+							if (c.HasCommand(DUMMY_TILLERGOHOME))
+								c.RemoveCommand(DUMMY_TILLERGOHOME);
+
+							if (c.HasCommand(DUMMY_TILLERCHECK))
+								c.RemoveCommand(DUMMY_TILLERCHECK);
+
+							if (c.HasCommand(DUMMY_ISTRAILED))
+								c.RemoveCommand(DUMMY_ISTRAILED);
+						}
+					}
+				}
+			}
+		}
+	}
+};
+
+object DummyTillerCheck : CommandScript
+{
+	DummyTillerCheck()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return false;
+	}
+
+  	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+			System::Log("Attach trailer!");
+			Vehicle v(Caller);
+			if (v.HasCommand(DUMMY_TILLERCHECK))
+				v.RemoveCommand(DUMMY_TILLERCHECK);
+			if (v.HasCommand(DUMMY_HASSIREN))
+				Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);						
+			Vehicle m = Game::CreateVehicle(OBJ_TILLER_TRAILER, NAME_TRAILER);
+			int VecID = v.GetID();
+			v.SetUserData(VecID);
+			m.SetUserData(VecID);
+			m.SetPlayerMP(v.GetPlayerMP());
+			float rot[9];
+			v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+				float ident[9];
+			Math::EulerToMatrix(0.f, 0.f, 0.f, ident);
+			v.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+			m.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+			Vector HookPos1 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			m.SetPosition(HookPos1);
+			v.AddTrainWaggon(&m);
+			v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+			v.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+			m.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+			Vector HookPos2 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			m.SetPosition(HookPos2);
+			if (!m.HasCommand(DUMMY_ISTRAILED))
+				m.AssignCommand(DUMMY_ISTRAILED);
+			if (!v.HasCommand(DUMMY_ISTRAILED))
+				v.AssignCommand(DUMMY_ISTRAILED);	
+	}
+};
+
+object DummyTillerGoHome : CommandScript
+{
+	DummyTillerGoHome()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return false;
+	}
+
+  	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		System::Log("Detach and delete trailer!");
+		Vehicle v(Caller);
+		if (v.HasCommand(DUMMY_HASSIREN))
+			Game::ExecuteCommand(DUMMY_DISABLE, &v, &v);
+		int VecID = v.GetID();
+		GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject Trailer = list.GetObject(i);
+			if (Trailer.GetUserData() == VecID)
+			{
+				v.RemoveTrainWaggon(&Trailer);
+				Trailer.PushActionDeleteOwner(ACTION_NEWLIST);
+				if (v.HasCommand(DUMMY_TILLERGOHOME))
+					v.RemoveCommand(DUMMY_TILLERGOHOME);
+				if (v.HasCommand(DUMMY_TILLERCHECK))
+					v.RemoveCommand(DUMMY_TILLERCHECK);
+				if (v.HasCommand(DUMMY_ISTRAILED))
+					v.RemoveCommand(DUMMY_ISTRAILED);
+			}
+		}
+	}
+};

@@ -1,0 +1,533 @@
+//******************************************************************************************
+// #Version 2.4#										
+//												
+// 		Includes: All M4 Commands								
+//												
+//	- PcmdM4Get										
+//	- PcmdM4Remove									
+//	- PcmdM4Shoot	
+//	- PcmdM4Aim									
+//	- PcmdM4AimEnd	
+//	- PcmdM4MoveTo	
+//	- DummyM4
+//						
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char CMD_GETM4[]				= "PcmdM4Get";
+const char CMD_REMOVEM4[]			= "PcmdM4Remove";
+const char CMD_SHOOTM4[]			= "PcmdM4Shoot";
+const char CMD_AIMM4[]				= "PcmdM4Aim";
+const char CMD_AIMENDM4[]			= "PcmdM4AimEnd";
+const char CMD_MOVEM4[]				= "PcmdM4MoveTo";
+const char DUMMY_M4[]				= "DummyM4";
+const char CMD_DOORS[]				= "OpenCloseDoor";
+const char OBJ_M4_IDLE[]			= "01 LA Equipment/m4_idle.V3O";
+const char OBJ_M4_AIM[]				= "01 LA Equipment/m4_aim.V3O";
+const char SND_GETM4[]				= "mod:Audio/FX/Misc/m4_get.wav";
+const char SND_FIREM4[]				= "mod:Audio/FX/Misc/m4_shoot.wav";
+const char SND_UNLOCK[]				= "mod:Audio/FX/Misc/unlock_weapon.wav";
+const char PARTICLE_FLASH[]			= "mod:Prototypes/Objects/05 LA Particles/muzzleflash04.e4p";
+const char NAME_FLASH[]				= "MuzzleFlash";
+
+int DummyGroup = 20;
+
+object PcmdM4Get : CommandScript
+{
+	
+	PcmdM4Get()
+	{
+    		SetIcon("m4");
+    		SetCursor("m4");
+		SetPriority(190);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetGroupID(CGROUP_GETEQUIPMENT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFLASHGRENADE);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_FLASHGRENADE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+			if ((v.HasCommand("FlyTo") || v.HasCommand("VcmdDeInstallRope")) && !v.IsOnGround())
+				return false;
+
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/hmmwv.e4p") == 0 ||
+ 			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/us_army_truck.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/blackhawk.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_M4, Target, 1, false);
+	}
+};
+
+object PcmdM4Remove : CommandScript
+{
+	
+	PcmdM4Remove()
+	{
+    		SetIcon("m4remove");
+    		SetCursor("m4remove");
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFLASHGRENADE);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetNeedsCarWithFlagSet(OF_HAS_FLASHGRENADE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE)
+			return false;
+		
+		if(Caller->GetObjectType()==TYPE_PERSON)
+		{
+			Person p(Caller);
+			Vehicle v(Target);
+
+			if (v.IsDestroyed())
+				return false;
+
+			if(p.IsValid() && (p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsPulling() || p.GetFirehoseID()!=0 || p.GetEnteredCarID() != -1)) 
+				return false;
+
+			Vehicle v(Target);
+			if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/hmmwv.e4p") == 0 ||
+ 			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/us_army_truck.e4p") == 0 ||
+			StrCompare(v.GetPrototypeFileName(), "mod:Prototypes/Vehicles/05 US Army/blackhawk.e4p") == 0)
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionGetEquipment(ACTION_APPEND, Target, EQUIP_NONE);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_M4, Target, 2, false);
+	}
+};
+
+object PcmdM4Shoot : CommandScript
+{
+	float Range;
+
+	PcmdM4Shoot()
+	{
+    		SetIcon("shoot");
+    		SetCursor("aim");
+		SetValidTargets(ACTOR_PERSON | ACTOR_VEHICLE);
+		SetRestrictions(RESTRICT_SHOOTABLE | RESTRICT_NOTINJURED);
+		//SetActivationByLeftClick(true);
+		SetDeselectCaller(false);
+		SetKeepAsCurrentCommand(true);
+		SetPossibleCallers(ACTOR_PERSON);
+		Range = 900.f;
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		/*if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;*/
+		Person p(Caller);
+		if (!p.IsValid())
+			return false;
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() == Caller->GetID())
+			return false;
+
+		Person p(Caller);
+		if(p.GetBoundingRadiusDistXYToObject(Target) > Range)
+			return false;
+
+		if(Target->GetType()==ACTOR_PERSON)
+		{	
+			Person t(Target);
+			if (t.IsValid() && t.GetEnteredHouseID() == p.GetEnteredHouseID())
+			{
+				if(p.IsAiming())
+				{
+					Game::ActivateSceneLens(true);
+				}
+				return true;
+			}
+		}
+
+		if(Target->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Target);
+			if (!v.IsCivilCar())
+				SetPriority(-700);
+			
+			if (v.IsValid() && !v.IsDestroyed() && v.IsFlagSet(OF_SHOOTABLE) && p.GetEnteredHouseID() == -1)
+			{
+				if ((v.GetVehicleType() == VT_POLICE_PHC || v.GetVehicleType() == VT_AMBULANCE_RHC || v.GetVehicleType() == VT_THW_FGRT_BH) && !v.IsOnGround())
+					return false;
+				if(p.IsAiming())
+				{
+					Game::ActivateSceneLens(true);
+				}
+				return true;
+			}
+		}
+					
+		return false;	
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		if(!p.IsAiming())
+		{
+			Vector Pos = p.GetPosition();
+			Audio::PlaySample3D(SND_UNLOCK, Pos);
+			p.PlaceObjectInRightHand(OBJ_M4_AIM);
+			p.PushActionPrepareAim(ACTION_NEWLIST);
+			p.AssignCommand(CMD_AIMENDM4);
+   			p.AssignCommand(CMD_MOVEM4);
+			p.RemoveCommand(CMD_REMOVEM4);
+			p.RemoveCommand(CMD_AIMM4);
+		} 
+		else
+		{
+			Vector Pos = p.GetPosition();
+			Audio::PlaySample3D(SND_FIREM4, Pos);
+
+				float r[9];
+			p.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+                	GameObject f = Game::CreateObject(PARTICLE_FLASH, NAME_FLASH);
+			f.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
+			f.SetPosition(Pos);
+			f.PushActionWait(ACTION_NEWLIST, 0.5f);
+			f.PushActionDeleteOwner(ACTION_APPEND);
+
+			if (Target->GetType() == ACTOR_PERSON)
+			{
+				Person t(Target);
+				if (t.IsValid() && !t.IsDead())
+				{
+					if (p.GetBoundingRadiusDistXYToObject(&t) < 50.f)
+					{
+						t.Kill(INJUREREASON_SHOT);
+					}
+					else if (p.GetBoundingRadiusDistXYToObject(&t) < 100.f)
+					{
+						t.Injure(INJUREREASON_SHOT);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 200.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 600.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 300.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 500.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 400.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 400.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 500.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 300.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 600.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 200.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&t) < 1000.f)
+					{
+						t.Hurt(INJUREREASON_SHOT, 100.f);
+					}
+				}
+			}
+			if (Target->GetType() == ACTOR_VEHICLE)
+			{
+				Vehicle v(Target);
+				if (v.IsValid() && !v.IsDestroyed())
+				{
+					if(p.GetBoundingRadiusDistXYToObject(&v) < 300.f)
+					{
+						v.Damage(330.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&v) < 500.f)
+					{
+						v.Damage(230.f);
+					}
+					else if(p.GetBoundingRadiusDistXYToObject(&v) < 700.f)
+					{
+						v.Damage(140.f);
+					} 
+					else 	if(p.GetBoundingRadiusDistXYToObject(&v) < 1000.f)
+					{
+						v.Damage(100.f);
+					}
+				}
+			}
+		}  
+	}
+};
+
+object PcmdM4Aim : CommandScript
+{
+	float Range;
+
+	PcmdM4Aim()
+	{
+    		SetIcon("aim");
+     		SetCursor("aim");
+		SetValidTargets(ACTOR_PERSON);
+		SetPriority(220);
+		SetDoubleClickable(true);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->IsAiming() || !Target->IsValid() || Caller->GetID() != Target->GetID())
+			return false;
+			
+		return true;		
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Vector Pos = p.GetPosition();
+		Audio::PlaySample3D(SND_UNLOCK, Pos);
+		p.PlaceObjectInRightHand(OBJ_M4_AIM);
+		p.PushActionPrepareAim(ACTION_NEWLIST);
+		p.AssignCommand(CMD_AIMENDM4);
+   		p.AssignCommand(CMD_MOVEM4);
+		p.RemoveCommand(CMD_REMOVEM4);   
+		p.RemoveCommand(CMD_AIMM4);  
+	}
+};
+
+object PcmdM4AimEnd : CommandScript
+{
+
+	PcmdM4AimEnd()
+	{
+    		SetIcon("aimend");
+     		SetCursor("aimed");
+		SetValidTargets(ACTOR_PERSON);
+		SetDoubleClickable(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPriority(600);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		/*if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;*/
+		return Caller->IsAiming();
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || (Caller->GetID() != Target->GetID()) || !Caller->IsAiming())
+			return false;
+				
+		return true;		
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		p.PlaceObjectInRightHand(OBJ_M4_IDLE);
+		p.PushActionAimEnd(ACTION_NEWLIST);
+		p.RemoveCommand(CMD_AIMENDM4);
+   		p.RemoveCommand(CMD_MOVEM4);
+		p.AssignCommand(CMD_AIMM4);
+		p.AssignCommand(CMD_REMOVEM4);
+		p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+	}
+};
+
+object PcmdM4MoveTo : CommandScript
+{
+	MoveResult mr;
+
+	PcmdM4MoveTo()
+	{
+    		SetIcon("moveto");
+    		SetCursor("moveto");
+		SetValidTargets(ACTOR_FLOOR | ACTOR_OBJECT | ACTOR_VIRTUAL | ACTOR_HOUSE | ACTOR_OPEN_HOUSE);
+		SetHighlightingEnabled(false);
+		SetDeselectCaller(false);
+		//SetActivationByLeftClick(true);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		mr = Commands::CheckMoveConditions(Caller, Target, childID);
+		if(mr.Mode == MOVE_ABORT)
+			return false;
+
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		if(p.IsAiming() || p.IsCurrentAnimation("shootrifle"))
+		{
+			p.PlaceObjectInRightHand(OBJ_M4_IDLE);
+			p.PushActionAimEnd(ACTION_NEWLIST);
+			p.PushActionWait(ACTION_APPEND, 1.5f);
+			p.PushActionExecuteCommand(ACTION_APPEND, DUMMY_M4, Caller, 3, false);
+			p.PushActionMove(ACTION_APPEND, mr.Target);
+			p.RemoveCommand(CMD_AIMENDM4);
+			p.RemoveCommand(CMD_MOVEM4);
+			p.AssignCommand(CMD_AIMM4);
+			p.AssignCommand(CMD_REMOVEM4);
+		}
+	}
+};
+
+object DummyM4 : CommandScript
+{
+	DummyM4()
+	{
+ 		SetGroupID(DummyGroup);
+	}
+
+ 	bool CheckGroupVisibility(GameObject *Caller)
+ 	{
+ 		return false;
+ 	}
+ 
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		return false;
+ 	} 
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		return false;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(childID == 1)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_M4_IDLE);
+			p.PushActionSwitchAnim(ACTION_APPEND, "idleequipped2");
+			p.AssignCommand(CMD_AIMM4);
+			p.AssignCommand(CMD_SHOOTM4);
+			p.AssignCommand(CMD_REMOVEM4);
+			p.RemoveCommand(CMD_GETM4);
+			p.RemoveCommand("PcmdBarricadeGet");
+			p.RemoveCommand("PcmdTrafficConeGet");
+			p.RemoveCommand("PcmdStabilize");
+			p.RemoveCommand("PcmdFlareGet");
+			p.RemoveCommand("GetRoadBlock");
+			p.RemoveCommand("Arrest");
+			p.RemoveCommand("ReleaseArrested");
+			p.RemoveCommand("DrawWeapon");
+			p.RemoveCommand("PutInCar");
+			p.RemoveCommand("AskPerson");
+			p.RemoveCommand("Halt");
+			p.RemoveCommand("GetFlashgrenade");
+			p.RemoveCommand("PickUp");
+			p.RemoveCommand("GetExtinguisher");
+			p.RemoveCommand("GetAxe");
+			p.RemoveCommand("GetShears");
+			p.RemoveCommand("GetChainsaw");
+			p.RemoveCommand("Pull");
+			p.RemoveCommand("StopPull");
+			p.RemoveCommand("Lift");
+			p.RemoveCommand("UnloadPerson");
+			p.RemoveCommand("SendPeople");
+			//p.RemoveCommand("DriveAwayPerson");
+			p.RemoveCommand("Redirect");
+			p.RemoveCommand("Stop");
+
+			Vector Pos = p.GetPosition();
+			Audio::PlaySample3D(SND_GETM4, Pos);
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+		if(childID == 2)
+		{
+			Person p(Caller);
+			p.RemoveObjectInRightHand();
+			p.PushActionSwitchAnim(ACTION_APPEND, "idle");
+			p.RemoveCommand(CMD_SHOOTM4);
+			p.RemoveCommand(CMD_REMOVEM4);
+			p.RemoveCommand(CMD_AIMM4);
+			p.AssignCommand(CMD_GETM4);
+			p.AssignCommand("PcmdBarricadeGet");
+			p.AssignCommand("PcmdTrafficConeGet");
+			p.AssignCommand("PcmdStabilize");
+			p.AssignCommand("PcmdFlareGet");
+			p.AssignCommand("GetRoadBlock");
+			p.AssignCommand("Arrest");
+			p.AssignCommand("ReleaseArrested");
+			p.AssignCommand("DrawWeapon");
+			p.AssignCommand("PutInCar");
+			p.AssignCommand("AskPerson");
+			p.AssignCommand("Halt");
+			p.AssignCommand("GetFlashgrenade");
+			p.AssignCommand("PickUp"); 
+			p.AssignCommand("GetExtinguisher");
+			p.AssignCommand("GetAxe");
+			p.AssignCommand("GetShears");
+			p.AssignCommand("GetChainsaw");
+			p.AssignCommand("Pull");
+			p.AssignCommand("StopPull");
+			p.AssignCommand("Lift");
+			p.AssignCommand("UnloadPerson");
+			p.AssignCommand("SendPeople");
+			//p.AssignCommand("DriveAwayPerson");
+			p.AssignCommand("Redirect");
+			p.AssignCommand("Stop");
+
+			Vehicle v(Target);
+			v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
+		}
+		if(childID == 3)
+		{
+			Person p(Caller);
+			p.PlaceObjectInRightHand(OBJ_M4_IDLE);
+		}
+  	}
+};

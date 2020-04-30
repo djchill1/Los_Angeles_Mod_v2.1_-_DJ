@@ -1,0 +1,231 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+// 		Includes: All command to attach hoses to vehicle automaticly.
+//
+//	- VcmdRapidDeployment
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char DUMMY_EQUIPMENT[] 			= "DummyEquipmentCommands";
+const char DUMMY_HOSESON[] 			= "DummyHosesAreOn";
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+const char PROTO_ENGINE01[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine1.e4p";
+const char PROTO_ENGINE02[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/fire_engine2.e4p";
+const char PROTO_USFS_ENGINE[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/usfs_engine.e4p";
+const char PROTO_WATERTENDER[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/water_tender.e4p";
+const char PROTO_BRUSH[] 			= "mod:Prototypes/Vehicles/02 LA Fire Department/brush_truck.e4p";
+const char NAME_CONNECTORS[] 			= "PumpConnector";
+
+int DummyGroup = 29;
+
+object VcmdRapidDeployment : CommandScript
+{
+	int MAXCONNECTORS;
+
+	VcmdRapidDeployment()
+	{
+		SetIcon("rapiddeployment");
+		SetCursor("rapiddeployment");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetPriority(90);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+		if (!Caller->IsValid())
+			return false;
+
+		if (Caller->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			if(v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02))
+				return false;
+
+			if(v.GetVehicleType() == VT_FIREFIGHTERS_GTF && v.GetNumPassengers() == 0 && !v.IsInstalled())
+				return false;
+
+			if(v.GetVehicleType() != VT_FIREFIGHTERS_GTF && v.GetNumPassengers() == 0 && !v.HasCommand(DUMMY_HOSESON))
+				return false;	
+		}
+
+		return true;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+		if (!Caller->IsValid() || !Target->IsValid() || (Caller->GetID() != Target->GetID()))
+			return false;
+
+		if (Caller->GetType()==ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			if(StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE01) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_ENGINE02) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_WATERTENDER) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_USFS_ENGINE) == 0 || StrCompare(v.GetPrototypeFileName(), PROTO_BRUSH) == 0)
+				return true;
+		}
+
+		return false;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		v.PushActionWait(ACTION_NEWLIST, 0.1f);
+		if (v.GetVehicleType() != VT_FIREFIGHTERS_GTF && !v.HasCommand(DUMMY_HOSESON))
+		{
+			int Pcnt = 0;
+			PersonList passengers = v.GetPassengers();
+			if (passengers.GetNumPersons() > 0)
+			{
+				for(int i=0; i<passengers.GetNumPersons(); i++)
+				{
+					if (Pcnt < 4)
+					{
+						Person *p = passengers.GetPerson(i);
+						if (p->HasCommand("Extinguish"))
+						{
+							TargetPoint targetPoint;
+							targetPoint = TARGET_EQUIPMENTDOOR;
+							p->PushActionLeaveCar(ACTION_NEWLIST, &v);
+							if(p->GetEquipment() != EQUIP_FIREHOSE)
+							{
+								p->PushActionMove(ACTION_APPEND, &v, targetPoint);
+								p->PushActionTurnTo(ACTION_APPEND, &v);
+								p->PushActionGetEquipment(ACTION_APPEND, &v, EQUIP_FIREHOSE);
+								p->PushActionExecuteCommand(ACTION_APPEND, DUMMY_EQUIPMENT, Caller, 3, false);
+							}
+							if (!v.HasCommand(DUMMY_HOSESON))
+							{
+								Vector TargetPos = v.GetChildPosition("pump1");
+								p->PushActionMove(ACTION_APPEND, TargetPos);
+								p->PushActionExecuteCommand(ACTION_APPEND, "AttachFireHose", Caller, 1, false);
+							} else
+								p->PushActionExecuteCommand(ACTION_APPEND, "AttachFireHose", Caller, 2, false);
+
+							//p->PushActionMove(ACTION_NEWLIST, &obj, TARGET_FREE_CONNECTOR);
+							//p->PushActionCheckFreeConnector(ACTION_APPEND, &obj);
+							//p->PushActionUseEquipment(ACTION_APPEND, &obj, childID, 1.0f);
+							Pcnt++;
+						}
+					}
+				}
+			}
+		
+		} 
+		else if (v.GetVehicleType() != VT_FIREFIGHTERS_GTF && v.HasCommand(DUMMY_HOSESON))
+		{
+			//v.PushActionWait(ACTION_NEWLIST, 0.1f);
+			int UnitID = v.GetID();
+			VehicleList list(NAME_CONNECTORS);
+			for(int i = 0; i < list.GetNumVehicles(); i++)
+			{
+				Vehicle *obj = list.GetVehicle(i);
+				if (obj->GetUserData() == UnitID)
+				{
+					if (obj->IsInstalled())
+					{
+						PersonList Pconnected(ROLE_SQUAD);
+						for(int i = 0; i < Pconnected.GetNumPersons(); i++)
+						{
+							if (Pconnected.GetPerson(i)->GetEquipment() == EQUIP_FIREHOSE && Pconnected.GetPerson(i)->GetType() == ACTOR_PERSON && Pconnected.GetPerson(i)->GetFirehoseID() != 0 && !Pconnected.GetPerson(i)->IsFlagSet(OF_HIDDEN) && !Pconnected.GetPerson(i)->IsCurrentAnimation("kneeldown"))
+							{
+								Vector TargetPos;
+								GameObject Phydrant = Pconnected.GetPerson(i)->GetHydrant();
+								if (Phydrant.GetID() == obj->GetID())
+								{
+									Person p(Pconnected.GetPerson(i));
+									if (!obj->GetUsedConnectorPosition(&p, TargetPos))
+									{
+										return;
+									} else
+					  				{
+										Pconnected.GetPerson(i)->PushActionMoveWithHose(ACTION_NEWLIST, TargetPos);
+										Pconnected.GetPerson(i)->PushActionUseEquipment(ACTION_APPEND, &Phydrant, childID, 10.0f);
+										Pconnected.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, "AttachFireHose", &Phydrant, 3, false);
+										Pconnected.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, "EnterCar", &v, childID, false);
+									}
+								}
+					  		}
+						}
+					} else
+					{
+						v.RemoveCommand(DUMMY_HOSESON);
+						v.SetChildEnabled("pump1", true);
+						v.SetChildEnabled("pump2", true);
+						v.SetChildEnabled("pump3", true);
+						v.SetChildEnabled("pump4", true);
+						obj->PushActionDeleteOwner(ACTION_APPEND);
+					}
+				}
+			}
+		}
+		else if (v.GetVehicleType() == VT_FIREFIGHTERS_GTF && !v.IsInstalled())
+		{
+			int Pcnt = 0;
+			PersonList passengers = v.GetPassengers();
+			if (passengers.GetNumPersons() > 0)
+			{
+				for(int i=0; i<passengers.GetNumPersons(); i++)
+				{
+					if (StrCompare(v.GetPrototypeFileName(), PROTO_BRUSH) == 0)
+						MAXCONNECTORS = 1;
+					else
+						MAXCONNECTORS = 4;
+
+					if (Pcnt < MAXCONNECTORS)
+					{
+						Person *p = passengers.GetPerson(i);
+
+						TargetPoint targetPoint;
+						targetPoint = TARGET_EQUIPMENTDOOR;
+
+						p->PushActionLeaveCar(ACTION_NEWLIST, &v);
+						if(p->GetEquipment() != EQUIP_FIREHOSE)
+						{
+							p->PushActionMove(ACTION_APPEND, &v, targetPoint);
+							p->PushActionTurnTo(ACTION_APPEND, &v);
+							p->PushActionGetEquipment(ACTION_APPEND, &v, EQUIP_FIREHOSE);
+							p->PushActionExecuteCommand(ACTION_APPEND, DUMMY_EQUIPMENT, Caller, 3, false);
+						}
+						p->PushActionMove(ACTION_NEWLIST, &v, TARGET_FREE_CONNECTOR);
+						p->PushActionCheckFreeConnector(ACTION_APPEND, &v);
+						p->PushActionUseEquipment(ACTION_APPEND, &v, childID, 1.0f);
+						Pcnt++;
+					}
+				}
+			}
+		} 
+		else if (v.GetVehicleType() == VT_FIREFIGHTERS_GTF && v.IsInstalled())
+		{
+			PersonList Pconnected(ROLE_SQUAD);
+			for(int i = 0; i < Pconnected.GetNumPersons(); i++)
+			{
+				if (Pconnected.GetPerson(i)->GetEquipment() == EQUIP_FIREHOSE && Pconnected.GetPerson(i)->GetType() == ACTOR_PERSON && Pconnected.GetPerson(i)->GetFirehoseID() != 0 && !Pconnected.GetPerson(i)->IsFlagSet(OF_HIDDEN))
+				{
+					Vector TargetPos;
+					GameObject Phydrant = Pconnected.GetPerson(i)->GetHydrant();
+					if (Phydrant.GetID() == v.GetID())
+					{
+						Person p(Pconnected.GetPerson(i));
+						if (!v.GetUsedConnectorPosition(&p, TargetPos))
+						{
+							return;
+						} else
+					  	{
+							Pconnected.GetPerson(i)->PushActionMoveWithHose(ACTION_NEWLIST, TargetPos);
+							Pconnected.GetPerson(i)->PushActionUseEquipment(ACTION_APPEND, &Phydrant, childID, 10.0f);
+							Pconnected.GetPerson(i)->PushActionExecuteCommand(ACTION_APPEND, "EnterCar", &v, childID, false);
+					  	}
+					}
+				}
+			}
+		}
+	}
+};

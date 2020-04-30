@@ -1,0 +1,1655 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 11;
+const int MAX_DEATHS = 0;
+const int MAX_INJURED = 3;
+const int MAX_SPARK_OBJECTS = 25;
+const int MAX_FIRES = 3;
+const int MAX_EVACS = 17;
+
+const char HINT_PRIORITY[]			= "MISSION06_HINT01";
+const char HINT_BUILDING[]			= "MISSION06_HINT02";
+const char HINT_EVAC[]				= "MISSION06_HINT03";
+const char HINT_NEWFIRE[]			= "MISSION06_HINT04";
+const char HINT_RAIN[]				= "MISSION06_HINT05";
+const char HINT_ARSONIST[]			= "MISSION06_HINT06";
+const char HINT_1MINUTE[]			= "MISSION06_HINT07";
+const char HINT_APPREHEND[]			= "MISSION06_HINT08";
+const char HINT_COMMITARSON[]			= "MISSION06_HINT09";
+const char HINT_WITHDRAW[]			= "MISSION06_HINT10";
+const char HINT_ARSONISTFLEES[]			= "MISSION06_HINT11";
+
+const char MISSION06_EXT[]			= "MISSION06_EXT";
+const char MISSION06_EVAC[]			= "MISSION06_EVAC";
+const char MISSION06_PROTECT[]			= "MISSION06_PROTECT";
+const char MISSION06_ARSONIST[]			= "MISSION06_ARSONIST";
+const char MISSION06_WITHDRAW[]			= "MISSION06_WITHDRAW";
+
+const char TIMER_CS1[] 				= "cs1";
+const float TIME_CS1				= 2.0f;
+const char TIMER_CS2[] 				= "cs2";
+const float TIME_CS2				= 2.5f;
+const char TIMER_CS3[] 				= "cs3";
+const float TIME_CS3				= 7.5f;
+const char TIMER_CS4[] 				= "cs4";
+const float TIME_CS4				= 4.0f;
+const char TIMER_CS5[] 				= "cs5";
+const float TIME_CS5				= 5.0f;
+
+const char TIMER_UPDATE[] 			= "update";
+const float TIME_UPDATE				= 5.0f;
+const char TIMER_WITHDRAW[] 			= "withdraw";
+const float TIME_WITHDRAW			= 1.0f;
+const char TIMER_SQUADCHECK[] 			= "squad1";
+const float TIME_SQUADCHECK			= 2.0f;
+const char TIMER_SQUADCHECK2[] 			= "squad2";
+const float TIME_SQUADCHECK2			= 14.0f;
+const float TIME_SQUADCHECK3			= 7.0f;
+const char TIMER_ARSONIST01[] 			= "arson1";
+const float TIME_ARSONIST01			= 3.0f;
+const char TIMER_ARSONIST02[] 			= "arson2";
+const float TIME_ARSONIST02			= 90.0f;
+const char TIMER_ARSONIST03[] 			= "arson3";
+const float TIME_ARSONIST03			= 60.0f;
+const char TIMER_ARSONIST04[] 			= "arson4";
+const float TIME_ARSONIST04			= 2.0f;
+const char TIMER_ARSONIST05[] 			= "arson5";
+const float TIME_ARSONIST05			= 1.0f;
+const char TIMER_ARSONIST06[] 			= "arson6";
+const float TIME_ARSONIST06			= 7.0f;
+const char TIMER_FIRE01[] 			= "fire1";
+const float TIME_FIRE01				= 6.0f * 60.0f;
+const char TIMER_FIRE02[] 			= "fire2";
+const float TIME_FIRE02				= 4.5f * 60.0f;
+const char TIMER_FIRE03[] 			= "fire3";
+const float TIME_FIRE03				= 4.5f * 60.0f;
+const char TIMER_AIRPLANE01[] 			= "airplane01";
+const float TIME_AIRPLANE01			= 2.0f;
+const char TIMER_AIRPLANE02[] 			= "airplane02";
+const float TIME_AIRPLANE02			= 0.5f;
+const char TIMER_PATHS[] 			= "paths";
+const float TIME_PATHS				= 4.0f;
+
+const char NAME_AIRPLANE[]			= "airplane";
+const char NAME_ENGINE01[]			= "engine1";
+const char NAME_ENGINE02[]			= "engine2";
+const char NAME_HOUSE[]				= "house";
+const char NAME_HOUSE2[]			= "house2";
+const char NAME_EVAC[]				= "evac";
+const char NAME_VIOLENT1[]			= "evacv1";
+const char NAME_VIOLENT2[]			= "evacv2";
+const char NAME_CAMPFIRE[]			= "campfire";
+const char NAME_CAMPFIRE_WOOD[]			= "campfire_wood";
+const char NAME_SPARK_OBJECT01[]		= "spark_object01";
+const char NAME_SPARK_OBJECT02[]		= "spark_object02";
+const char NAME_SPARK_OBJECT03[]		= "spark_object03";
+const char NAME_SPARK_OBJECT04[]		= "spark_object04";
+const char NAME_SPARK_OBJECT05[]		= "spark_object05";
+const char NAME_SPARK_OBJECT06[]		= "spark_object06";
+const char NAME_SPARK_OBJECT07[]		= "spark_object07";
+const char NAME_SPARK_OBJECT08[]		= "spark_object08";
+const char NAME_SPARK_OBJECT09[]		= "spark_object09";
+const char NAME_SPARK_OBJECT10[]		= "spark_object10";
+const char NAME_SPARK_OBJECT11[]		= "spark_object11";
+const char NAME_SPARK_OBJECT12[]		= "spark_object12";
+const char NAME_SPARK_OBJECT13[]		= "spark_object13";
+const char NAME_SPARK_OBJECT14[]		= "spark_object14";
+const char NAME_SPARK_OBJECT15[]		= "spark_object15";
+const char NAME_SPARK_OBJECT16[]		= "spark_object16";
+const char NAME_SPARK_OBJECT17[]		= "spark_object17";
+const char NAME_SPARK_OBJECT18[]		= "spark_object18";
+const char NAME_SPARK_OBJECT19[]		= "spark_object19";
+const char NAME_SPARK_OBJECT20[]		= "spark_object20";
+const char NAME_SPARK_OBJECT21[]		= "spark_object21";
+const char NAME_SPARK_OBJECT22[]		= "spark_object22";
+const char NAME_SPARK_OBJECT23[]		= "spark_object23";
+const char NAME_SPARK_OBJECT24[]		= "spark_object24";
+const char NAME_SPARK_OBJECT25[]		= "spark_object25";
+const char NAME_SPARK_EMIT01[]		= "spark_emit01";
+const char NAME_SPARK_EMIT02[]		= "spark_emit02";
+const char NAME_SPARK_EMIT03[]		= "spark_emit03";
+const char NAME_SPARK_EMIT04[]		= "spark_emit04";
+const char NAME_SPARK_EMIT05[]		= "spark_emit05";
+const char NAME_SPARK_EMIT06[]		= "spark_emit06";
+const char NAME_SPARK_EMIT07[]		= "spark_emit07";
+const char NAME_SPARK_EMIT08[]		= "spark_emit08";
+const char NAME_SPARK_EMIT09[]		= "spark_emit09";
+const char NAME_SPARK_EMIT10[]		= "spark_emit10";
+const char NAME_SPARK_EMIT11[]		= "spark_emit11";
+const char NAME_SPARK_EMIT12[]		= "spark_emit12";
+const char NAME_SPARK_EMIT13[]		= "spark_emit13";
+const char NAME_SPARK_EMIT14[]		= "spark_emit14";
+const char NAME_SPARK_EMIT15[]		= "spark_emit15";
+const char NAME_SPARK_EMIT16[]		= "spark_emit16";
+const char NAME_SPARK_EMIT17[]		= "spark_emit17";
+const char NAME_SPARK_EMIT18[]		= "spark_emit18";
+const char NAME_SPARK_EMIT19[]		= "spark_emit19";
+const char NAME_SPARK_EMIT20[]		= "spark_emit20";
+const char NAME_SPARK_EMIT21[]		= "spark_emit21";
+const char NAME_SPARK_EMIT22[]		= "spark_emit22";
+const char NAME_SPARK_EMIT23[]		= "spark_emit23";
+const char NAME_SPARK_EMIT24[]		= "spark_emit24";
+const char NAME_SPARK_EMIT25[]		= "spark_emit25";
+const char NAME_SPARK_DEST01[]		= "spark_dest01";
+const char NAME_SPARK_DEST02[]		= "spark_dest02";
+const char NAME_SPARK_DEST03[]		= "spark_dest03";
+const char NAME_SPARK_DEST04[]		= "spark_dest04";
+const char NAME_SPARK_DEST05[]		= "spark_dest05";
+const char NAME_SPARK_DEST06[]		= "spark_dest06";
+const char NAME_SPARK_DEST07[]		= "spark_dest07";
+const char NAME_SPARK_DEST08[]		= "spark_dest08";
+const char NAME_SPARK_DEST09[]		= "spark_dest09";
+const char NAME_SPARK_DEST10[]		= "spark_dest10";
+const char NAME_SPARK_DEST11[]		= "spark_dest11";
+const char NAME_SPARK_DEST12[]		= "spark_dest12";
+const char NAME_SPARK_DEST13[]		= "spark_dest13";
+const char NAME_SPARK_DEST14[]		= "spark_dest14";
+const char NAME_SPARK_DEST15[]		= "spark_dest15";
+const char NAME_SPARK_DEST16[]		= "spark_dest16";
+const char NAME_SPARK_DEST17[]		= "spark_dest17";
+const char NAME_SPARK_DEST18[]		= "spark_dest18";
+const char NAME_SPARK_DEST19[]		= "spark_dest19";
+const char NAME_SPARK_DEST20[]		= "spark_dest20";
+const char NAME_SPARK_DEST21[]		= "spark_dest21";
+const char NAME_SPARK_DEST22[]		= "spark_dest22";
+const char NAME_SPARK_DEST23[]		= "spark_dest23";
+const char NAME_SPARK_DEST24[]		= "spark_dest24";
+const char NAME_SPARK_DEST25[]		= "spark_dest25";
+const char TIMER_SPARK01[] 			= "spark_timer01";
+const char TIMER_SPARK02[] 			= "spark_timer02";
+const char TIMER_SPARK03[] 			= "spark_timer03";
+const char TIMER_SPARK04[] 			= "spark_timer04";
+const char TIMER_SPARK05[] 			= "spark_timer05";
+const char TIMER_SPARK06[] 			= "spark_timer06";
+const char TIMER_SPARK07[] 			= "spark_timer07";
+const char TIMER_SPARK08[] 			= "spark_timer08";
+const char TIMER_SPARK09[] 			= "spark_timer09";
+const char TIMER_SPARK10[] 			= "spark_timer10";
+const char TIMER_SPARK11[] 			= "spark_timer11";
+const char TIMER_SPARK12[] 			= "spark_timer12";
+const char TIMER_SPARK13[] 			= "spark_timer13";
+const char TIMER_SPARK14[] 			= "spark_timer14";
+const char TIMER_SPARK15[] 			= "spark_timer15";
+const char TIMER_SPARK16[] 			= "spark_timer16";
+const char TIMER_SPARK17[] 			= "spark_timer17";
+const char TIMER_SPARK18[] 			= "spark_timer18";
+const char TIMER_SPARK19[] 			= "spark_timer19";
+const char TIMER_SPARK20[] 			= "spark_timer20";
+const char TIMER_SPARK21[] 			= "spark_timer21";
+const char TIMER_SPARK22[] 			= "spark_timer22";
+const char TIMER_SPARK23[] 			= "spark_timer23";
+const char TIMER_SPARK24[] 			= "spark_timer24";
+const char TIMER_SPARK25[] 			= "spark_timer25";
+const float TIME_SPARK 				= 30.0f;
+const char NAME_FIRE01[]			= "fire1";
+const char NAME_FIRE02[]			= "fire2";
+const char NAME_FIRE03[]			= "fire3";
+const char NAME_TRANSITION01[]			= "Unnamed0";
+const char NAME_TRANSITION02[]			= "Unnamed1";
+const char NAME_TRANSITION03[]			= "Unnamed2";
+const char NAME_TRANSITION04[]			= "Unnamed3";
+
+const char TRIGGER_AIRBASE[]			= "airbase_trigger";
+const char PATH_AIRPLANE[]			= "path_airplane";
+const float SPEED_AIRPLANE			= 6.0f;
+const char SND_AIRPLANE[]			= "mod:Audio/Fx/misc/misc_planeturbine_starting.wav";
+
+const char TIMER_RAIN[] 			= "rain";
+const float TIME_RAIN				= 6.0f;
+const char TIMER_DARK[]				= "dark";
+const float TIME_DARK				= 3.0f;
+const int TIME_TILL_DARK			= 5;	
+const char NAME_AMBIENT_RAIN[]			= "rain";
+const char NAME_AMBIENT_THUNDER[]		= "thunder";
+const char SND_THUNDER[]			= "mod:Audio/Ambient/Thunder02.wav";
+
+const char NAME_ARSON[]				= "arson";
+const char NAME_ARSONIST[]			= "arsonist";
+const char NAME_AREALIGHT[]			= "arealight";
+const char NAME_CAR[]				= "car";
+const char PATH_ARSONIST[]			= "path_arsonist";
+const char PATH_ARSONIST2[]			= "path_arsonist2";
+const char PATH_CAR[]				= "path_car";
+const char TRIGGER_ARSONIST[]			= "arsonist_trigger";
+const char TRIGGER_ARSON[]			= "arson_trigger";
+const float COUNTDOWN_TIME			= 2.5f * 60.f;
+
+const char TRIGGER_CAR01[]			= "car_trigger01";
+const char VO_CAR01[]				= "car_vo01";
+const char VO_CAR02[]				= "car_vo02";
+
+object Mission05 : MissionScript
+{
+	int mHintCounter[MAX_HINTS], mNumEvacs, mSoundAirplane;
+	bool mTooManyVictims, mFailedToProtectBase, mFailedToProtectHouses, mFire01, mFire02, mFire03, mPart2, mArsonistOnFoot, mArrestAllowed, mArsonistCaptured, mSquadInTrigger, mNoArson, mArsonistEscaped;
+	GameObjectList mSparkDestList[MAX_SPARK_OBJECTS];
+	GameObjectList mFireList[MAX_FIRES];
+	GameObject mSparkObj[MAX_SPARK_OBJECTS];
+	GameObject mSparkEmit[MAX_SPARK_OBJECTS];
+	GameObject mCampFire, mCampFireWood, mArson;
+	Vehicle mAirplane, mCar;
+	Person mEvacs[MAX_EVACS], mViolent1, mViolent2, mArsonist;
+	OpenHouse mHouse;
+	GameObjectList mAreaLights;
+	Actor mVoCar01, mVoCar02;
+
+	Mission06()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mNumEvacs = 0;
+		mTooManyVictims = false;
+		mFailedToProtectBase = false;
+		mFailedToProtectHouses = false;
+		mFire01 = false;
+		mFire02 = false;
+		mFire03 = false;
+		mPart2 = false;
+		mArrestAllowed = false;
+		mArsonistCaptured = false;
+		mSquadInTrigger = false;
+		mArsonistOnFoot = false;
+		mNoArson = false;
+		mArsonistEscaped = false;
+	}
+	
+	~Mission06()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList l1 = Game::GetGameObjects();
+		for(int i = 0; i < l1.GetNumObjects(); i++)
+		{
+			GameObject *obj = l1.GetObject(i);
+			if (obj->HasName(NAME_VIOLENT1))
+			{
+				mViolent1 = Person(obj);
+				mNumEvacs++;
+				System::Log("M06: %d evacuees", mNumEvacs);
+			}
+			else if (obj->HasName(NAME_VIOLENT2))
+			{
+				mViolent2 = Person(obj);
+				mNumEvacs++;
+				System::Log("M06: %d evacuees", mNumEvacs);
+			}
+			else if (obj->HasName(NAME_EVAC))
+			{
+				if (mNumEvacs < MAX_EVACS)
+				{
+					mEvacs[mNumEvacs++] = Person(obj);
+					System::Log("M06: %d evacuees", mNumEvacs);
+				}
+				else
+					System::Log("M06: Too many evacuees!");
+			}
+			else if (obj->HasName(NAME_HOUSE2))
+				mHouse = OpenHouse(obj);
+			else if (obj->HasName(NAME_CAMPFIRE))
+				mCampFire = obj;
+			else if (obj->HasName(NAME_CAMPFIRE_WOOD))
+				mCampFireWood = obj;
+			else if (obj->HasName(NAME_ARSONIST))
+				mArsonist = Person(obj);
+			else if (obj->HasName(NAME_CAR))
+			{
+				mCar = Vehicle(obj);
+				mCar.SetMaxPassengers(1);
+				mCar.Hide();
+			}
+			else if (obj->HasName(NAME_ARSON))
+			{
+				mArson = obj;
+				mArson.Hide();
+			}
+			else if (obj->HasName(NAME_AIRPLANE))
+			{
+				mAirplane = Vehicle(obj);
+				mAirplane.EnableSpecialLights(true);
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT01))
+				mSparkObj[0] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT01))
+			{
+				mSparkEmit[0] = obj;
+				mSparkEmit[0].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT02))
+				mSparkObj[1] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT02))
+			{
+				mSparkEmit[1] = obj;
+				mSparkEmit[1].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT03))
+				mSparkObj[2] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT03))
+			{
+				mSparkEmit[2] = obj;
+				mSparkEmit[2].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT04))
+				mSparkObj[3] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT04))
+			{
+				mSparkEmit[3] = obj;
+				mSparkEmit[3].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT05))
+				mSparkObj[4] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT05))
+			{
+				mSparkEmit[4] = obj;
+				mSparkEmit[4].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT06))
+				mSparkObj[5] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT06))
+			{
+				mSparkEmit[5] = obj;
+				mSparkEmit[5].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT07))
+				mSparkObj[6] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT07))
+			{
+				mSparkEmit[6] = obj;
+				mSparkEmit[6].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT08))
+				mSparkObj[7] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT08))
+			{
+				mSparkEmit[7] = obj;
+				mSparkEmit[7].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT09))
+				mSparkObj[8] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT09))
+			{
+				mSparkEmit[8] = obj;
+				mSparkEmit[8].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT10))
+				mSparkObj[9] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT10))
+			{
+				mSparkEmit[9] = obj;
+				mSparkEmit[9].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT11))
+				mSparkObj[10] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT11))
+			{
+				mSparkEmit[10] = obj;
+				mSparkEmit[10].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT12))
+				mSparkObj[11] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT12))
+			{
+				mSparkEmit[11] = obj;
+				mSparkEmit[11].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT13))
+				mSparkObj[12] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT13))
+			{
+				mSparkEmit[12] = obj;
+				mSparkEmit[12].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT14))
+				mSparkObj[13] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT14))
+			{
+				mSparkEmit[13] = obj;
+				mSparkEmit[13].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT15))
+				mSparkObj[14] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT15))
+			{
+				mSparkEmit[14] = obj;
+				mSparkEmit[14].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT16))
+				mSparkObj[15] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT16))
+			{
+				mSparkEmit[15] = obj;
+				mSparkEmit[15].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT17))
+				mSparkObj[16] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT17))
+			{
+				mSparkEmit[16] = obj;
+				mSparkEmit[16].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT18))
+				mSparkObj[17] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT18))
+			{
+				mSparkEmit[17] = obj;
+				mSparkEmit[17].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT19))
+				mSparkObj[18] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT19))
+			{
+				mSparkEmit[18] = obj;
+				mSparkEmit[18].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT20))
+				mSparkObj[19] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT20))
+			{
+				mSparkEmit[19] = obj;
+				mSparkEmit[19].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT21))
+				mSparkObj[20] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT21))
+			{
+				mSparkEmit[20] = obj;
+				mSparkEmit[20].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT22))
+				mSparkObj[21] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT22))
+			{
+				mSparkEmit[21] = obj;
+				mSparkEmit[21].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT23))
+				mSparkObj[22] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT23))
+			{
+				mSparkEmit[22] = obj;
+				mSparkEmit[22].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT24))
+				mSparkObj[23] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT24))
+			{
+				mSparkEmit[23] = obj;
+				mSparkEmit[23].StopParticleEffect();
+			}
+			else if (obj->HasName(NAME_SPARK_OBJECT25))
+				mSparkObj[24] = obj;
+			else if (obj->HasName(NAME_SPARK_EMIT25))
+			{
+				mSparkEmit[24] = obj;
+				mSparkEmit[24].StopParticleEffect();
+			}
+		}
+
+		ActorList actListVO1 = Game::GetActors(VO_CAR01);
+		if (actListVO1.GetNumActors() > 0)
+			mVoCar01 = actListVO1.GetActor(0);
+		ActorList actListVO2 = Game::GetActors(VO_CAR02);
+		if (actListVO2.GetNumActors() > 0)
+			mVoCar02 = actListVO2.GetActor(0);
+
+		mSparkDestList[0] = Game::GetGameObjects(NAME_SPARK_DEST01);
+		mSparkDestList[1] = Game::GetGameObjects(NAME_SPARK_DEST02);
+		mSparkDestList[2] = Game::GetGameObjects(NAME_SPARK_DEST03);
+		mSparkDestList[3] = Game::GetGameObjects(NAME_SPARK_DEST04);
+		mSparkDestList[4] = Game::GetGameObjects(NAME_SPARK_DEST05);
+		mSparkDestList[5] = Game::GetGameObjects(NAME_SPARK_DEST06);
+		mSparkDestList[6] = Game::GetGameObjects(NAME_SPARK_DEST07);
+		mSparkDestList[7] = Game::GetGameObjects(NAME_SPARK_DEST08);
+		mSparkDestList[8] = Game::GetGameObjects(NAME_SPARK_DEST09);
+		mSparkDestList[9] = Game::GetGameObjects(NAME_SPARK_DEST10);
+		mSparkDestList[10] = Game::GetGameObjects(NAME_SPARK_DEST11);
+		mSparkDestList[11] = Game::GetGameObjects(NAME_SPARK_DEST12);
+		mSparkDestList[12] = Game::GetGameObjects(NAME_SPARK_DEST13);
+		mSparkDestList[13] = Game::GetGameObjects(NAME_SPARK_DEST14);
+		mSparkDestList[14] = Game::GetGameObjects(NAME_SPARK_DEST15);
+		mSparkDestList[15] = Game::GetGameObjects(NAME_SPARK_DEST16);
+		mSparkDestList[16] = Game::GetGameObjects(NAME_SPARK_DEST17);
+		mSparkDestList[17] = Game::GetGameObjects(NAME_SPARK_DEST18);
+		mSparkDestList[18] = Game::GetGameObjects(NAME_SPARK_DEST19);
+		mSparkDestList[19] = Game::GetGameObjects(NAME_SPARK_DEST20);
+		mSparkDestList[20] = Game::GetGameObjects(NAME_SPARK_DEST21);
+		mSparkDestList[21] = Game::GetGameObjects(NAME_SPARK_DEST22);
+		mSparkDestList[22] = Game::GetGameObjects(NAME_SPARK_DEST23);
+		mSparkDestList[23] = Game::GetGameObjects(NAME_SPARK_DEST24);
+		mSparkDestList[24] = Game::GetGameObjects(NAME_SPARK_DEST25);
+		mFireList[0] = Game::GetGameObjects(NAME_FIRE01);
+		mFireList[1] = Game::GetGameObjects(NAME_FIRE02);
+		mFireList[2] = Game::GetGameObjects(NAME_FIRE03);
+		mCar.AddPassenger(&mArsonist);
+		Mission::AddObjective(MISSION06_EXT);
+		Mission::AddObjective(MISSION06_EVAC);
+		Mission::AddObjective(MISSION06_PROTECT);
+		Mission::StartIntervalTimer(TIMER_UPDATE, TIME_UPDATE);
+		Mission::StartSingleTimer(TIMER_FIRE01, TIME_FIRE01);
+		Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_RAIN, 0.0f);
+		Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_THUNDER, 0.0f);
+		Game::CreateAreaLightsAroundTrigger(TRIGGER_ARSONIST, NAME_AREALIGHT, 400.f);
+		mAreaLights = Game::GetGameObjects(NAME_AREALIGHT);
+		SwitchAreaLights(&mAreaLights, false);
+		Mission::StartSingleTimer(TIMER_CS1, TIME_CS1);
+		ScriptInterface::HideRadar();
+		ScriptInterface::HideMap();
+		ScriptInterface::HideNavigator();
+		ScriptInterface::HideInfoBar();
+		ScriptInterface::HideVehicleBrowser();
+		ScriptInterface::HideMouseCursor(false);
+		Camera::DisableCameraXYMovement();
+		Camera::DisableCameraZMovement();
+		Camera::DisableCameraRotation();
+		Audio::PlaySoundtrack("31", 0.7f);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	bool OnStartBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid() && (burningObject->HasName(NAME_HOUSE) || burningObject->HasName(NAME_HOUSE2)))
+		{
+			if (!mFailedToProtectHouses)
+			{
+				mFailedToProtectHouses = true;
+				Mission::RemoveObjective(MISSION06_PROTECT); 
+				if (mHintCounter[1] == 0)
+					ShowHint(1);	
+			}
+		}
+		if (burningObject->IsValid())
+		{
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StartParticleEffect();
+					if (i == 0)
+						Mission::StartSingleTimer(TIMER_SPARK01, TIME_SPARK);
+					else if (i == 1)
+						Mission::StartSingleTimer(TIMER_SPARK02, TIME_SPARK);
+					else if (i == 2)
+						Mission::StartSingleTimer(TIMER_SPARK03, TIME_SPARK);
+					else if (i == 3)
+						Mission::StartSingleTimer(TIMER_SPARK04, TIME_SPARK);
+					else if (i == 4)
+						Mission::StartSingleTimer(TIMER_SPARK05, TIME_SPARK);
+					else if (i == 5)
+						Mission::StartSingleTimer(TIMER_SPARK06, TIME_SPARK);
+					else if (i == 6)
+						Mission::StartSingleTimer(TIMER_SPARK07, TIME_SPARK);
+					else if (i == 7)
+						Mission::StartSingleTimer(TIMER_SPARK08, TIME_SPARK);
+					else if (i == 8)
+						Mission::StartSingleTimer(TIMER_SPARK09, TIME_SPARK);
+					else if (i == 9)
+						Mission::StartSingleTimer(TIMER_SPARK10, TIME_SPARK);
+					else if (i == 10)
+						Mission::StartSingleTimer(TIMER_SPARK11, TIME_SPARK);
+					else if (i == 11)
+						Mission::StartSingleTimer(TIMER_SPARK12, TIME_SPARK);
+					else if (i == 12)
+						Mission::StartSingleTimer(TIMER_SPARK13, TIME_SPARK);
+					else if (i == 13)
+						Mission::StartSingleTimer(TIMER_SPARK14, TIME_SPARK);
+					else if (i == 14)
+						Mission::StartSingleTimer(TIMER_SPARK15, TIME_SPARK);
+					else if (i == 15)
+						Mission::StartSingleTimer(TIMER_SPARK16, TIME_SPARK);
+					else if (i == 16)
+						Mission::StartSingleTimer(TIMER_SPARK17, TIME_SPARK);
+					else if (i == 17)
+						Mission::StartSingleTimer(TIMER_SPARK18, TIME_SPARK);
+					else if (i == 18)
+						Mission::StartSingleTimer(TIMER_SPARK19, TIME_SPARK);
+					else if (i == 19)
+						Mission::StartSingleTimer(TIMER_SPARK20, TIME_SPARK);
+					else if (i == 20)
+						Mission::StartSingleTimer(TIMER_SPARK21, TIME_SPARK);
+					else if (i == 21)
+						Mission::StartSingleTimer(TIMER_SPARK22, TIME_SPARK);
+					else if (i == 22)
+						Mission::StartSingleTimer(TIMER_SPARK23, TIME_SPARK);
+					else if (i == 23)
+						Mission::StartSingleTimer(TIMER_SPARK24, TIME_SPARK);
+					else if (i == 24)
+						Mission::StartSingleTimer(TIMER_SPARK25, TIME_SPARK);
+				}
+			}
+		}
+		return true;
+	}
+
+	bool OnStopBurning(GameObject *burningObject)
+	{
+		if (burningObject->IsValid())
+		{
+			for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+			{
+				if (burningObject->GetID() == mSparkObj[i].GetID())
+				{
+					mSparkEmit[i].StopParticleEffect();
+					if (i == 0)
+						Mission::StopTimer(TIMER_SPARK01);
+					else if (i == 1)
+						Mission::StopTimer(TIMER_SPARK02);
+					else if (i == 2)
+						Mission::StopTimer(TIMER_SPARK03);
+					else if (i == 3)
+						Mission::StopTimer(TIMER_SPARK04);
+					else if (i == 4)
+						Mission::StopTimer(TIMER_SPARK05);
+					else if (i == 5)
+						Mission::StopTimer(TIMER_SPARK06);
+					else if (i == 6)
+						Mission::StopTimer(TIMER_SPARK07);
+					else if (i == 7)
+						Mission::StopTimer(TIMER_SPARK08);
+					else if (i == 8)
+						Mission::StopTimer(TIMER_SPARK09);
+					else if (i == 9)
+						Mission::StopTimer(TIMER_SPARK10);
+					else if (i == 10)
+						Mission::StopTimer(TIMER_SPARK11);
+					else if (i == 11)
+						Mission::StopTimer(TIMER_SPARK12);
+					else if (i == 12)
+						Mission::StopTimer(TIMER_SPARK13);
+					else if (i == 13)
+						Mission::StopTimer(TIMER_SPARK14);
+					else if (i == 14)
+						Mission::StopTimer(TIMER_SPARK15);
+					else if (i == 15)
+						Mission::StopTimer(TIMER_SPARK16);
+					else if (i == 16)
+						Mission::StopTimer(TIMER_SPARK17);
+					else if (i == 17)
+						Mission::StopTimer(TIMER_SPARK18);
+					else if (i == 18)
+						Mission::StopTimer(TIMER_SPARK19);
+					else if (i == 19)
+						Mission::StopTimer(TIMER_SPARK20);
+					else if (i == 20)
+						Mission::StopTimer(TIMER_SPARK21);
+					else if (i == 21)
+						Mission::StopTimer(TIMER_SPARK22);
+					else if (i == 22)
+						Mission::StopTimer(TIMER_SPARK23);
+					else if (i == 23)
+						Mission::StopTimer(TIMER_SPARK24);
+					else if (i == 24)
+						Mission::StopTimer(TIMER_SPARK25);
+				}
+			}
+		}
+		return true;
+	}
+
+	void OnTimer(const char *Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_SPARK01 :
+				for (int i = 0; i < mSparkDestList[0].GetNumObjects(); i++)
+					mSparkDestList[0].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK02 :
+				for (int i = 0; i < mSparkDestList[1].GetNumObjects(); i++)
+					mSparkDestList[1].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK03 :
+				for (int i = 0; i < mSparkDestList[2].GetNumObjects(); i++)
+					mSparkDestList[2].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK04 :
+				for (int i = 0; i < mSparkDestList[3].GetNumObjects(); i++)
+					mSparkDestList[3].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK05 :
+				for (int i = 0; i < mSparkDestList[4].GetNumObjects(); i++)
+					mSparkDestList[4].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK06 :
+				for (int i = 0; i < mSparkDestList[5].GetNumObjects(); i++)
+					mSparkDestList[5].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK07 :
+				for (int i = 0; i < mSparkDestList[6].GetNumObjects(); i++)
+					mSparkDestList[6].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK08 :
+				for (int i = 0; i < mSparkDestList[7].GetNumObjects(); i++)
+					mSparkDestList[7].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK09 :
+				for (int i = 0; i < mSparkDestList[8].GetNumObjects(); i++)
+					mSparkDestList[8].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK10 :
+				for (int i = 0; i < mSparkDestList[9].GetNumObjects(); i++)
+					mSparkDestList[9].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK11 :
+				for (int i = 0; i < mSparkDestList[10].GetNumObjects(); i++)
+					mSparkDestList[10].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK12 :
+				for (int i = 0; i < mSparkDestList[11].GetNumObjects(); i++)
+					mSparkDestList[11].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK13 :
+				for (int i = 0; i < mSparkDestList[12].GetNumObjects(); i++)
+					mSparkDestList[12].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK14 :
+				for (int i = 0; i < mSparkDestList[13].GetNumObjects(); i++)
+					mSparkDestList[13].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK15 :
+				for (int i = 0; i < mSparkDestList[14].GetNumObjects(); i++)
+					mSparkDestList[14].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK16 :
+				for (int i = 0; i < mSparkDestList[15].GetNumObjects(); i++)
+					mSparkDestList[15].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK17 :
+				for (int i = 0; i < mSparkDestList[16].GetNumObjects(); i++)
+					mSparkDestList[16].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK18 :
+				for (int i = 0; i < mSparkDestList[17].GetNumObjects(); i++)
+					mSparkDestList[17].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK19 :
+				for (int i = 0; i < mSparkDestList[18].GetNumObjects(); i++)
+					mSparkDestList[18].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK20 :
+				for (int i = 0; i < mSparkDestList[19].GetNumObjects(); i++)
+					mSparkDestList[19].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK21 :
+				for (int i = 0; i < mSparkDestList[20].GetNumObjects(); i++)
+					mSparkDestList[20].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK22 :
+				for (int i = 0; i < mSparkDestList[21].GetNumObjects(); i++)
+					mSparkDestList[21].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK23 :
+				for (int i = 0; i < mSparkDestList[22].GetNumObjects(); i++)
+					mSparkDestList[22].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK24 :
+				for (int i = 0; i < mSparkDestList[23].GetNumObjects(); i++)
+					mSparkDestList[23].GetObject(i)->Burn();
+				break;
+			case TIMER_SPARK25 :
+				for (int i = 0; i < mSparkDestList[24].GetNumObjects(); i++)
+					mSparkDestList[24].GetObject(i)->Burn();
+				break;
+
+			case TIMER_CS1 :
+			{
+				Mission::StartCutScene();
+				Mission::ShowBlackBars();
+				Camera::StartTransition(NAME_TRANSITION01, 2.0f);
+				Mission::StartSingleTimer(TIMER_CS2, TIME_CS2);
+			}
+			break;
+
+			case TIMER_CS2 :
+			{
+				Camera::StartTransition(NAME_TRANSITION02, 2.0f);
+				Mission::StartSingleTimer(TIMER_CS3, TIME_CS3);
+				Mission::StartSingleTimer(TIMER_AIRPLANE01, TIME_AIRPLANE01);
+				mSoundAirplane = Audio::PlaySample3D(SND_AIRPLANE, mAirplane.GetPosition(), false);
+			}
+			break;
+
+			case TIMER_CS3 :
+			{
+				Camera::StartTransition(NAME_TRANSITION03, 3.0f);
+				Mission::StartSingleTimer(TIMER_CS4, TIME_CS4);
+			}
+			break;
+
+			case TIMER_CS4 :
+			{
+				Audio::SetMusicLevel(0.0f);
+				Camera::StartTransition(NAME_TRANSITION04, 2.0f);
+				Mission::StartSingleTimer(TIMER_CS5, TIME_CS5);
+			}
+			break;
+
+			case TIMER_CS5 :
+			{
+				Mission::HideBlackBars();
+				Mission::EndCutScene();
+				ScriptInterface::ShowRadar();
+				ScriptInterface::ShowMap();
+				ScriptInterface::ShowNavigator();
+				ScriptInterface::ShowInfoBar();
+				ScriptInterface::ShowVehicleBrowser();
+				ScriptInterface::HideMouseCursor(false);
+				Camera::EnableCameraXYMovement();
+				Camera::EnableCameraZMovement();
+				Camera::EnableCameraRotation();
+				if (mHintCounter[0] == 0)
+					ShowHint(0);
+			}
+			break;
+
+			case TIMER_AIRPLANE01 :
+			{
+				mAirplane.PushActionWait(ACTION_NEWLIST, 1.5f);
+				mAirplane.PushActionUsePath(ACTION_APPEND, PATH_AIRPLANE, SPEED_AIRPLANE);
+				Mission::StartIntervalTimer(TIMER_AIRPLANE02, TIME_AIRPLANE02);
+			}
+			break;
+
+			case TIMER_AIRPLANE02 :
+			{
+				float OldSpeed = mAirplane.GetCurrentPathSpeed();
+				float NewSpeed = OldSpeed + 2.0f;
+				mAirplane.SetCurrentPathSpeed(NewSpeed, false);
+			}
+			break;
+
+			case TIMER_FIRE01 :
+			{
+				Mission::StartSingleTimer(TIMER_FIRE02, TIME_FIRE02);
+				int random = Math::rand()%3;
+				if (random == 0)
+				{
+					StartFire01();
+				}
+				else if (random == 1)
+				{
+					StartFire02();
+				}
+				else if (random == 2)
+				{
+					StartFire03();
+				}		
+			}
+			break;
+
+			case TIMER_FIRE02 :
+			{
+				Mission::StartSingleTimer(TIMER_FIRE03, TIME_FIRE03);
+				int random = Math::rand()%2;
+				if (random == 0)
+				{
+					if (!mFire01)
+						StartFire01();
+					else
+						StartFire02();
+				}
+				else if (random == 1)
+				{
+					if (!mFire02)
+						StartFire02();
+					else
+						StartFire03();
+				}	
+			}
+			break;
+
+			case TIMER_FIRE03 :
+			{
+				if (!mFire01)
+					StartFire01();
+				else if (!mFire02)
+					StartFire02();
+				else if (!mFire03)
+					StartFire03();
+			}
+			break;
+
+			case TIMER_RAIN :
+			{
+				float RainIntensity = Weather::GetRainIntensity();
+				if (RainIntensity == 0.0f)
+				{
+					System::Log("Start rain, time warp and arsonist scene");	
+					float mRainIntensity = RainIntensity + 0.1f;
+					float mFlashIntensity = 0.3f;
+					float RainVolume = mRainIntensity;
+					float ThunderVolume = mRainIntensity - 0.1f;
+					Weather::SetRainVisible(true);
+					Weather::SetFlashVisible(true);
+					Weather::SetRainIntensity(mRainIntensity);
+					Weather::SetFlashIntensity(mFlashIntensity);
+					Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_RAIN, RainVolume);
+					Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_THUNDER, ThunderVolume);
+
+					int hour, minute, second;
+					Game::GetTime( hour, minute, second );
+					System::Log("Time: %d %d %d", hour, minute, second );
+					int hoursLeft = 20 - hour;
+					int minutesLeft = 60 * hoursLeft - minute + 60;
+					Game::SetTimeSpeed(minutesLeft/TIME_TILL_DARK);
+					Mission::StartIntervalTimer(TIMER_DARK, TIME_DARK);
+					Audio::PlaySample(SND_THUNDER);
+
+					Mission::StartSingleTimer(TIMER_ARSONIST01, TIME_ARSONIST01);
+					if (mHintCounter[4] == 0)
+						ShowHint(4);
+				} 
+				else if (RainIntensity < 1.0f)
+				{
+					float mRainIntensity = RainIntensity + 0.1f;
+					float RainVolume = mRainIntensity;
+					float ThunderVolume = mRainIntensity - 0.2f;
+					Weather::SetRainIntensity(mRainIntensity);
+					Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_RAIN, RainVolume);
+					Game::SetAmbientSoundVolumeByName(NAME_AMBIENT_THUNDER, ThunderVolume);
+
+				}
+				else
+				{
+					Mission::StopTimer(TIMER_RAIN);
+					System::Log("Stop TIMER_RAIN");	
+				}
+
+			}
+			break;
+
+			case TIMER_DARK :
+			{
+				int hour, minute, second;
+				Game::GetTime( hour, minute, second );
+				if ( hour >= 20 && hour < 21)
+				{
+					Game::SetTimeSpeed(0);
+					Mission::StopTimer(TIMER_DARK);
+					System::Log("Stop TIMER_DARK. Time: %d %d %d", hour, minute, second );
+				}
+			}
+			break;
+
+			case TIMER_ARSONIST01 :
+			{
+				mArson.Show();
+				SoundNewObjective();
+				SwitchAreaLights(&mAreaLights, true);
+
+				Mission::AddObjective(MISSION06_ARSONIST);
+				Mission::AddObjective(MISSION06_WITHDRAW);
+				Mission::StartIntervalTimer(TIMER_WITHDRAW, TIME_WITHDRAW);
+				Mission::StartSingleTimer(TIMER_ARSONIST02, TIME_ARSONIST02);
+				Mission::StartCountDown(COUNTDOWN_TIME);
+				Mission::SetCountDownColor(1.0f, 0.0f, 0.0f);
+				if (mHintCounter[5] == 0)
+					ShowHint(5);
+			}
+			break;
+
+			case TIMER_ARSONIST02 :
+			{
+				Mission::StartSingleTimer(TIMER_ARSONIST03, TIME_ARSONIST03);
+				if (mHintCounter[6] == 0)
+					ShowHint(6);
+			}
+			break;
+
+			case TIMER_ARSONIST03 :
+			{
+				mCar.Show();
+				mCar.SetVehicleRole(VT_GANGSTER_GETAWAY);
+				mArsonist.SetRole(ROLE_GANGSTER);
+				mArsonist.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+				mCar.SetObjectPath(PATH_CAR, 6.5f);
+				Mission::StartIntervalTimer(TIMER_SQUADCHECK, TIME_SQUADCHECK);
+				if (mHintCounter[7] == 0)
+					ShowHint(7);
+			}
+			break;
+
+			case TIMER_ARSONIST04 :
+			{
+				SwitchAreaLights(&mAreaLights, false);
+				mCar.SetParking(true);
+				mArsonist.PushActionLeaveCar(ACTION_NEWLIST, &mCar);
+				mArsonist.PushActionWait(ACTION_APPEND, 1.5f);
+				mArsonist.PushActionUsePath(ACTION_APPEND, PATH_ARSONIST, 2.0f);
+				Mission::StopTimer(TIMER_WITHDRAW);
+				mArsonistOnFoot = true;
+				if (!Mission::IsObjectiveAccomplished(MISSION06_WITHDRAW))
+					Mission::SetObjectiveAccomplished(MISSION06_WITHDRAW, true);
+			}
+			break;
+
+			case TIMER_ARSONIST05 :
+			{
+				System::Log("Commit arson. Arresting of arsonist allowed.");
+				Mission::StopTimer(TIMER_SQUADCHECK);
+				mArsonist.SetFleeing(true);
+				mArsonist.PushActionSwitchAnim(ACTION_NEWLIST, "treatinjured1");
+				mArsonist.PushActionWait(ACTION_APPEND, 7.0f);
+				mArsonist.PushActionUsePath(ACTION_APPEND, PATH_ARSONIST2, 3.8f);
+				Mission::StartSingleTimer(TIMER_ARSONIST06, TIME_ARSONIST06);
+				mArrestAllowed = true;
+				if (mHintCounter[8] == 0)
+					ShowHint(8);	
+
+				if (Mission::TimerIsStarted(TIMER_SQUADCHECK))
+					Mission::StopTimer(TIMER_SQUADCHECK);
+				if (Mission::TimerIsStarted(TIMER_SQUADCHECK2))
+					Mission::StopTimer(TIMER_SQUADCHECK2);
+			}
+			break;
+
+			case TIMER_ARSONIST06 :
+			{
+				mArson.Burn();				
+			}
+			break;
+
+			case TIMER_WITHDRAW :
+			{
+				GameObjectList list3;
+				Game::CollectObstaclesOnTrigger(TRIGGER_ARSONIST, list3, ACTOR_VEHICLE|ACTOR_PERSON);
+				if (list3.ContainsSquad())
+				{
+					if (Mission::HasObjective(MISSION06_WITHDRAW) && Mission::IsObjectiveAccomplished(MISSION06_WITHDRAW))
+						Mission::SetObjectiveAccomplished(MISSION06_WITHDRAW, false);
+				}
+				else
+				{
+					if (Mission::HasObjective(MISSION06_WITHDRAW) && !Mission::IsObjectiveAccomplished(MISSION06_WITHDRAW))
+						Mission::SetObjectiveAccomplished(MISSION06_WITHDRAW, true);
+				}
+			}
+			break;
+
+			case TIMER_SQUADCHECK :
+			{
+				if (!mArsonistOnFoot)
+				{
+					GameObjectList list;
+					Game::CollectObstaclesOnTrigger(TRIGGER_ARSONIST, list, ACTOR_VEHICLE|ACTOR_PERSON);
+					if (list.ContainsSquad())
+					{
+						System::Log("M06: Squad found in TRIGGER_ARSONIST: 10 secs to withdraw or fail");
+						Mission::PauseTimer(TIMER_SQUADCHECK);
+						Mission::StartSingleTimer(TIMER_SQUADCHECK2, TIME_SQUADCHECK2);
+						ShowHint(9);
+					}
+					else
+						return;
+				}
+				else
+				{
+					GameObjectList list;
+					Game::CollectObstaclesOnTrigger(TRIGGER_ARSON, list, ACTOR_VEHICLE|ACTOR_PERSON);
+					if (list.ContainsSquad())
+					{
+						mArsonist.SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+						mArsonist.SetFleeing(true);
+						if (mArsonist.HasObjectPath(PATH_ARSONIST))
+						{
+							System::Log("M06: Arsonist has PATH_ARSONIST");
+							mArsonist.RemoveObjectPath();
+						}
+						mArsonist.PushActionWait(ACTION_NEWLIST, 0.5f);
+						mArsonist.SetStandardPath(PATH_ARSONIST2);
+						mArsonist.SetEscapePath(PATH_ARSONIST2);
+						Mission::StopTimer(TIMER_SQUADCHECK);
+						mNoArson = true;
+						if (mHintCounter[10] == 0)
+							ShowHint(10);
+					}
+					else
+						return;
+				}
+			}
+			break;
+
+			case TIMER_SQUADCHECK2 :
+			{
+				if (!mArsonistOnFoot)
+				{
+					GameObjectList list2;
+					Game::CollectObstaclesOnTrigger(TRIGGER_ARSONIST, list2, ACTOR_VEHICLE|ACTOR_PERSON);
+					if (list2.ContainsSquad())
+					{
+						mSquadInTrigger = true;
+					}
+					else
+					{
+						System::Log("M06: Squad withdrawn from TRIGGER_ARSONIST in time");
+						Mission::ResumeTimer(TIMER_SQUADCHECK);
+					}
+				}
+			}
+			break;
+
+			case TIMER_PATHS :
+			{
+				mVoCar01.SetVirtualObjectTerrain("Road");
+				mVoCar01.SetVirtualObjectTerrain("Road");
+			}
+			break;
+
+			case TIMER_UPDATE :
+			{
+				GameObjectList list;
+				Game::CollectObstaclesOnTrigger(TRIGGER_AIRBASE, list, ACTOR_OBJECT|ACTOR_VEHICLE);
+				if (list.GetNumBurningObjects() > 0)
+					mFailedToProtectBase = true;
+			}
+			break;
+		}
+	}
+
+	void OnCountDownEnded()
+	{
+		Mission::SetCountDownColor(1.0f, 1.0f, 1.0f);
+		return;
+	}
+
+	bool StartFire01()
+	{
+		mFire01 = true;
+		for (int i = 0; i < mFireList[0].GetNumObjects(); i++)
+		{
+			if(!mFireList[0].GetObject(i)->IsBurning())
+			{
+				for (int i = 0; i < mFireList[0].GetNumObjects(); i++)
+					mFireList[0].GetObject(i)->Burn();
+				Vector pos, dir;
+				float yaw, pitch, roll;
+				pos = Camera::Get();
+				Camera::GetRotation(yaw, pitch, roll);
+				Camera::StartTransition(mFireList[0].GetObject(0)->GetPosition(), pos.z, yaw, pitch, roll, 2.0f);
+				ShowHint(3);
+			}
+			else
+			{
+				System::Log("M06: Trees 0 already burning or burned");
+				return;
+			}
+		}	
+	}
+
+	bool StartFire02()
+	{
+		mFire02 = true;
+		for (int i = 0; i < mFireList[1].GetNumObjects(); i++)
+		{
+			if(!mFireList[1].GetObject(i)->IsBurning())
+			{
+				for (int i = 0; i < mFireList[1].GetNumObjects(); i++)
+					mFireList[1].GetObject(i)->Burn();
+				Vector pos, dir;
+				float yaw, pitch, roll;
+				pos = Camera::Get();
+				Camera::GetRotation(yaw, pitch, roll);
+				Camera::StartTransition(mFireList[1].GetObject(0)->GetPosition(), pos.z, yaw, pitch, roll, 2.0f);
+				ShowHint(3);
+			}
+			else
+			{
+				System::Log("M06: Trees 1 already burning or burned");
+				return;
+			}	
+		}	
+	}
+
+	bool StartFire03()
+	{
+		mFire03 = true;
+		for (int i = 0; i < mFireList[2].GetNumObjects(); i++)
+		{
+			if(!mFireList[2].GetObject(i)->IsBurning())
+			{
+				for (int i = 0; i < mFireList[2].GetNumObjects(); i++)
+					mFireList[2].GetObject(i)->Burn();
+				Vector pos, dir;
+				float yaw, pitch, roll;
+				pos = Camera::Get();
+				Camera::GetRotation(yaw, pitch, roll);
+				Camera::StartTransition(mFireList[2].GetObject(0)->GetPosition(), pos.z, yaw, pitch, roll, 2.0f);
+				ShowHint(3);
+			}
+			else
+			{
+				System::Log("M06: Trees 2 already burning or burned");
+				return;
+			}	
+		}	
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_CAR01 :
+			{
+				if (Collider->GetType() == ACTOR_VEHICLE)
+				{
+					Vehicle v(Collider);
+					if (v.IsCivilCar())
+					{
+						Mission::StartSingleTimer(TIMER_PATHS, TIME_PATHS);
+						mVoCar01.SetVirtualObjectTerrain("No vehicles");
+						mVoCar01.SetVirtualObjectTerrain("No vehicles");
+					}
+				}
+			}
+			break;
+		}
+	}
+
+	PathFinishedAction OnPathFinished(const char* Path, GameObject *Obj)
+	{
+		switch(Path)
+		{
+			case PATH_AIRPLANE :
+			{
+				Audio::StopSample(mSoundAirplane);
+				Mission::StopTimer(TIMER_AIRPLANE02);
+				mAirplane.PushActionDeleteOwner(ACTION_NEWLIST);
+			}
+			break;
+
+			case PATH_CAR :
+			{
+				Mission::StartSingleTimer(TIMER_ARSONIST04, TIME_ARSONIST04);
+			}
+			break;
+
+			case PATH_ARSONIST :
+			{
+				Mission::StartSingleTimer(TIMER_ARSONIST05, TIME_ARSONIST05);
+			}
+			break;
+
+			case PATH_ARSONIST2 :
+			{
+				mArsonistEscaped = true;
+			}
+			break;
+		}
+		return PATH_DEFAULT;
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasName(NAME_EVAC) || Obj->HasName(NAME_VIOLENT1) || Obj->HasName(NAME_VIOLENT2))
+		{
+			mNumEvacs--;
+			System::Log("M06: Minus 1 evac: Number of evacs: %d", mNumEvacs);
+		}
+		if (Obj->GetID() == mArsonist.GetID())
+		{
+			if (mArsonistOnFoot)
+			{
+				Mission::SetObjectiveAccomplished(MISSION06_ARSONIST, true);
+				mArsonistCaptured = true;
+			}
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void SoundNewObjective()
+	{
+		Audio::PlaySample("mod:Audio/FX/misc/newobjective.wav");
+	}
+
+	void SwitchAreaLights(GameObjectList *lights_, bool enable_)
+	{
+		for ( int i=0; i<lights_->GetNumObjects(); ++i )
+		{
+			if ( enable_ )
+				lights_->GetObject(i)->Show();
+			else
+				lights_->GetObject(i)->Hide();
+		}
+	}
+
+	ActionCallbackResult OnPreAction(const char *Action, ActionCallback* Data_)
+	{
+		switch(Action)
+		{
+			case "EActionLinkPerson" :
+			case "EActionArrest" :
+			case "EActionArrestPerson" :
+			{
+				if (Data_->Parameters[0].iValue == mViolent1.GetID())
+				{
+					if (mViolent1.GetRole() == ROLE_CIVILIAN)
+					{
+						System::Log("M06: Violent1 attacks");
+						mViolent1.SetRole(ROLE_GANGSTER);
+						mViolent1.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+						Data_->Owner->PushActionArrest(ACTION_INSERTAFTERFIRST, &mViolent1, true);
+						return ACTION_SKIP;
+					}
+				}
+				else if (Data_->Parameters[0].iValue == mViolent2.GetID())
+				{
+					if (mViolent2.GetRole() == ROLE_CIVILIAN)
+					{
+						System::Log("M06: Violent2 attacks");
+						mViolent2.SetRole(ROLE_GANGSTER);
+						mViolent2.SetBehaviour(BEHAVIOUR_GANGSTER_CIVILUNARMED);
+						Data_->Owner->PushActionArrest(ACTION_INSERTAFTERFIRST, &mViolent2, true);
+						return ACTION_SKIP;
+					}
+				}
+			}
+			break;
+
+			case "EActionCool" :
+			case "EActionExtinguish" :
+			case "EActionUseEquipment" :
+			{
+				if(Data_->Parameters[0].iValue == mCampFireWood.GetID())
+				{
+					mCampFire.SetParticleEffectStrength(0.f);
+				}
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M06: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_PRIORITY);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_BUILDING);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_EVAC);
+				break;
+			case 3:
+				Mission::PlayHint(HINT_NEWFIRE);
+				break;
+			case 4:
+				Mission::PlayHint(HINT_RAIN);
+				break;
+			case 5:
+				Mission::PlayHint(HINT_ARSONIST);
+				break;
+			case 6:
+				Mission::PlayHint(HINT_1MINUTE);
+				break;
+			case 7:
+				Mission::PlayHint(HINT_APPREHEND);
+				break;
+			case 8:
+				Mission::PlayHint(HINT_COMMITARSON);
+				break;
+			case 9:
+				Mission::PlayHint(HINT_WITHDRAW);
+				break;
+			case 10:
+				Mission::PlayHint(HINT_ARSONISTFLEES);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Burning Objects") + Mission::GetCounter("Burning Houses") == 0) 
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION06_EXT))
+			{
+				if (Mission::HasObjective(MISSION06_EXT))
+					Mission::SetObjectiveAccomplished(MISSION06_EXT, true);
+				if (Mission::HasObjective(MISSION06_PROTECT))
+					Mission::SetObjectiveAccomplished(MISSION06_PROTECT, true);
+			}
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION06_EXT))
+			{
+				if (Mission::HasObjective(MISSION06_EXT))
+					Mission::SetObjectiveAccomplished(MISSION06_EXT, false);
+				if (Mission::HasObjective(MISSION06_PROTECT))
+					Mission::SetObjectiveAccomplished(MISSION06_PROTECT, false);
+			}
+		}
+
+		if (mNumEvacs == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION06_EVAC))
+			{
+				Mission::SetObjectiveAccomplished(MISSION06_EVAC, true);
+				if (mHintCounter[3] == 0)
+					ShowHint(3);
+			}
+		}
+
+		if (mFailedToProtectBase || mSquadInTrigger || mArsonistEscaped)
+		{
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Dead Persons") - Mission::GetCounter("Dead Gangsters") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") - Mission::GetCounter("Injured Gangsters") > MAX_INJURED)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.5f);
+			return MISSION_FAILED;
+		}
+
+		if (mFire01 && mFire02 && mFire03 && Mission::IsObjectiveAccomplished(MISSION06_PROTECT) && Mission::IsObjectiveAccomplished(MISSION06_EVAC))
+		{
+			if (!mPart2)
+			{
+				System::Log("M06: Start part 2");
+				mPart2 = true;
+				Mission::StartIntervalTimer(TIMER_RAIN, TIME_RAIN);
+			}			
+		}
+
+		if (mArsonistCaptured && Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.6f);
+             	return MISSION_SUCCEEDED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		if (mFailedToProtectBase)
+			return "M06_PROTECTION_REASON";
+
+		if (mSquadInTrigger)
+			return "M06_SQUAD_REASON";
+
+		if (mArsonistEscaped)
+			return "M06_ESCAPE_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		if (mFailedToProtectBase)
+			return "M06_PROTECTION_COMMENT";
+
+		if (mSquadInTrigger)
+			return "M06_SQUAD_COMMENT";
+
+		if (mArsonistEscaped)
+			return "M06_ESCAPE_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (mNoArson && mFailedToProtectHouses)
+			return "SUPERV_MISSION06_01";
+		if (mNoArson)
+			return "SUPERV_MISSION06_02";
+		if (mFailedToProtectHouses)
+			return "SUPERV_MISSION06_03";
+		else if (scoring->Efficiency >= 0.6f)
+			return "SUPERV_MISSION06_04";
+		else if (scoring->Efficiency < 0.6f)
+			return "SUPERV_MISSION06_05";
+
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+		for (int i = 0; i < MAX_EVACS; i++)
+			Serializer->Write(mEvacs[i]);
+		Serializer->Write(mNumEvacs);
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Write(mSparkObj[i]);
+			Serializer->Write(mSparkEmit[i]);
+			Serializer->Write(mSparkDestList[i]);
+		}
+		for (int i = 0; i < MAX_FIRES; i++)
+			Serializer->Write(mFireList[i]);
+		Serializer->Write(mFire01);
+		Serializer->Write(mFire02);
+		Serializer->Write(mFire03);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mFailedToProtectBase);
+		Serializer->Write(mFailedToProtectHouses);
+		Serializer->Write(mAirplane);
+		Serializer->Write(mSoundAirplane);
+		Serializer->Write(mViolent1);
+		Serializer->Write(mViolent2);
+		Serializer->Write(mHouse);
+		Serializer->Write(mCampFire);
+		Serializer->Write(mCampFireWood);
+		Serializer->Write(mPart2);
+		Serializer->Write(mArsonist);
+		Serializer->Write(mArson);
+		Serializer->Write(mCar);
+		Serializer->Write(mArrestAllowed);
+		Serializer->Write(mArsonistCaptured);
+		Serializer->Write(mAreaLights);
+		Serializer->Write(mSquadInTrigger);
+		Serializer->Write(mArsonistOnFoot);
+		Serializer->Write(mNoArson);
+		Serializer->Write(mArsonistEscaped);
+		Serializer->Write(mVoCar01);
+		Serializer->Write(mVoCar02);
+
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+		for (int i = 0; i < MAX_EVACS; i++)
+			Serializer->Read(mEvacs[i]);
+		Serializer->Read(mNumEvacs);
+		for (int i = 0; i < MAX_SPARK_OBJECTS; i++)
+		{
+			Serializer->Read(mSparkObj[i]);
+			Serializer->Read(mSparkEmit[i]);
+			Serializer->Read(mSparkDestList[i]);
+		}
+		for (int i = 0; i < MAX_FIRES; i++)
+			Serializer->Read(mFireList[i]);
+		Serializer->Read(mFire01);
+		Serializer->Read(mFire02);
+		Serializer->Read(mFire03);
+		Serializer->Read(mTooManyVictims);
+		Serializer->Read(mFailedToProtectBase);
+		Serializer->Read(mFailedToProtectHouses);
+		Serializer->Read(mAirplane);
+		Serializer->Read(mSoundAirplane);
+		Serializer->Read(mViolent1);
+		Serializer->Read(mViolent2);
+		Serializer->Read(mHouse);
+		Serializer->Read(mCampFire);
+		Serializer->Read(mCampFireWood);
+		Serializer->Read(mPart2);
+		Serializer->Read(mArsonist);
+		Serializer->Read(mArson);
+		Serializer->Read(mCar);
+		Serializer->Read(mArrestAllowed);
+		Serializer->Read(mArsonistCaptured);
+		Serializer->Read(mAreaLights);
+		Serializer->Read(mSquadInTrigger);
+		Serializer->Read(mArsonistOnFoot);
+		Serializer->Read(mNoArson);
+		Serializer->Read(mArsonistEscaped);
+		Serializer->Read(mVoCar01);
+		Serializer->Read(mVoCar02);
+
+		return true;
+	}
+};
+

@@ -1,0 +1,129 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: Commands exclusively for LA mod mission 3
+//
+//	- M03PickUp
+//	- M03PutInCar
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const char NAME_BOMB[] 				= "m03_bomb";
+const char PROTO_BOMBSQUAD[] 			= "mod:Prototypes/Vehicles/03 LA Police/suv_bomb_squad.e4p";
+const char M03DUMMY[] 				= "M03Dummy";
+const char OBJ_BOMB[]				= "06 LA Misc/bomb_case.V3O";
+
+object M03PickUp : CommandScript
+{
+	M03PickUp()
+	{
+		SetIcon("liftwithcrane");
+		SetCursor("liftwithcrane");
+		SetValidTargets(ACTOR_OBJECT);
+		SetPriority(100);
+		SetSelfClickActivation(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		GameObject obj(Target);
+            if (obj.HasName(NAME_BOMB) && !obj.IsSpecialLightEnabled())
+            	return true;
+		
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_USE);
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionSwitchAnim(ACTION_APPEND, "putobj03");
+		Caller->PushActionWait(ACTION_APPEND, 1.0f);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, M03DUMMY, Target, 1, false);
+	}
+};
+
+object M03PutInCar : CommandScript
+{
+	M03PutInCar()
+	{
+		SetIcon("drop");
+		SetCursor("drop");
+		SetValidTargets(ACTOR_VEHICLE);
+		SetPriority(210);
+		SetSelfClickActivation(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetType()!=ACTOR_VEHICLE || Caller->GetType()!=ACTOR_PERSON)
+			return false;
+
+		Vehicle v(Target);		
+		if (v.IsValid() && !v.IsDestroyed() && StrCompare(v.GetPrototypeFileName(), PROTO_BOMBSQUAD) == 0)
+			return true;
+				
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector TargetPos = Target->GetTargetPoint(Caller, TARGET_EQUIPMENTDOOR);
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionPutInCar(ACTION_APPEND, Target);
+	}
+};
+
+object M03Dummy : CommandScript
+{
+	M03Dummy()
+	{
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(childID == 1)
+		{
+			Person p(Caller);
+			GameObject o(Target);
+			o.PushActionDeleteOwner(ACTION_APPEND);
+			p.PushActionSwitchAnim(ACTION_APPEND, "putobj03_b");
+			p.PlaceObjectInRightHand(OBJ_BOMB);
+			p.RemoveCommand("Use");
+			p.RemoveCommand("EnterCar");
+			p.RemoveCommand("M03PickUp");
+			p.AssignCommand("M03PutInCar");
+		}
+	}
+};
+

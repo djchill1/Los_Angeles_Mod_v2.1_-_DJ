@@ -1,0 +1,495 @@
+//******************************************************************************************
+// #Version 1.3#
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+const int MAX_HINTS = 3;
+const int MAX_DEATHS = 1;
+const int MAX_INJURIES = 6;
+const int MAX_NUM_TERRORS = 3;
+const int MAX_NUM_CHILDS = 3;
+const int NUM_CHILDS = 2;
+
+const char MISSION09_TRANSPORT[]		= "MISSION09_TRANSPORT";
+const char MISSION09_TERROR[]			= "MISSION09_TERROR";
+const char MISSION09_CHILDS[]			= "MISSION09_CHILDS";
+const char HINT_START[]				= "MISSION09_HINT01";
+const char HINT_TERRORS[]			= "MISSION09_HINT02";
+const char HINT_CHILDLOST[]			= "MISSION09_HINT03";
+
+const float TIME_WARP_HOUR 			= 22;
+const float TIME_WARP_MINUTE 			= 00;
+const int TIME_TILL_NIGHT 			= 13; // minutes till TIME_WARP
+const char TIMER_NIGHT[]			= "timer_night";
+const float TIME_NIGHT				= 5.f;
+
+const float TIME_TERROR 			= 4.f * 60.f;
+const char TIMER_TERROR[]			= "timer_terror";
+
+const float TIME_LIGHTS				= 15.f;
+const char TIMER_LIGHTS[]			= "timer_lights";
+
+const char NAME_TERRORIST1[]			= "terror1";
+const char NAME_TERRORIST2[]			= "terror2";
+const char NAME_TERRORIST3[]			= "terror3";
+const char NAME_CHILD1_1[]			= "child1_1";
+const char NAME_CHILD1_2[]			= "child1_2";
+const char NAME_CHILD1_3[]			= "child1_3";
+const char NAME_CHILD2[]			= "child2";
+const char NAME_TREE1[]				= "tree1";
+const char NAME_TREE2[]				= "tree2";
+const char NAME_TREE3[]				= "tree3";
+const char TRIGGER_TERROR[]			= "trigger_terror";
+
+const char NAME_WALKER[]			= "walker";
+const char PATH_WALKER[]			= "path_walker";
+const char MESSAGEPOOL1[]			= "child1";
+const char MESSAGEPOOL2[]			= "child2";
+const char MESSAGEPOOL3[]			= "child3";
+
+const char NAME_AREALIGHT[]			= "arealight";
+
+object Mission09 : MissionScript
+{
+	bool mChildPos1, mChildPos2, mChildPos3, mChildDied, mTooManyVictims;
+	int mHintCounter[MAX_HINTS];
+	int mNumTerrors, mNumChilds;
+	Person mTerror[MAX_NUM_TERRORS];
+	Person mChild1[MAX_NUM_CHILDS];
+	Person mChild2;
+	GameObject mTree[MAX_NUM_CHILDS];
+	GameObjectList mAreaLights;
+
+	Mission09()
+	{
+		for(int i = 0; i < MAX_HINTS; ++i)
+		{
+			mHintCounter[i] = 0;
+		}
+		mTooManyVictims = false;
+		mChildPos1 = false;
+		mChildPos2 = false;
+		mChildPos3 = false;
+		mChildDied = false;
+		mNumTerrors = MAX_NUM_TERRORS;
+		mNumChilds = NUM_CHILDS;
+	}
+	
+	~Mission01()
+	{
+	}
+	
+	void Start()
+	{
+		GameObjectList list = Game::GetGameObjects();
+		for(int i = 0; i < list.GetNumObjects(); i++)
+		{
+			GameObject *obj = list.GetObject(i);
+			if (obj->HasName(NAME_TERRORIST1))
+				mTerror[0] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST2))
+				mTerror[1] = Person(obj);
+			if (obj->HasName(NAME_TERRORIST3))
+				mTerror[2] = Person(obj);
+
+			if (obj->HasName(NAME_CHILD1_1))
+				mChild1[0] = Person(obj);
+			if (obj->HasName(NAME_CHILD1_2))
+				mChild1[1] = Person(obj);
+			if (obj->HasName(NAME_CHILD1_3))
+				mChild1[2] = Person(obj);
+			if (obj->HasName(NAME_TREE1))
+				mTree[0] = obj;
+			if (obj->HasName(NAME_TREE2))
+				mTree[1] = obj;
+			if (obj->HasName(NAME_TREE3))
+				mTree[2] = obj;
+
+			if (obj->HasName(NAME_CHILD2))
+				mChild2 = Person(obj);
+		}
+		int rnd = Math::rand()%3;
+		switch(rnd)
+		{
+			case 0:
+				mChildPos1 = true;
+				mChild1[1].Hide();
+				mChild1[2].Hide();
+				mChild1[1].SetInjuredLifeDrain(0.0f);
+				mChild1[2].SetInjuredLifeDrain(0.0f);
+				break;
+			case 1:
+				mChildPos2 = true;
+				mChild1[0].Hide();
+				mChild1[2].Hide();
+				mChild1[0].SetInjuredLifeDrain(0.0f);
+				mChild1[2].SetInjuredLifeDrain(0.0f);
+				break;
+			case 2:
+				mChildPos3 = true;
+				mChild1[0].Hide();
+				mChild1[1].Hide();
+				mChild1[0].SetInjuredLifeDrain(0.0f);
+				mChild1[1].SetInjuredLifeDrain(0.0f);
+				break;
+		}
+		PersonList persons(NAME_WALKER);
+		for(int i = 0; i < persons.GetNumPersons(); i++)
+		{
+			persons.GetPerson(i)->SetObjectPath(PATH_WALKER, 2.0f);
+			if(mChildPos1)
+				persons.GetPerson(i)->SetMessageGroup(MESSAGEPOOL1);
+			else if(mChildPos2)
+				persons.GetPerson(i)->SetMessageGroup(MESSAGEPOOL2);
+			else if(mChildPos3)
+				persons.GetPerson(i)->SetMessageGroup(MESSAGEPOOL3);
+		}
+		for (int i = 0; i < MAX_NUM_CHILDS; ++i)
+		{
+			//mChild1[i].Hide();
+			mChild1[i].SetFlag(OF_BLOCKED);
+			mTree[i].SetFlag(OF_RECOVERABLE);
+		}
+		//if(mChildPos1)
+		//	mChild1[0].Show();
+		//else if(mChildPos2)
+		//	mChild1[1].Show();
+		//else if(mChildPos3)
+		//	mChild1[2].Show();
+		Mission::StartIntervalTimer(TIMER_NIGHT, TIME_NIGHT);
+		int hour, minute, second;
+		Game::GetTime( hour, minute, second );
+		System::Log("Time: %d %d %d", hour, minute, second );
+		int hoursLeft = TIME_WARP_HOUR - hour;
+		int minutesLeft = 60 * hoursLeft - minute + TIME_WARP_MINUTE;
+		Game::SetTimeSpeed(minutesLeft/TIME_TILL_NIGHT);
+		System::Log("minutes left: %d ", minutesLeft );
+		System::Log("timespeed: %d ", minutesLeft/TIME_TILL_NIGHT);
+		Game::CreateAreaLightsAroundTrigger(TRIGGER_TERROR, NAME_AREALIGHT, 200.f);
+		mAreaLights = Game::GetGameObjects(NAME_AREALIGHT);
+		SwitchAreaLights(&mAreaLights, false);
+		Mission::StartSingleTimer(TIMER_TERROR, TIME_TERROR);
+		Mission::AddObjective(MISSION09_TRANSPORT);
+		Mission::AddObjective(MISSION09_TERROR);
+		Mission::AddObjective(MISSION09_CHILDS);
+		Audio::PlaySoundtrack("34", 0.0f);
+		ShowHint(0);
+	}
+
+	void OnSquadVehicleArrived(Vehicle *v)
+	{
+		if (v->HasCommand("DummyTillerCheck") && !v->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle til = *v;
+			Game::ExecuteCommand("DummyTillerCheck", &til, &til);
+		}
+		if (v->HasCommand("VcmdToFireStation"))
+			v->RemoveCommand("VcmdToFireStation");
+		if (v->HasCommand("VcmdToHospital"))
+			v->RemoveCommand("VcmdToHospital");
+		if (v->HasCommand("VcmdToPoliceStation"))
+			v->RemoveCommand("VcmdToPoliceStation");
+		if (v->HasCommand("VcmdPatrol"))
+			v->RemoveCommand("VcmdPatrol");
+		if (v->HasCommand("VcmdPatrolAmbulance"))
+			v->RemoveCommand("VcmdPatrolAmbulance");
+		if (v->HasCommand("VcmdTrailer"))
+			v->RemoveCommand("VcmdTrailer");
+	}
+
+	void OnTimer(const char *Timer, float Time)
+	{
+		switch(Timer)
+		{
+			case TIMER_NIGHT :
+			{
+				int hour, minute, second;
+				Game::GetTime(hour, minute, second);
+				if (hour >= TIME_WARP_HOUR && minute >= TIME_WARP_MINUTE)
+				{					
+					System::Log("Stop timer night");
+					Game::SetTimeSpeed(0);
+					Mission::StopTimer(TIMER_NIGHT);
+				}
+			}
+			break;
+
+			case TIMER_TERROR :
+			{
+				ShowHint(1);
+				SwitchAreaLights(&mAreaLights, true);
+				Mission::StartSingleTimer(TIMER_LIGHTS, TIME_LIGHTS);
+			}
+			break;
+
+			case TIMER_LIGHTS :
+			{
+				SwitchAreaLights(&mAreaLights, false);
+			}
+			break;
+		}
+	}
+
+	void OnTrigger(const char *Trigger, Actor *Collider)
+	{
+		switch(Trigger)
+		{
+			case TRIGGER_TERROR :
+			{
+				if (mTerror[0].IsValid() && !mTerror[0].IsDead() && !mTerror[0].IsInjured())
+				{
+					mTerror[0].SetRole(ROLE_GANGSTER);
+					mTerror[0].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[0].SetEquipment(EQUIP_PISTOL);
+					mTerror[0].SetCivilsFleeRange(0.f);
+				}
+				if (mTerror[1].IsValid() && !mTerror[1].IsDead() && !mTerror[1].IsInjured())
+				{
+					mTerror[1].SetRole(ROLE_GANGSTER);
+					mTerror[1].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[1].SetEquipment(EQUIP_PISTOL);
+					mTerror[1].SetCivilsFleeRange(0.f);
+				}
+				if (mTerror[2].IsValid() && !mTerror[2].IsDead() && !mTerror[2].IsInjured())
+				{
+					mTerror[2].SetRole(ROLE_GANGSTER);
+					mTerror[2].SetBehaviour(BEHAVIOUR_GANGSTER_ATTACKSQUAD);
+					mTerror[2].SetEquipment(EQUIP_RIFLE);
+					mTerror[2].SetShootPower(200.f);
+					mTerror[2].SetShootRange(20.f);
+					mTerror[2].SetCivilsFleeRange(0.f);
+				}
+				Game::DeactivateTrigger(TRIGGER_TERROR);
+				if (Mission::TimerIsStarted(TIMER_TERROR))
+					Mission::StopTimer(TIMER_TERROR);	
+			}
+			break;
+		}
+	}
+
+	void SwitchAreaLights(GameObjectList *lights_, bool enable_)
+	{
+		for ( int i=0; i<lights_->GetNumObjects(); ++i )
+		{
+			if ( enable_ )
+				lights_->GetObject(i)->Show();
+			else
+				lights_->GetObject(i)->Hide();
+		}
+	}
+
+	void OnMissionLeft(GameObject *Obj)
+	{
+		if (Obj->HasName(NAME_TERRORIST1) || Obj->HasName(NAME_TERRORIST2) || Obj->HasName(NAME_TERRORIST3))
+		{
+			mNumTerrors--;
+		}
+		if (Obj->HasNamePrefix("child"))
+		{
+			mNumChilds--;
+		}
+		if (Obj->HasCommand("DummyTillerGoHome"))
+		{
+			Vehicle till(Obj);
+			Game::ExecuteCommand("DummyTillerGoHome", &till, &till);
+		}
+	}
+
+	void OnPersonKilled(Person *p)
+	{
+		if (p->GetID() == mChild1[0].GetID() || p->GetID() == mChild1[1].GetID() || p->GetID() == mChild1[2].GetID() || p->GetID() == mChild2.GetID())
+			mChildDied = true;
+	}
+
+	ActionCallbackResult OnPostAction(const char *Action, ActionCallback *Data)
+	{
+		switch(Action)
+		{
+			case "EActionLiftWithCrane":
+			{
+				if(mChildPos1 && Data->Parameters[0].iValue == mTree[0].GetID() && mChild1[0].IsFlagSet(OF_BLOCKED))
+					mChild1[0].ClearFlag(OF_BLOCKED);
+				else if(mChildPos2 && Data->Parameters[0].iValue == mTree[1].GetID() && mChild1[1].IsFlagSet(OF_BLOCKED))
+					mChild1[1].ClearFlag(OF_BLOCKED);
+				else if(mChildPos3 && Data->Parameters[0].iValue == mTree[2].GetID() && mChild1[2].IsFlagSet(OF_BLOCKED))
+					mChild1[2].ClearFlag(OF_BLOCKED);
+			}
+			break;
+
+			case "EActionArrest" :
+			case "EActionArrestPerson" :
+			case "EActionLinkPerson" :
+			{
+				if (Game::GetActor(Data->Parameters[0].iValue).HasNamePrefix("terror") || Game::GetActor(Data->Parameters[0].iValue).HasName(NAME_CHILD2))
+				{
+					if (mHintCounter[2] == 0)
+						ShowHint(2);
+				}
+
+			}
+			break;
+		}
+		return ACTION_CONTINUE;
+	}
+
+	void ShowHint(int hintId_)
+	{
+		System::Log("M09: Hint %i shown.", hintId_);
+		++mHintCounter[hintId_];
+
+		switch ( hintId_ )
+		{
+			case 0:
+				Mission::PlayHint(HINT_START);
+				break;
+			case 1:
+				Mission::PlayHint(HINT_TERRORS);
+				break;
+			case 2:
+				Mission::PlayHint(HINT_CHILDLOST);
+				break;
+		}
+	}
+
+	MissionState GetMissionState()
+	{
+		if (Mission::GetCounter("Injured Persons") + Mission::GetCounter("Dead Persons") == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION09_TRANSPORT))
+             			Mission::SetObjectiveAccomplished(MISSION09_TRANSPORT, true);
+		}
+		else
+		{
+			if (Mission::IsObjectiveAccomplished(MISSION09_TRANSPORT))
+				Mission::SetObjectiveAccomplished(MISSION09_TRANSPORT, false);
+		}
+
+		if (mNumTerrors == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION09_TERROR))
+				Mission::SetObjectiveAccomplished(MISSION09_TERROR, true);
+		}
+
+		if (mNumChilds == 0)
+		{
+			if (!Mission::IsObjectiveAccomplished(MISSION09_CHILDS))
+				Mission::SetObjectiveAccomplished(MISSION09_CHILDS, true);
+		}
+
+		if (Mission::IsDefaultLogicPositive() && Mission::AllObjectivesAccomplished()) 
+		{
+			Audio::SetMusicLevel(0.5f);
+             		return MISSION_SUCCEEDED;
+		}
+
+		if (Mission::GetCounter("Dead Civils") + Mission::GetCounter("Dead Squads") > MAX_DEATHS)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.4f);
+			return MISSION_FAILED;
+		}
+
+		if (Mission::GetCounter("Injured Persons") > MAX_INJURIES)
+		{
+			mTooManyVictims = true;
+			Audio::SetMusicLevel(0.4f);
+			return MISSION_FAILED;
+		}
+
+		if (mChildDied)
+		{
+			Audio::SetMusicLevel(0.4f);
+			return MISSION_FAILED;
+		}
+
+		return MISSION_RUNNING;
+	}
+
+	const char *GetFailReason()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_REASON";
+
+		if (mChildDied)
+			return "M09_CHILDDIED_REASON";
+
+		return "UNKNOWN";
+	}
+
+	const char *GetFailComment()
+	{
+		if (mTooManyVictims)
+			return "TOO_MANY_VICTIMS_COMMENT";
+
+		if (mChildDied)
+			return "M09_CHILDDIED_COMMENT";
+
+		return "UNKNOWN";
+	}
+	
+	const char *GetSuccessComment(Mission::MissionScoring *scoring)
+	{
+		if (scoring->Efficiency >= 0.8f)
+			return "SUPERV_MISSION09_01";
+		else if (scoring->Efficiency < 0.8f && scoring->Efficiency >= 0.5f)
+			return "SUPERV_MISSION09_02";
+		else if (scoring->Efficiency < 0.5f)
+			return "SUPERV_MISSION09_03";
+		return Mission::GetDefaultCommentForEfficiency(scoring->Efficiency);
+	}
+
+	bool SerializeTo(ScriptSerializer *Serializer)
+	{
+		const int Version = 0x0100;
+		Serializer->Write(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Write(mHintCounter[i]);
+		for (int i = 0; i < MAX_NUM_CHILDS; i++)
+		{
+			Serializer->Write(mChild1[i]);
+			Serializer->Write(mTree[i]);
+		}
+		for (int i = 0; i < MAX_NUM_TERRORS; i++)
+			Serializer->Write(mTerror[i]);
+		Serializer->Write(mChild2);
+		Serializer->Write(mNumTerrors);
+		Serializer->Write(mNumChilds);
+		Serializer->Write(mTooManyVictims);
+		Serializer->Write(mChildPos1);
+		Serializer->Write(mChildPos2);
+		Serializer->Write(mChildPos3);
+		Serializer->Write(mChildDied);
+		return true;
+	}
+
+	bool SerializeFrom(ScriptSerializer *Serializer)
+	{
+		int Version;
+		Serializer->Read(Version);
+
+		for (int i = 0; i < MAX_HINTS; i++)
+			Serializer->Read(mHintCounter[i]);
+		for (int i = 0; i < MAX_NUM_CHILDS; i++)
+		{
+			Serializer->Read(mChild1[i]);
+			Serializer->Read(mTree[i]);
+		}
+		for (int i = 0; i < MAX_NUM_TERRORS; i++)
+			Serializer->Read(mTerror[i]);
+		Serializer->Read(mChild2);
+		Serializer->Read(mNumTerrors);
+		Serializer->Read(mNumChilds);
+		mTooManyVictims = Serializer->ReadBool();
+		mChildPos1 = Serializer->ReadBool();
+		mChildPos2 = Serializer->ReadBool();
+		mChildPos3 = Serializer->ReadBool();
+		mChildDied = Serializer->ReadBool();
+
+		return true;
+	}
+};

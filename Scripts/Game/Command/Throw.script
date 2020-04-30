@@ -1,0 +1,61 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+// 		Changes: - Throw command will be removed.
+//			   - Priority removed.
+//
+//******************************************************************************************
+
+const char CMD_THROW[] 		= "Throw";
+
+object Throw : CommandScript
+{
+	Throw()
+	{
+		SetValidTargets(ACTOR_FLOOR | ACTOR_OBJECT | ACTOR_VIRTUAL | ACTOR_HOUSE | ACTOR_OPEN_HOUSE);
+		SetDeselectCaller(false);
+		SetSelfClickActivation(true);
+		SetHighlightingEnabled(false);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON || Caller->GetEquipment()!=EQUIP_FLASHGRENADE)
+			return false;
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || Caller->GetEquipment()!=EQUIP_FLASHGRENADE || Caller->GetID() == Target->GetID())
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.GetEnteredCarID() != -1)
+			return false;
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector CmdPos, TargetPos;
+		CmdPos = Game::GetCommandPos();
+		TargetPos = CmdPos;
+
+		Person p(Caller);
+		if (!p.IsValid())
+			return;
+		if (p.GetThrowPosition(TargetPos))
+		{
+			Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+			Caller->PushActionTurnTo(ACTION_APPEND, CmdPos);
+		} 
+		else
+			Caller->PushActionTurnTo(ACTION_NEWLIST, CmdPos);
+			
+		Caller->PushActionThrow(ACTION_APPEND, CmdPos);
+		Caller->RemoveCommand(CMD_THROW);
+	}
+};

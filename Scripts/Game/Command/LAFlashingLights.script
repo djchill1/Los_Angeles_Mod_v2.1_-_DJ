@@ -1,0 +1,104 @@
+//******************************************************************************************
+// #Version 1.2#
+//
+// 		Includes: All Flashing Lights command
+//
+//	- VcmdFlashingLights
+//
+//		Script by Hoppah
+//		
+//		Usage of this script in other mods is NOT allowed without permission of Hoppah
+//
+//******************************************************************************************
+
+int DummyGroup = 24;
+
+const char OBJ_TILLER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
+const char DUMMY_ISTRAILED[] 		= "DummyIsTrailed";
+
+object VcmdFlashingLights : CommandScript
+{
+	VcmdFlashingLights()
+	{
+		SetIcon("flashinglightson");
+		SetCursor("flashinglights");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+ 	bool CheckPossible(GameObject *Caller)
+ 	{
+ 		if (!Caller->IsValid())
+ 			return false;
+
+		Vehicle v(Caller);
+		if (v.IsBlueLightEnabled())
+			SetIcon("flashinglightsoff");
+		else
+			SetIcon("flashinglightson");
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return false;
+ 	}
+ 
+ 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+ 	{
+ 		if (!Caller->IsValid() || !Target->IsValid() || Target->GetID() != Caller->GetID())
+ 			return false;
+ 
+ 		if (Caller->GetType() == ACTOR_VEHICLE)
+ 		{
+ 			return true;
+ 		}
+ 
+ 		return true;
+ 	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (StrCompare(v.GetPrototypeFileName(), OBJ_TILLER) == 0 && v.HasCommand(DUMMY_ISTRAILED))
+		{
+			int VecID = v.GetID();
+			if (v.IsBlueLightEnabled())
+			{
+				v.EnableBlueLights(false);
+				VehicleList list(VT_FIREFIGHTERS_DLK, VT_FIREFIGHTERS_RW);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					Vehicle *c = list.GetVehicle(i);
+					if(c->GetUserData() == VecID)
+					{
+						System::Log("Vehicle flashinglights found");
+						if (c->IsBlueLightEnabled())
+							c->EnableBlueLights(false);
+					}
+				}
+			} else
+			{
+				v.EnableBlueLights(true);
+				VehicleList list(VT_FIREFIGHTERS_DLK, VT_FIREFIGHTERS_RW);
+				for(int i = 0; i < list.GetNumVehicles(); i++)
+				{
+					Vehicle *c = list.GetVehicle(i);
+					if(c->GetUserData() == VecID)
+					{
+						System::Log("Vehicle flashinglights found");
+						if (!c->IsBlueLightEnabled())
+							c->EnableBlueLights(true);
+					}
+				}			
+			}
+		} 
+		else if (v.IsBlueLightEnabled())
+			v.EnableBlueLights(false);
+		else
+			v.EnableBlueLights(true);
+			
+	}
+};

@@ -1,0 +1,19 @@
+civilcardelivery01 			2006 Ford Econoline Cargo Van Extended Barn Doors FEDEX
+civilcardelivery01_driver	2006 Ford Econoline Cargo Van Extended Barn Doors FEDEX
+civilcardelivery02			2006 Ford Econoline Cargo Van Extended Barn Doors FCW
+civiltruck02_blue			2006 Chevrolet Express White
+civiltruck02_white			2006 Chevrolet Express Grey
+civiltruck03_deep_blue		2006 Ford Econoline Passenger Van Barn Doors Blue
+civiltruck03_light_blue		2006 Ford Econoline Passenger Van Barn Doors Black
+civiltruck03_white			2006 Ford Econoline Passenger Van Slide Door White
+civiltruck03_yellow			2006 Ford Econoline Passenger Van Barn Doors Grey
+civiltruck03_red			2006 Ford Econoline Passenger Van Barn Doors Red
+civiltruck04_green			2006 Ford Econoline Cargo Van Slide Door White
+civiltruck04_red			2006 Ford Econoline Cargo Van Slide Door White
+civiltruck07_blue			2003 Ford F-350 White
+civiltruck07_blue2			2003 Ford F-350 Black
+civiltruck07_yellow			2003 Ford F-350 Red
+civiltruck08_red			Freightliner Step-Van FedEx
+civiltruck10				2006 Ford Econoline Cargo Van Extended Slide Doors UPS
+civilvan01					2006 Ford Econoline Cargo Van Slide Door Black
+truck11						2006 Chevrolet Express Box Truck U Haul

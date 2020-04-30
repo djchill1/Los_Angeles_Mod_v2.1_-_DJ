@@ -1,0 +1,136 @@
+//**************************************************************************************************
+// #Version 1.1#								    EMERGENCY 4 ****
+//												****
+// 		Includes: Med-Stabilize Script							****
+//												****
+//	1.0| PcmdStabilize									****
+//	1.1| DUMMYTreatment									****
+//												****
+//	This script is a legal copy of DDR-MOD-Scripting, authorized by Bass-ti.		****
+//												****
+//	Legalization: ID#230706HOPPAH03002							****
+//												****
+//	Unauthorized use of this script will be punished.					****
+//	If you want to use this script for your own mod please send me an email to the adress	****
+//	given below. THANK YOU FOR YOUR COORPERATION!						****
+//												****
+//							    	    Contact: Bass-ti@ddr-mod.de ****
+//**************************************************************************************************
+// Visit: www.ddr-mod.de/legalization for more information!					****
+//**************************************************************************************************
+
+const char CMD_STABILIZE[]		= "PcmdStabilize";
+const char CMD_DEAD[]			= "PcmdDead";
+const char HINT_NOSTABILIZE[]	= "This person is too severely injured and can't be stabilized!";
+const char HINT_BAG[]			= "You need a FF/Paramedic with EMT bag to defibrillate this person!";
+
+object PcmdStabilize : CommandScript
+{
+	PcmdStabilize()
+	{
+		SetIcon("heal");
+		SetCursor("heal");
+		SetValidTargets(ACTOR_PERSON);
+		SetRestrictions(RESTRICT_NOTARRESTED);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPossibleExists(CPE_INJURED_PERSON);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		GameObjectList SelectPer = Game::GetSelectedGameObjects();
+		if (SelectPer.GetNumObjects() > 1)
+			return false;
+
+		Person p(Caller);
+		if (p.IsValid() && (p.IsCarryingPerson() || p.IsCarryingPerson() || p.IsEquipped() || p.IsCurrentAction("EActionTreatPerson") || p.IsLinkedWithPerson() || p.GetFirehoseID() != 0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid() || Caller->GetID() == Target->GetID())
+			return false;
+
+		Person t(Target);
+		//if (StrCompare(t.GetModelFileName(), OBJ_BLANKET) == 0)
+		//	return false;
+				
+		SetPriority(300);
+		if (StrCompare(Caller->GetPrototypeFileName(), "mod:Prototypes/Persons/02 LA Fire Department/ff_emt_stretcher.e4p") == 0 && !t.IsClassified())
+			SetPriority(410);
+		else if (t.IsClassified() && t.GetLife() < 0.33f * t.GetMaxLife())
+			SetPriority(410);
+
+		if (!t.HasCommand("DummyBlanket") && !t.IsDrowning() && t.GetRole() != ROLE_ANIMAL && !t.IsRescueDog() && t.IsInjured() && t.GetEnteredCarID() == -1 && !t.IsCarried())
+			return true;
+	
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Person p(Caller);
+		Person t(Target);
+		if (childID == 0)
+		{
+			if (t.IsClassified() && t.IsComatose())
+			{
+				Mission::PlayHint(HINT_BAG);
+				return;
+			}
+			//else if (t.IsClassified() && t.IsDead())
+			//{
+				//Mission::PlayHint(HINT_DEAD);
+				//return;
+			//}
+			else if (t.IsClassified() && !t.IsDead() && t.GetLife() < 0.5f * t.GetMaxLife())
+			{
+				Mission::PlayHint(HINT_NOSTABILIZE);
+				return;
+			}
+			p.PushActionMove(ACTION_NEWLIST, Target, TARGET_TREATMENT);
+			p.PushActionTurnTo(ACTION_APPEND, Target);
+			if (t.IsDead())
+			{
+				p.PushActionExecuteCommand(ACTION_APPEND, CMD_DEAD, &t, 0, false);
+				return;
+			}
+			p.PushActionExecuteCommand(ACTION_APPEND, CMD_STABILIZE, Target, 1, false);
+		}
+		if (childID == 1)
+		{
+			if (!t.IsClassified())
+				t.SetClassified(true);
+			if (t.IsComatose())
+			{
+				Mission::PlayHint(HINT_BAG);
+				return;
+			}
+			else if (t.GetLife() < 0.5f * t.GetMaxLife())
+			{
+				Mission::PlayHint(HINT_NOSTABILIZE);
+				return;
+			}
+			t.SetInjuredLifeDrain(0.0f);
+			if (StrCompare(p.GetPrototypeFileName(), "mod:Prototypes/Persons/02 LA Fire Department/ff_emt_stretcher.e4p") == 0)
+			{
+				p.PushActionSwitchAnim(ACTION_NEWLIST, "paramedictreat_down");
+				p.PushActionWait(ACTION_APPEND, 2.f);
+				p.PushActionSwitchAnim(ACTION_APPEND, "paramedictreat");
+				p.PushActionWait(ACTION_APPEND, 5.f);
+				p.PushActionSwitchAnim(ACTION_APPEND, "paramedictreat_up");
+			} else
+			{
+				p.PushActionSwitchAnim(ACTION_NEWLIST, "treatinjured1");
+				p.PushActionWait(ACTION_APPEND, 5.f);
+				p.PushActionSwitchAnim(ACTION_APPEND, "idle");
+			}
+		}
+	}
+};

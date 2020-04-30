@@ -1,0 +1,226 @@
+//**************************************************************************************************
+// #Version 1.1#
+//
+// 		Includes: Trailer commands
+//
+//	- VcmdGetTrailer
+//	- DummyGetTrailer
+//	- DummyIsTrailed
+//
+// Thanks to Nico Bohnsack for his help.
+//**************************************************************************************************
+// Sponsored by: DDR-MODIFIKATION     | www.ddr-mod.de |    Errors? Contact: Bass-ti@ddr-mod.de ****
+//**************************************************************************************************
+
+const char DUMMY_GETTRAIL[] 			= "DummyGetTrailer";
+const char DUMMY_ISTRAILED[] 			= "DummyIsTrailed";
+const char DUMMY_PATROL[] 			= "DummyPatrol";
+const char NAME_TRAILER[] 			= "equipment_trailer";
+const char CHILD_TRAILERHOOK[] 		= "trailer_coupling";
+const char PATH_PATROL01[] 			= "patrolpath01";
+const char PATH_PATROL02[] 			= "patrolpath02";
+const char PATH_PATROL03[] 			= "patrolpath03";
+const char VO_SQUAD01[]				= "fs_squad01";
+const char VO_SQUAD02[]				= "fs_squad02";
+
+int DummyGroup = 30;
+
+object VcmdTrailer : CommandScript
+{
+	VcmdTrailer()
+	{
+		SetIcon("trailer");
+		SetCursor("trailer");
+ 		SetGroupID(DummyGroup);
+ 		SetGroupLeader(true);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid())
+			return false;
+
+		Vehicle v(Caller);
+		if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02))
+			return false;
+
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (!Caller->IsValid() || !Target->IsValid())
+			return false;
+
+		Vehicle vCal(Caller);
+		if (Caller->GetID() == Target->GetID())
+		{
+			if (vCal.HasCommand(DUMMY_ISTRAILED))
+				return true;
+
+			return false;
+		}
+
+		if (Target->HasName(NAME_TRAILER))
+		{
+			GameObject vTar(Target);
+			if (!vTar.HasCommand(DUMMY_ISTRAILED) && !vCal.HasCommand(DUMMY_ISTRAILED))
+				return true;
+
+			return false;
+		}
+		
+		return false;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle v(Caller);
+		if (v.HasObjectPath(PATH_PATROL01) || v.HasObjectPath(PATH_PATROL02) || v.HasObjectPath(PATH_PATROL03))
+		{
+			Game::ExecuteCommand(DUMMY_PATROL, &v, &v);
+		}
+		if (!v.HasCommand(DUMMY_ISTRAILED))
+		{
+			if (!v.IsChildEnabled(CHILD_TRAILERHOOK))
+				v.SetChildEnabled(CHILD_TRAILERHOOK, true);
+
+			Vector TarPos = Target->GetPosition();
+			Caller->PushActionMove(ACTION_NEWLIST, TarPos, true);
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTRAIL, Target, 1, false);
+		} else
+		  {
+			Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTRAIL, Caller, 2, false);
+		  }
+	}
+};
+
+object DummyGetTrailer : CommandScript
+{
+	DummyGetTrailer()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		if (childID == 1)
+		{
+			Vehicle vCal(Caller);
+			GameObject vTar(Target);
+			Vector HookPos = vCal.GetChildPosition(CHILD_TRAILERHOOK);
+
+			float rot[9];
+			vCal.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			vTar.SetPosition(HookPos);
+			vTar.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			int VecID = vCal.GetID();
+			vTar.SetUserData(VecID);
+
+			if (!vTar.HasCommand(DUMMY_ISTRAILED))
+				vTar.AssignCommand(DUMMY_ISTRAILED);
+
+			if (!vCal.HasCommand(DUMMY_ISTRAILED))
+				vCal.AssignCommand(DUMMY_ISTRAILED);
+
+
+			vCal.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_GETTRAIL, Target, 3, false);
+			vCal.PushActionWait(ACTION_APPEND, 2.f);
+			vCal.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTRAIL, Target, 4, false);
+			vCal.PushActionExecuteCommand(ACTION_APPEND, DUMMY_GETTRAIL, Target, 5, false);
+		}
+
+		if (childID == 2)
+		{
+			Vehicle v(Caller);
+			int VecID = v.GetID();
+			GameObjectList list = Game::GetGameObjects(NAME_TRAILER);
+			for(int i = 0; i < list.GetNumObjects(); i++)
+			{
+				GameObject Trailer = list.GetObject(i);
+				if (Trailer.GetUserData() == VecID)
+				{
+					v.RemoveTrainWaggon(&Trailer);
+
+					int TrailerID = Trailer.GetID();
+					Trailer.SetUserData(TrailerID);
+
+					if (Trailer.HasCommand(DUMMY_ISTRAILED))
+						Trailer.RemoveCommand(DUMMY_ISTRAILED);
+
+					if (v.HasCommand(DUMMY_ISTRAILED))
+						v.RemoveCommand(DUMMY_ISTRAILED);
+				}
+			}
+		}
+
+		if (childID == 3)
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(false);
+		}
+
+		if (childID == 4)
+		{
+			float rot[9];
+			Vehicle v(Caller);GameObject obj(Target);
+			v.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			float ident[9];
+			Math::EulerToMatrix(0.f, 0.f, 0.f, ident);
+			v.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+			obj.SetRotation(ident[0], ident[1], ident[2], ident[3], ident[4], ident[5], ident[6], ident[7], ident[8]);
+
+			Vector HookPos1 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			obj.SetPosition(HookPos1);
+
+			v.AddTrainWaggon(&obj);
+
+			v.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+			obj.SetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
+
+			Vector HookPos2 = v.GetChildPosition(CHILD_TRAILERHOOK);
+			obj.SetPosition(HookPos2);
+		}
+
+		if (childID == 5)
+		{
+			Vehicle v(Caller);
+			v.SetCommandable(true);
+		}
+	}
+};
+
+object DummyIsTrailed : CommandScript
+{
+	DummyIsTrailed()
+	{
+		SetGroupID(DummyGroup);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+	
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+	
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+	}
+};
