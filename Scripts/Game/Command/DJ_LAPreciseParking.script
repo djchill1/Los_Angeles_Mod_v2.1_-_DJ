@@ -133,7 +133,7 @@ object VcmdParkingDrive : CommandScript
 		APos = AO-> GetPosition();
 
 		v.PushActionMove(ACTION_NEWLIST, APos,true);
-		v.PushActionExecuteCommand(ACTION_APPEND, "D_VcmdParkingRotate",AO);
+		v.PushActionExecuteCommand(ACTION_APPEND, "D_VcmdParkingDrive",AO);
 		Game::ShowHelpTextWindow("The vehicle is moving to the selected location.");
 		v.RemoveCommand("VcmdParkingRotate");
 		v.RemoveCommand("VcmdParkingRotate");
@@ -142,9 +142,9 @@ object VcmdParkingDrive : CommandScript
 };
 
 
-object D_VcmdParkingRotate : CommandScript
+object D_VcmdParkingDrive : CommandScript
 {
-	D_VcmdParkingRotate()
+	D_VcmdParkingDrive()
 	{
 		SetIcon(IMG_PARKINGDRIVE);
 		SetCursor(IMG_PARKINGDRIVE);
