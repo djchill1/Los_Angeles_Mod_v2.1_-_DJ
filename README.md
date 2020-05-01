@@ -7,6 +7,7 @@ The `master` branch will contain the latest stable build, and is the best versio
 A mit licence file is included in this repository. All work can be re-distributed and re-released in your own modification without contacting the mod author. djchill must be credited whenever mod files are used.
 
 ### Screenshots
+For more, check the "02 Screenshots" folder above.
 ![Police cars](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/police_cars.png?raw=true)
 ![Fire Station 2](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/station2.png?raw=true)
 
