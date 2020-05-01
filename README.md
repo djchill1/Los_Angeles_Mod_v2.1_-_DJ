@@ -11,6 +11,7 @@ Click "clone or download" in the top right of this page to download the latest v
 If you download a zip file, extract it to your emergency 4 mods folder. The path of this folder will look something like this: `D:\SteamLibrary\steamapps\common\911 First Responders\Mods`
 
 ### Changelog (from LA Mod v2.1)
+#### v1.0
 * Modified: Most units have LED lightbars from LED Lightbar submod.
 * Added: EMS Chief Dodge Charger (car 2) can park at fire station 2.
 * Added command: Battalion Chiefs can be called from both fire station control panels.
