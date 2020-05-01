@@ -8,13 +8,13 @@ A mit licence file is included in this repository. All work can be re-distribute
 
 ### Changelog
 * Modified: Most units have LED lightbars from LED Lightbar submod.
-* Added: EMS Chief Dodge Charger can park at fire station 2
-* Added command: Battalion Chiefs can be called from both fire station control panels
-* Added command: Battalion Chief and EMS Chief can call a heavy equipment Squad
+* Added: EMS Chief Dodge Charger (car 2) can park at fire station 2.
+* Added command: Battalion Chiefs can be called from both fire station control panels.
+* Added command: Battalion Chief and EMS Chief can call a heavy equipment Squad.
 * Added: unmarked police Taurus in blue.
 * Added: LAPD Impala by Hoppah from LA Additional Units submod.
-* Added: EMS Chief car 3 from LA v3.1.5
-* Added: Precise parking script
+* Added: EMS Chief car 3 from LA v3.1.5.
+* Added: Precise parking script.
 * Added: USARFF can change to Diver. Diver can change to USARFF.
 * Added Event: Car crash #16 outside fire station 1.
 * Added Event: Car crash #17 in the port, with car underwater.
