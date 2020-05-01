@@ -1,4 +1,9 @@
 //******************************************************************************************
+//
+// DJ Additions:
+// - PcmdChangeToUSARFF
+// - PcmdChangeToDiver
+//
 // #Version 2.5#
 //
 // 		Includes: All Changing clothes commands
@@ -13,7 +18,7 @@
 //
 //		Original script for Emergency 3 by Rev Bem
 //		Made compatible for Emergency 4 by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -28,6 +33,9 @@ const char OBJ_PM_SCBA[]			= "mod:Prototypes/Persons/01 LA Ambulance/ff_paramedi
 
 const char OBJ_USFS_FF[]			= "mod:Prototypes/Persons/02 LA Fire Department/usfs_ff.e4p";
 const char OBJ_USFS_FF_SCBA[]			= "mod:Prototypes/Persons/02 LA Fire Department/usfs_ff_scba.e4p";
+
+const char OBJ_USARFF[]				= "mod:Prototypes/Persons/02 LA Fire Department/usar_ff.e4p";
+const char OBJ_DIVER[]			= "mod:Prototypes/Persons/02 LA Fire Department/ff_diver.e4p";
 
 const char OBJ_OFFICER_M[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_m.e4p";
 const char OBJ_OFFICER_F[]			= "mod:Prototypes/Persons/03 LA Police/lapd_officer_f.e4p";
@@ -376,6 +384,115 @@ object PcmdRemoveTacVest : CommandScript
 	}
 };
 
+object PcmdChangeToUSARFF : CommandScript
+{
+	PcmdChangeToUSARFF()
+	{
+		SetCursor("clothes");
+		SetIcon("callusar");
+		//SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFIREAXE);
+		SetNeedsCarWithFlagSet(OF_HAS_FIREAXE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		if (!Game::ExistsNormalObjectWithFlagSet(OF_HAS_FIREAXE))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB || v.GetVehicleType() == VT_FIREFIGHTERS_RW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 7, false);
+	}
+};
+
+object PcmdChangeToDiver : CommandScript
+{
+	PcmdChangeToDiver()
+	{
+		SetCursor("clothes");
+		SetIcon("calldiver");
+		//SetGroupID(CGROUP_GETEQUIPMENT);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetValidTargets(ACTOR_VEHICLE | ACTOR_OBJECT);
+		SetRestrictions(RESTRICT_NOTDESTROYED | RESTRICT_NOTBURNING | RESTRICT_HASFIREAXE);
+		SetNeedsCarWithFlagSet(OF_HAS_FIREAXE);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if (p.IsCarryingPerson() || p.IsLinkedWithPerson() || p.IsPulling())
+			return false;
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+		return true;
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+
+		if(!Caller->IsValid() || !Target->IsValid() || Caller->GetType() != ACTOR_PERSON)
+			return false;
+
+		Person p(Caller);
+		if(p.IsValid() && (p.IsCarryingPerson() || p.IsInDLKBasket() || p.IsLinkedWithPerson() || p.GetFirehoseID()!=0 || p.IsPulling() || p.GetEnteredCarID() != -1))
+			return false;
+
+		if (p.IsCurrentAction("EActionTreatPerson"))
+			return false;
+
+		Vehicle v(Target);
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB || v.GetVehicleType() == VT_FIREFIGHTERS_RW)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Caller->PushActionMove(ACTION_NEWLIST, Target, TARGET_PASSENGERDOOR);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionExecuteCommand(ACTION_APPEND, DUMMY_CHANGE, Target, 8, false);
+	}
+};
+
 object DummyChange : CommandScript
 {
 	DummyChange()
@@ -454,6 +571,16 @@ object DummyChange : CommandScript
             		n = Game::CreatePerson(OBJ_FBI, Target->GetName());
 
 		}
+		if(childID == 7)
+		{
+            		n = Game::CreatePerson(OBJ_USARFF, Target->GetName());
+
+		}
+		if(childID == 8)
+		{
+            		n = Game::CreatePerson(OBJ_DIVER, Target->GetName());
+
+		}
 		if(n.HasCommand("Heal"))
 		{
 			n.RemoveCommand("Heal");
@@ -468,9 +595,8 @@ object DummyChange : CommandScript
 		n.SetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
 		n.Hide();
 		n.PushActionWait(ACTION_NEWLIST, 5.f);
-		n.PushActionShowHide(ACTION_APPEND, false); 
+		n.PushActionShowHide(ACTION_APPEND, false);
 		Vehicle v(Target);
-		v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);                
+		v.PushActionExecuteCommand(ACTION_APPEND, CMD_DOORS, Caller, 1, false);
 	}
 };
-
