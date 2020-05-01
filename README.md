@@ -1,7 +1,7 @@
 ## Emergency 4 Los Angeles Mod v2.1 - djchill
 djchills own edits of the LA mod v2.1, originally by Hoppah.
 
-The `master` branch will contain the latest stable build, and is the best version to download to play. If you wish, you can download the `Dev` branch where the latest features will be created. But content here will be very work in progress and may break part of the game, so do so at your own risk.
+The `master` branch will contain the latest stable build, and is the best version to download to play. If you wish, you can download the `Dev`, or any other branch where the latest features will be created. But content here will be very work in progress and may break part of the game, so do so at your own risk.
 
 ### License
 A mit licence file is included in this repository. All work can be re-distributed and re-released in your own modification without contacting the mod author. djchill must be credited whenever mod files are used.
