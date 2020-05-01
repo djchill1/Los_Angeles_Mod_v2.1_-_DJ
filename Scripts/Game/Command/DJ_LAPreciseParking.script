@@ -15,7 +15,7 @@
 /*Scriptteile k�nnen mit Namensnennung in anderen Scripten verwendet werden     */
 //////////////////////////////////////////////////////////////////////////////////
 
-const char OBJ_PARKINGALIGNMENT[] = "mod:Prototypes/Objects/06 LA Misc/parkingalignment.e4p";
+const char OBJ_PARKINGALIGNMENT[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p"
 
 const char IMG_PARKINGCHOOSE[] = "parkingchoose";
 const char IMG_PARKINGROTATE[] = "rotate_cw"; // Should check if this actually moves CW or CCW
