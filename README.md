@@ -14,5 +14,6 @@ https://trello.com/b/0GnE8Rc0/la-modding
 * Added: Precise parking script
 * Added Event: Car crash #16 outside fire station 1.
 * Added Event: Car crash #17 in the port, with car underwater.
+* Added Event: More bomb locations.
 * Modified: Heavy Equipment Squad replaces Hazmat at fire station 2.
 * Removed: EMS Chief's ability to call Hazmat squad
