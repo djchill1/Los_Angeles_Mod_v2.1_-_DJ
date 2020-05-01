@@ -1,7 +1,12 @@
-# Emergency 4 Los Angeles Mod v2.1 - With DJ edits
-DJ edits of the LA mod originally by Hoppah
+## Emergency 4 Los Angeles Mod v2.1 - With DJ edits
+DJ's own edits of the LA mod v2.1, originally by Hoppah.
 
-## Roadmap
+The `master` branch will contain the latest stable build, and is the best version to download to play. If you wish, you can download the `Dev` branch where the latest features will be created. But content here will be very work in progress and may break part of the game, so do so at your own risk.
+
+### License
+A creative commons licence file is included. All work can be re-distributed in your own modification without contacting the mod author, as long as it is not for profit. The original author and DJChill must be credited whenever files are used.
+
+### Roadmap
 https://trello.com/b/0GnE8Rc0/la-modding
 
 ### Changelog
@@ -18,3 +23,11 @@ https://trello.com/b/0GnE8Rc0/la-modding
 * Added Event: More bomb locations.
 * Modified: Heavy Equipment Squad replaces Hazmat at fire station 2.
 * Removed: EMS Chief's ability to call Hazmat squad
+
+
+### Credits
+This mod is based from LA Mod v2.1, LA Mod v3.1.5 and Jackson County mod v0.81. As such this mod could contain content made by:
+
+HOPPAH, THVFD, itchboy, The Loot, Dyson, MickeyPI, Bama1234, GoKa, a-rescue, GrisuStefan, Ghost Graphic Designs, Reaper, Janjua, EA Games, Ubisoft, Turn10 Studios, Sixteen Tons, Deep Silver, Rockstar Games, Chris07, losangelesi, merritt_long, killerik, Mathew, Frekinmusket, Helljumper, Montana Mod team, goog12, CMCC626/SOCOM626, ThatOneIowan, Niederwallufer (Whelen Parts), NNICO, RK-1000, NelsonSilve, Engine.Co.7, Mrmatt 5432123, Emc-unit, [Wittener, Iglheaz, ERS, Keano (EMS HELO)], Fire Dept. Boston, RD saarland, Rachammer, BFEMP team & Winterberg Team, FamousBasic13, IFD, Max Starmer
+
+Note: An attempt was made to contact all content developers prior to publishing this mod, however, not all requests to use content were answered at the time this mod was published. If you have any questions or want to reach out, contact djchill on emergency-planet.
