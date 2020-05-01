@@ -6,6 +6,10 @@ The `master` branch will contain the latest stable build, and is the best versio
 ### License
 A mit licence file is included in this repository. All work can be re-distributed and re-released in your own modification without contacting the mod author. djchill must be credited whenever mod files are used.
 
+### Screenshots
+![Police cars](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/police_cars.png?raw=true)
+![Fire Station 2](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/station2.png?raw=true)
+
 ### How to play
 Click "clone or download" in the top right of this page to download the latest version to your PC. If you have git installed on your device, you can constantly fetch the latest version of this mod. Otherwise you can download a zip of the entire modification.
 If you download a zip file, extract it to your emergency 4 mods folder. The path of this folder will look something like this: `D:\SteamLibrary\steamapps\common\911 First Responders\Mods`
