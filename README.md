@@ -12,6 +12,7 @@ https://trello.com/b/0GnE8Rc0/la-modding
 * Added: LAPD Impala by Hoppah from LA Additional Units submod.
 * Added: EMS Chief car 3 from LA v3.1.5
 * Added: Precise parking script
+* Added: USARFF can change to Diver. Diver can change to USARFF.
 * Added Event: Car crash #16 outside fire station 1.
 * Added Event: Car crash #17 in the port, with car underwater.
 * Added Event: More bomb locations.
