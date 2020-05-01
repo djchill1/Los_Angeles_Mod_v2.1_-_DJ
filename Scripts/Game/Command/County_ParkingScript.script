@@ -1,89 +1,79 @@
-//******************************************************************************************
-//
-// DJ Additions:
-// - modified to english
-// - VcmdParkingChoose
-// - VcmdParkingRotate
-// - VcmdParkingDrive
-//
-//******************************************************************************************
-
 //////////////////////////////////////////////////////////////////////////////////
 /*Ausrichtungs-Logik                                                            */
 /*Script von carli96 und Flo Ko 12/2                                            */
-/*ï¿½nderungen erlaubt nach Absprache mit carli96 oder Flo Ko 12/2                */
-/*Scriptteile kï¿½nnen mit Namensnennung in anderen Scripten verwendet werden     */
+/*Änderungen erlaubt nach Absprache mit carli96 oder Flo Ko 12/2                */
+/*Scriptteile können mit Namensnennung in anderen Scripten verwendet werden     */
 //////////////////////////////////////////////////////////////////////////////////
 
-const char OBJ_PARKINGALIGNMENT[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p"
+const char Prototype_Ausrichtung[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p"; //Pfad zum Prototyp des Ausrichtungs-Objekt (AO)
 
-const char IMG_PARKINGCHOOSE[] = "parkingchoose";
-const char IMG_PARKINGROTATE[] = "rotate_cw"; // Should check if this actually moves CW or CCW
-const char IMG_PARKINGDRIVE[] = "parkingdrive";
+const char IMG1[] = "AOWaehlen"; //Bild zum Icon 1
+const char IMG2[] = "Drehen"; //Bild zum Icon 2
+const char IMG3[] = "FZFahren"; //Bild zum Icon 3
 
 
-object VcmdParkingChoose : CommandScript
+object AOWaehlen : CommandScript
 {
-	VcmdParkingChoose()
+	AOWaehlen()
 	{
-		SetIcon(IMG_PARKINGCHOOSE);
-		SetCursor(IMG_PARKINGCHOOSE);
+		SetIcon(IMG1);
+		SetCursor(IMG1);
 		SetValidTargets(ACTOR_FLOOR);
 	}
-
+	
 	bool CheckPossible(GameObject *Caller)
-	{
+	{	
 		if (Caller->GetType() == ACTOR_VEHICLE)
-		{
+		{	
 			Vehicle v(Caller);
 			if (v.GetNumPassengers() == 0)
-				return false;
+				return false;				
 			if (v.HasCommand("EngineOns"))
 				return false;
-		}
+		}		
 		return true;
 	}
-
+	
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-
+	
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		Vector APos = Game::GetCommandPos();
 		Vehicle v(Caller);
-
-		GameObject AO = Game::CreateObject(OBJ_PARKINGALIGNMENT, "Ausrichtung");
+		
+		GameObject AO = Game::CreateObject(Prototype_Ausrichtung, "Ausrichtung");
 		Game::FindFreePosition(&AO, APos, 50.f);
 		AO.SetPosition(APos);
 		AO.SetSelectable(false);
 		Game::ShowHelpTextWindow("Please select the desired rotation and location.");
-		v.AssignCommand("VcmdParkingRotate");
-		v.AssignCommand("VcmdParkingDrive");
+		v.AssignCommand("Drehen");
+		v.AssignCommand("FZFahren");
 	}
 };
 
 
 
-object VcmdParkingRotate : CommandScript
+object Drehen : CommandScript
 {
-	VcmdParkingRotate()
+	Drehen()
 	{
-		SetIcon(IMG_PARKINGROTATE);
-		SetCursor(IMG_PARKINGROTATE);
+		SetIcon(IMG2);
+		SetCursor(IMG2);
 	}
-
+	
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-
+	
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-
+	
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		GameObjectList GOL=Game::GetGameObjects("Ausrichtung");
@@ -102,64 +92,64 @@ object VcmdParkingRotate : CommandScript
 };
 
 
-object VcmdParkingDrive : CommandScript
+object FZFahren : CommandScript
 {
-	VcmdParkingDrive()
+	FZFahren()
 	{
-		SetIcon(IMG_PARKINGDRIVE);
-		SetCursor(IMG_PARKINGDRIVE);
+		SetIcon(IMG3);
+		SetCursor(IMG3);
 	}
-
+	
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-
+	
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return Target->GetType() == ACTOR_VEHICLE;
 	}
-
+	
 	void PushActions(GameObject *Caller, Actor *Target, int childID)
 	{
 		//Person p(Caller);
 		Vehicle v(Caller);
 		Vector APos;
-
+		
 		GameObjectList gol = Game::GetGameObjects("Ausrichtung");
 		GameObject *AO;
 		AO = *gol.GetObject(0);
-
+		
 		APos = AO-> GetPosition();
-
+		
 		v.PushActionMove(ACTION_NEWLIST, APos,true);
-		v.PushActionExecuteCommand(ACTION_APPEND, "D_VcmdParkingDrive",AO);
+		v.PushActionExecuteCommand(ACTION_APPEND, "D_Drehen",AO);
 		Game::ShowHelpTextWindow("The vehicle is moving to the selected location.");
-		v.RemoveCommand("VcmdParkingRotate");
-		v.RemoveCommand("VcmdParkingRotate");
-		v.RemoveCommand("VcmdParkingDrive");
+		v.RemoveCommand("Drehen");
+		v.RemoveCommand("Drehen");
+		v.RemoveCommand("FZFahren");
 	}
 };
 
 
-object D_VcmdParkingDrive : CommandScript
+object D_Drehen : CommandScript
 {
-	D_VcmdParkingDrive()
+	D_Drehen()
 	{
-		SetIcon(IMG_PARKINGDRIVE);
-		SetCursor(IMG_PARKINGDRIVE);
+		SetIcon(IMG3);
+		SetCursor(IMG3);
 	}
-
+	
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-
+	
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-
+	
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		Caller->SetRotation(&GameObject(target));
@@ -167,3 +157,8 @@ object D_VcmdParkingDrive : CommandScript
 		Game::ShowHelpTextWindow("The vehicle has reached the desired location.");
 	}
 };
+
+	
+	
+	
+	
