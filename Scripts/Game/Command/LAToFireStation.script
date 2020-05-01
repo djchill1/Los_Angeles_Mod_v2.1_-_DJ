@@ -79,8 +79,8 @@ const char VO_ENGINE04[]			= "fs_engine04";
 const char VO_ENGINE05[]			= "fs_engine05";
 const char VO_BATTALION[]			= "fs_battalion";
 const char VO_BATTALION2[]			= "fs_battalion2";
-const char VO_EMSCAPTAIN[]			= "fs_emsCaptain";
-const char VO_EMSCAPTAIN2[]			= "fs_emsCaptain2";
+const char VO_EMSCHIEF[]			= "fs_emsCaptain";
+const char VO_EMSCHIEF2[]			= "fs_emsCaptain2";
 const char VO_USAR[]				= "fs_usar";
 const char VO_LADDER[]				= "fs_ladder";
 const char VO_HAZMAT[]				= "fs_hazmat";
@@ -188,10 +188,10 @@ object VcmdToFireStation : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION);
 			}
 		}
-		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
 		{
 			GameObjectList l4;
-			Game::CollectObstaclesOnVirtualObject(VO_EMSCAPTAIN, l4, ACTOR_VEHICLE);
+			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l4, ACTOR_VEHICLE);
 			if(l4.GetNumObjects() > 0)
 			{
 				Mission::PlayHint(HINT_NOSPACE);
@@ -199,8 +199,8 @@ object VcmdToFireStation : CommandScript
 				return;
 			} else
 			{
-				ActorList l1 = Game::GetActors(VO_EMSCAPTAIN2);
-				ActorList l2 = Game::GetActors(VO_EMSCAPTAIN);
+				ActorList l1 = Game::GetActors(VO_EMSCHIEF2);
+				ActorList l2 = Game::GetActors(VO_EMSCHIEF);
 			}
 		}
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_USAR) == 0)
@@ -439,10 +439,10 @@ object DummyCheckParked : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION2);
 			}
 		}
-		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
 		{
 			GameObjectList l3;
-			Game::CollectObstaclesOnVirtualObject(VO_EMSCAPTAIN, l3, ACTOR_VEHICLE);
+			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l3, ACTOR_VEHICLE);
 			if(l3.GetNumObjects() > 0)
 			{
 				Mission::PlayHint(HINT_NOSPACE);
@@ -451,8 +451,8 @@ object DummyCheckParked : CommandScript
 			} else
 			{
 				ParkinglotFound = true;
-				ActorList l1 = Game::GetActors(VO_EMSCAPTAIN);
-				ActorList l2 = Game::GetActors(VO_EMSCAPTAIN2);
+				ActorList l1 = Game::GetActors(VO_EMSCHIEF);
+				ActorList l2 = Game::GetActors(VO_EMSCHIEF2);
 			}
 		}
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE02) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE03) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_AMBULANCE04) == 0)
@@ -720,8 +720,8 @@ object DummyCheckParked : CommandScript
 			{
 				v.PushActionMove(ACTION_APPEND, Park);
 				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
-			} else
-			if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+			}
+			else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
 			{
 				v.PushActionMove(ACTION_APPEND, Park);
 				v.PushActionTurnTo(ACTION_APPEND, TurnTo);

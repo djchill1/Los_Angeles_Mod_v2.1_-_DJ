@@ -654,7 +654,7 @@ object VcmdCallBatChief : CommandScript
 	VcmdCallBatChief()
 	{
 		SetCursor("alarm");
-		SetIcon("callchief"); // needs changing
+		SetIcon("callchief");
 	}
 
 	bool CheckPossible(GameObject *Caller)
