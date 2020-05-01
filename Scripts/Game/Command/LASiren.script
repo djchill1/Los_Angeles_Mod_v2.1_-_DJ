@@ -51,6 +51,7 @@ const char PROTO_MOTORCYCLE[] = "mod:Prototypes/Vehicles/03 LA Police/motorcycle
 const char PROTO_CV_LAPD[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapd.e4p";
 const char PROTO_CV_LAPD2[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapd2.e4p";
 const char PROTO_CV_LAPD3[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapd3.e4p";
+const char PROTO_CV_LAPD_IMPALA[] = "mod:Prototypes/Vehicles/03 LA Police/lapd_impala.e4p";
 const char PROTO_CV_LAPD_K9[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapdk9.e4p";
 const char PROTO_CV_LAPD_ST[] = "mod:Prototypes/Vehicles/03 LA Police/cv_lapd_slicktop.e4p";
 const char PROTO_CV_LAAP[] = "mod:Prototypes/Vehicles/03 LA Police/cv_laap.e4p";
@@ -174,6 +175,7 @@ object VcmdSiren : CommandScript
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD2) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD3) == 0 ||
+			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD_IMPALA) == 0 ||
  			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD_ST) == 0 ||
 			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAPD_K9) == 0 ||
 			StrCompare(v.GetPrototypeFileName(), PROTO_CV_LAAP) == 0 ||

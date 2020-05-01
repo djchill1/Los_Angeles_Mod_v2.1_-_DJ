@@ -424,7 +424,7 @@ object PcmdChangeToUSARFF : CommandScript
 			return false;
 
 		Vehicle v(Target);
-		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB)
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB || v.GetVehicleType() == VT_FIREFIGHTERS_RW)
 		{
 			return true;
 		}
@@ -478,7 +478,7 @@ object PcmdChangeToDiver : CommandScript
 			return false;
 
 		Vehicle v(Target);
-		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB)
+		if (v.IsValid() && !v.IsDestroyed() && v.GetVehicleType() == VT_FIREFIGHTERS_TFMB || v.GetVehicleType() == VT_FIREFIGHTERS_RW)
 		{
 			return true;
 		}

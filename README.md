@@ -10,7 +10,7 @@ A mit licence file is included in this repository. All work can be re-distribute
 * Modified: Most units have LED lightbars from LED Lightbar submod.
 * Added: EMS Chief Dodge Charger (car 2) can park at fire station 2.
 * Added command: Battalion Chiefs can be called from both fire station control panels.
-* Added command: Battalion Chief and EMS Chief can call a heavy equipment Squad.
+* Added command: Battalion Chief and EMS Chief can call a heavy equipment squad.
 * Added: unmarked police Taurus in blue.
 * Added: LAPD Impala by Hoppah from LA Additional Units submod.
 * Added: EMS Chief car 3 from LA v3.1.5.
@@ -22,7 +22,7 @@ A mit licence file is included in this repository. All work can be re-distribute
 * Modified: Heavy Equipment Squad replaces Hazmat at fire station 2.
 * Removed: EMS Chief's ability to call Hazmat squad.
 
-### Roadmap
+### Private Roadmap (for now)
 https://trello.com/b/0GnE8Rc0/la-modding
 
 ### Reporting bugs and feature requests
