@@ -188,7 +188,7 @@ object VcmdToFireStation : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION);
 			}
 		}
-		if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
 		{
 			GameObjectList l4;
 			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l4, ACTOR_VEHICLE);
@@ -439,7 +439,7 @@ object DummyCheckParked : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION2);
 			}
 		}
-		if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
 		{
 			GameObjectList l3;
 			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l3, ACTOR_VEHICLE);
