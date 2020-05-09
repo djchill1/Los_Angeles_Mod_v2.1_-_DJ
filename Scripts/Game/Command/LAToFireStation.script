@@ -113,9 +113,6 @@ object VcmdToFireStation : CommandScript
 		if (!Caller->IsValid())
 			return false;
 
-		if (!Game::IsFreeplay())
-			return false;
-
  		Vehicle v(Caller);
 		if (v.IsCollidingWithVirtualObject(VO_SQUAD01) || v.IsCollidingWithVirtualObject(VO_SQUAD02) || v.IsCollidingWithVirtualObject(VO_BATTALION) || (v.HasCommand(DUMMY_ISTRAILED) && !v.HasCommand(CMD_GETTILLER)) || v.HasCommand(DUMMY_HOSESON) || v.IsInstalled())
 			return false;
