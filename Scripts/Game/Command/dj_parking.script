@@ -33,7 +33,7 @@ object parkStart : CommandScript
 		if(Caller->GetType() == ACTOR_VEHICLE)
 		{
 			Vehicle v(Caller);
-			return (v.GetNumPassengers() > 0 && !v.IsInstalled());
+			return (!v.IsInstalled());
 		}
 		return true;
 	}
