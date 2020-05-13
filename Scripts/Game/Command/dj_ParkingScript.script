@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 /*Ausrichtungs-Logik                                                            */
 /*Script von carli96 und Flo Ko 12/2                                            */
-/*Änderungen erlaubt nach Absprache mit carli96 oder Flo Ko 12/2                */
-/*Scriptteile können mit Namensnennung in anderen Scripten verwendet werden     */
+/*ï¿½nderungen erlaubt nach Absprache mit carli96 oder Flo Ko 12/2                */
+/*Scriptteile kï¿½nnen mit Namensnennung in anderen Scripten verwendet werden     */
 //////////////////////////////////////////////////////////////////////////////////
 
 const char Prototype_Ausrichtung[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p"; //Pfad zum Prototyp des Ausrichtungs-Objekt (AO)
@@ -20,32 +20,29 @@ object AOWaehlen : CommandScript
 		SetCursor(IMG1);
 		SetValidTargets(ACTOR_FLOOR);
 	}
-	
+
 	bool CheckPossible(GameObject *Caller)
-	{	
-		if (Caller->GetType() == ACTOR_VEHICLE)
-		{	
+	{
+		if(Caller->GetType() == ACTOR_VEHICLE)
+		{
 			Vehicle v(Caller);
-			if (v.GetNumPassengers() == 0)
-				return false;				
-			if (v.HasCommand("EngineOns"))
-				return false;
-		}		
+			return (v.GetNumPassengers() > 0 && !v.IsInstalled());
+		}
 		return true;
 	}
-	
+
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-	
+
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		Vector APos = Game::GetCommandPos();
 		Vehicle v(Caller);
-		
+
 		GameObject AO = Game::CreateObject(Prototype_Ausrichtung, "Ausrichtung");
-		Game::FindFreePosition(&AO, APos, 50.f);
+		Game::FindFreePosition(&AO, APos, 100.f);
 		AO.SetPosition(APos);
 		AO.SetSelectable(false);
 		Game::ShowHelpTextWindow("Please select the desired rotation and location.");
@@ -63,17 +60,17 @@ object Drehen : CommandScript
 		SetIcon(IMG2);
 		SetCursor(IMG2);
 	}
-	
+
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-	
+
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-	
+
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		GameObjectList GOL=Game::GetGameObjects("Ausrichtung");
@@ -84,7 +81,7 @@ object Drehen : CommandScript
     		float rot[9];
     		float childRot[9];
     		AusrichtungsObjekt.GetRotation(rot[0], rot[1], rot[2], rot[3], rot[4], rot[5], rot[6], rot[7], rot[8]);
-   			Math::EulerToMatrix(15.f, 0.f, 0.f, childRot); //die erste hier ist die Rotation um die ?-Achse ;)
+   			Math::EulerToMatrix(10.f, 0.f, 0.f, childRot); // rotation angle?
     		Math::MultiplyMatrices(childRot, rot);
     		AusrichtungsObjekt.SetRotation(childRot[0], childRot[1], childRot[2], childRot[3], childRot[4], childRot[5], childRot[6], childRot[7], childRot[8]);
 		}
@@ -99,29 +96,29 @@ object FZFahren : CommandScript
 		SetIcon(IMG3);
 		SetCursor(IMG3);
 	}
-	
+
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-	
+
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return Target->GetType() == ACTOR_VEHICLE;
 	}
-	
+
 	void PushActions(GameObject *Caller, Actor *Target, int childID)
 	{
 		//Person p(Caller);
 		Vehicle v(Caller);
 		Vector APos;
-		
+
 		GameObjectList gol = Game::GetGameObjects("Ausrichtung");
 		GameObject *AO;
 		AO = *gol.GetObject(0);
-		
+
 		APos = AO-> GetPosition();
-		
+
 		v.PushActionMove(ACTION_NEWLIST, APos,true);
 		v.PushActionExecuteCommand(ACTION_APPEND, "D_Drehen",AO);
 		Game::ShowHelpTextWindow("The vehicle is moving to the selected location.");
@@ -139,17 +136,17 @@ object D_Drehen : CommandScript
 		SetIcon(IMG3);
 		SetCursor(IMG3);
 	}
-	
+
 	bool CheckPossible(GameObject *Caller)
 	{
 		return true;
 	}
-	
+
 	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
 	{
 		return true;
 	}
-	
+
 	void PushActions(GameObject *Caller, Actor *target, int childID)
 	{
 		Caller->SetRotation(&GameObject(target));
@@ -157,8 +154,3 @@ object D_Drehen : CommandScript
 		Game::ShowHelpTextWindow("The vehicle has reached the desired location.");
 	}
 };
-
-	
-	
-	
-	

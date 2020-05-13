@@ -1,0 +1,214 @@
+////////////////////////////////////
+// Precise parking script
+//
+// originally from bieberfelde mod
+// with modifications by djchill
+//
+////////////////////////////////////
+
+
+const char Prototype_FloorMarker[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p";
+
+const char ICON_PARK[] = "Park";
+const char CURSOR_PARK[] = "sendto";
+const char ICON_TURNTO[] = "rotate_ccw";
+const char ICON_LEFT[] = "left";
+const char ICON_RIGHT[] = "right";
+const char ICON_CANCEL[] = "stop";
+const char ICON_GO[] = "go";
+
+
+object parkStart : CommandScript
+{
+	parkStart()
+	{
+		SetValidTargets(ACTOR_FLOOR | ACTOR_STREET);
+		SetPossibleCallers(ACTOR_PERSON | ACTOR_VEHICLE);
+		SetIcon(ICON_PARK);
+		SetCursor(CURSOR_PARK);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		if(Caller->GetType() == ACTOR_VEHICLE)
+		{
+			Vehicle v(Caller);
+			return (v.GetNumPassengers() > 0 && !v.IsInstalled());
+		}
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vector TargetPos = Game::GetCommandPos();
+		int id;
+		if(Caller->GetType()==ACTOR_VEHICLE)id=Caller->GetID();
+		else id=VehicleList(Caller->GetName()).GetVehicle(0)->GetID();
+		char makerName[20];
+		snprintf(makerName, 20, "maker_%i", id);
+		GameObjectList ol1 = Game::GetGameObjects(makerName);
+		if(ol1.GetNumObjects() == 0)
+		{
+			Vehicle maker = Game::CreateVehicle(Prototype_FloorMarker, makerName);
+			maker.SetPosition(TargetPos);
+			maker.SetPlayerMP(Caller->GetPlayerMP());
+			maker.PushActionShowHide(ACTION_NEWLIST, false);
+			maker.AssignCommand("TurnTo");
+			maker.AssignCommand("turnLeft");
+			maker.AssignCommand("turnRight");
+			maker.AssignCommand("parkStop");
+			maker.AssignCommand("parkGo");
+			maker.SetCommandable(true);
+			maker.SetUserData(id);
+			if(Caller->GetType() == ACTOR_VEHICLE)
+			{
+				Vehicle v(Caller);
+				v.Deselect();
+			}
+			else if(Caller->GetType() == ACTOR_PERSON)
+			{
+				Person p(Caller);
+				p.Deselect();
+			}
+			maker.Select();
+		}
+		else
+		{
+			Game::ShowHelpTextWindow("A maker has already been set for this vehicle.", 5.f);
+		}
+	}
+};
+
+object TurnTo : CommandScript
+{
+	TurnTo()
+	{
+		SetIcon(ICON_TURNTO);
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return Target->GetType()==ACTOR_FLOOR||Target->GetType()==ACTOR_STREET;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vector pos=Game::GetCommandPos();
+		Caller->PushActionTurnTo(ACTION_NEWLIST, pos, 0.0f);
+	}
+
+};
+
+object turnRight : CommandScript
+{
+	turnRight()
+	{
+		SetIcon(ICON_RIGHT);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int linie)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Xmlutil::DreheUm(GameObject(Caller),GameObject(Caller),-15.0);
+	}
+};
+
+object turnLeft : CommandScript
+{
+	turnLeft()
+	{
+		SetIcon(ICON_LEFT);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int linie)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Xmlutil::DreheUm(GameObject(Caller),GameObject(Caller),15.0);
+	}
+};
+
+object parkStop : CommandScript
+{
+	parkStop()
+	{
+		SetIcon(ICON_CANCEL);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int linie)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle maker(Caller);
+		Vehicle v(&Game::GetActor(maker.GetUserData()));
+		maker.PushActionDeleteOwner(ACTION_NEWLIST);
+		v.SetCommandable(true);
+		v.PushActionWait(ACTION_NEWLIST, 0.1f);
+	}
+};
+
+object parkGo : CommandScript
+{
+	parkGo()
+	{
+		SetIcon(ICON_GO);
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int linie)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle maker(Caller);
+		Vehicle v(&Game::GetActor(maker.GetUserData()));
+
+		v.SetCommandable(false);
+		v.SetSpeed(4.f);
+		v.PushActionMove(ACTION_NEWLIST, maker.GetPosition());
+		v.PushActionExecuteCommand(ACTION_APPEND, "command_frei", &maker, 0, false);
+	}
+};
+
+object command_frei : CommandScript
+{
+	command_frei()
+	{
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		Vehicle v(Caller);
+		Vehicle maker(Target);
+		v.SetCommandable(true);
+		Xmlutil::DreheUm(v,maker,0);
+		v.SetPosition(maker.GetPosition());
+		maker.PushActionDeleteOwner(ACTION_NEWLIST);
+	}
+};
