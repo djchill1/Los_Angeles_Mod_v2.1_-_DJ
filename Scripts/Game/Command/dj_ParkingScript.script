@@ -29,6 +29,10 @@ object AOWaehlen : CommandScript
 			if (v.IsInstalled() == 1)
 				return false;
 		}
+
+		if (Game::IsMultiplayer())
+			return false;
+			
 		return true;
 	}
 
