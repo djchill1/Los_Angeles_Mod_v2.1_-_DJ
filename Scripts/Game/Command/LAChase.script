@@ -8,7 +8,7 @@
 //	- DummyFollow
 //
 //		Script by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -60,6 +60,9 @@ object VcmdFollow : CommandScript
 		if (!Caller->IsValid() || !Caller->HasCommand(CMD_SIREN))
 			return false;
 
+		if (Game::IsMultiplayer())
+			return false;
+
 		if (Caller->GetType()==ACTOR_VEHICLE)
 		{
 			Vehicle v(Caller);
@@ -71,7 +74,7 @@ object VcmdFollow : CommandScript
 
 		return true;
  	}
- 
+
  	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
  	{
 		if (!Caller->IsValid() || !Target->IsValid() || (Target->GetID() == Caller->GetID()))
@@ -83,23 +86,23 @@ object VcmdFollow : CommandScript
 			if(v.GetNumPassengers() == 0)
 				return false;
 		}
-		
+
 		if (Target->GetType() == ACTOR_VEHICLE)
 		{
 			Vehicle t(Target);
 			if (!t.IsValid() || t.IsParking() || t.IsUplifted() || t.IsDestroyed() || t.IsSmoking() || (t.GetVehicleType() != VT_NOSQUAD && t.GetVehicleType() != VT_GANGSTER_GETAWAY))
-				return false;	
+				return false;
 		}
 		else if (Target->GetType() == ACTOR_PERSON)
 		{
 			Person p(Target);
 			if(!p.IsValid() || p.IsLinkedWithPerson() || p.IsCarryingPerson() || p.GetEnteredCarID() != -1 || p.IsPhysicsSimulationEnabled() || p.GetRole() == ROLE_ANIMAL || p.GetRole() == ROLE_SQUAD)
 				return false;
-								
+
 			if(p.GetRole() == ROLE_GANGSTER)
-				SetPriority(800);		
+				SetPriority(800);
 		}
-		
+
 		return true;
  	}
 
@@ -127,7 +130,7 @@ object VcmdFollow : CommandScript
 			{
 				Vehicle vt(&t);
 				if (vt.HasName("stolencar") && !vt.WasStoppedByRoadblock())
-				{	
+				{
 					if (rand()%2 == 0)
 						Audio::PlaySample3D(SND_CARTHEFT1, vt.GetPosition());
 					else
@@ -198,7 +201,7 @@ object DummyUpdateFollowPos : CommandScript
 					mDummy.PushActionDeleteOwner(ACTION_NEWLIST);
 					v.PushActionWait(ACTION_NEWLIST, 0.1f);
 					return;
-				} 
+				}
 				else if (!t.IsValid())
 				{
 					mDummy.PushActionDeleteOwner(ACTION_NEWLIST);
@@ -225,7 +228,7 @@ object DummyUpdateFollowPos : CommandScript
 						mBlock.PushActionExecuteCommand(ACTION_APPEND, DUMMY_UPDATEPOS, &t, 1, false);
 						if (!mBlock.IsFlagSet(OF_HIDDEN))
 							mBlock.SetFlag(OF_HIDDEN);
-					} 
+					}
 					else if (vt.GetVehicleType() == VT_GANGSTER_GETAWAY)
 					{
 						if (vt.HasObjectPath(NULL)) //Stop gangster vehicle
@@ -244,19 +247,19 @@ object DummyUpdateFollowPos : CommandScript
 					Game::FindFreePosition(&v, Move, 250);
 					v.PushActionMove(ACTION_NEWLIST, Move, true);
 					v.PushActionWait(ACTION_APPEND, 0.5f);
-					v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_FOLLOW, &t, 0, false);					
+					v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_FOLLOW, &t, 0, false);
 				}
 				else if (v.GetBoundingRadiusDistXYToObject(&t) < 600.f && t.GetType() == ACTOR_PERSON)
 				{
 					mDummy.PushActionDeleteOwner(ACTION_NEWLIST);
 					Person pt(Target);
 					if (pt.GetRole() != ROLE_GANGSTER && (pt.HasObjectPath(NULL) || pt.IsFleeing()))
-						t.PushActionWait(ACTION_NEWLIST, 10.f);						
+						t.PushActionWait(ACTION_NEWLIST, 10.f);
 					v.ClearActions();
 					v.PushActionWait(ACTION_NEWLIST, 0.5f);
 					v.PushActionExecuteCommand(ACTION_APPEND, DUMMY_FOLLOW, &t, 0, false);
 				}
-				return;				
+				return;
 			}
 		}
 		mDummy.PushActionDeleteOwner(ACTION_NEWLIST);
@@ -290,13 +293,13 @@ object DummyFollow : CommandScript
 			float r[9];
 			float childr[9];
 			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
-		
+
 			bool cop1 = false;
 			bool cop2 = false;
 			bool armed = false;
 			bool shoot = false;
 			bool fight = false;
-			
+
 			if (l1.GetNumPersons() >= 1)
 			{
 				if (l1.GetPerson(0)->HasCommand(CMD_ARREST) || l1.GetPerson(0)->HasCommand(CMD_ARREST2))
@@ -315,7 +318,7 @@ object DummyFollow : CommandScript
 							cop2 = true;
 					}
 				}
-			} 
+			}
 			else if (t.GetType() == ACTOR_PERSON)
 			{
 				Person pt(Target);
@@ -326,16 +329,16 @@ object DummyFollow : CommandScript
 					{
 						if (l1.GetPerson(1)->HasCommand(CMD_ARREST) || l1.GetPerson(1)->HasCommand(CMD_ARREST2))
 							cop2 = true;
-					}					
+					}
 					if (pt.GetEquipment() == EQUIP_PISTOL)
 					{
 						if ((pt.GetBehaviour() == BEHAVIOUR_GANGSTER_ATTACKALL || pt.GetBehaviour() == BEHAVIOUR_GANGSTER_ATTACKSQUAD || pt.GetBehaviour() == BEHAVIOUR_GANGSTER_ATTACKSQUAD_SMART || pt.GetBehaviour() == BEHAVIOUR_GANGSTER_GUARDHOSTAGE) && rand()%10 > 5)
-							shoot = true;						
+							shoot = true;
 						else if (rand()%4 >= 1)
-							fight = true;					
+							fight = true;
 					}
 				}
-			}			
+			}
 			if (cop1 && cop2)
 			{
 				v.SetCommandable(false);
@@ -380,7 +383,7 @@ object DummyFollow : CommandScript
 			if (cop2)
 			{
 				p2 = l1.GetPerson(1);
-				float dx2 = -12.f, dy2 = 65.f, dz2 = 0.f;	
+				float dx2 = -12.f, dy2 = 65.f, dz2 = 0.f;
 				v.RemovePassenger(&p2);
 				Math::RotateVector(dx2, dy2, dz2, r);
 				Math::EulerToMatrix(0.0f, 0.f, 0.f, childr);
@@ -452,16 +455,16 @@ object DummyFollow : CommandScript
 								if (shoot)
 								{
 									p1.PushActionWait(ACTION_APPEND, 2.0f);
-									p1.PushActionShoot(ACTION_APPEND, &pt);							
+									p1.PushActionShoot(ACTION_APPEND, &pt);
 								}
 								else
 								{
 									p1.PushActionWait(ACTION_APPEND, 6.0f);
 									p1.PushActionMove(ACTION_APPEND, &pt, TARGET_FOLLOW);
-									p1.PushActionTurnTo(ACTION_APPEND, &pt);								
+									p1.PushActionTurnTo(ACTION_APPEND, &pt);
 									p1.PushActionExecuteCommand(ACTION_APPEND, DUMMY_ARREST2, &p1, 3, false);
 									if (rand()%4 >= 1)
-										fight = true;	
+										fight = true;
 									p1.PushActionArrest(ACTION_APPEND, &pt, fight);
 									if (v.GetFreeTransports() >= 1 && pt.GetRole() == ROLE_GANGSTER)
 										p1.PushActionExecuteCommand(ACTION_APPEND, CMD_PUTINCAR, &v, 0, false);
@@ -483,7 +486,7 @@ object DummyFollow : CommandScript
 									{
 										p2.PushActionSwitchAnim(ACTION_APPEND, "pistoltarget");
 										p2.PushActionWait(ACTION_APPEND, 2.0f);
-										p2.PushActionShoot(ACTION_APPEND, &pt);	
+										p2.PushActionShoot(ACTION_APPEND, &pt);
 									} else
 									{
 										p2.PushActionTurnTo(ACTION_APPEND, &t);
@@ -499,7 +502,7 @@ object DummyFollow : CommandScript
 					else
 					{
 						p1.PushActionExecuteCommand(ACTION_APPEND, DUMMY_FOLLOW, Target, 2, false);
-					}				
+					}
 				}
 				else if (t.GetType() == ACTOR_PERSON)
 				{
@@ -558,10 +561,10 @@ object DummyFollow : CommandScript
 							Vector Pos = p1.GetPosition();
 							Audio::PlaySample3D(SND_HOLSTER, Pos);
 						}
-						p1.PushActionExecuteCommand(ACTION_APPEND, CMD_ARREST, &pt, 0, false);	
+						p1.PushActionExecuteCommand(ACTION_APPEND, CMD_ARREST, &pt, 0, false);
 					}
 				}
-			} 
+			}
 			if (t.GetType() == ACTOR_PERSON && cop2 && armed)
 			{
 				Person pt(&t);
@@ -572,7 +575,7 @@ object DummyFollow : CommandScript
 					p2.AssignCommand(CMD_HOLSTERGUN);
 					p2.RemoveCommand(CMD_DRAWGUN);
 					p2.AssignCommand(CMD_ARREST2);
-					p2.RemoveCommand(CMD_ARREST);	
+					p2.RemoveCommand(CMD_ARREST);
 					Vector Pos = p2.GetPosition();
 					Audio::PlaySample3D(SND_DRAW, Pos);
 				}
@@ -598,7 +601,7 @@ object DummyFollow : CommandScript
 				{
 					obj->PushActionDeleteOwner(ACTION_NEWLIST);
 				}
-			}	
+			}
 		}
 		if (childID == 2)
 		{
@@ -654,8 +657,8 @@ object DummyFollow : CommandScript
 				Fine = 600;
 				Mission::PlayHint("Driver fined for failure to use a seatbelt. You've earned 600 credits!");
 			}
-			int NewMoney = Money + Fine;          
-			Mission::SetMoney(NewMoney);			
+			int NewMoney = Money + Fine;
+			Mission::SetMoney(NewMoney);
 		}
 	}
 };
