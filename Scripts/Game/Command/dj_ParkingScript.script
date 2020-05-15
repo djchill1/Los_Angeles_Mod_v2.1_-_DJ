@@ -23,6 +23,9 @@ object AOWaehlen : CommandScript
 
 	bool CheckPossible(GameObject *Caller)
 	{
+		if (!Game::IsFreeplay())
+			return false;
+
 		if(Caller->GetType() == ACTOR_VEHICLE)
 		{
 			Vehicle v(Caller);
@@ -30,9 +33,6 @@ object AOWaehlen : CommandScript
 				return false;
 		}
 
-		if (Game::IsMultiplayer())
-			return false;
-			
 		return true;
 	}
 

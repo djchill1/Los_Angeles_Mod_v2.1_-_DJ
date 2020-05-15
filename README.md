@@ -32,8 +32,8 @@ If you download a zip file, extract it to your emergency 4 mods folder. The path
 * Modified: Heavy Equipment Squad replaces Hazmat at fire station 2.
 * Removed: EMS Chief's ability to call Hazmat squad.
 
-### Private Roadmap (for now)
-https://trello.com/b/0GnE8Rc0/la-modding
+### Roadmap
+https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/projects/1
 
 ### Reporting bugs and feature requests
 Please use the issues tab on github to request features and report bugs. Please select the right option for your request and use the issue format provided. This'll help speed up bug fixing!
