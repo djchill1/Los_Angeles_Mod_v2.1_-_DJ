@@ -11,14 +11,20 @@ For more, check the "02 Screenshots" folder above.
 ![Police cars](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/police_cars.png?raw=true)
 ![Fire Station 2](https://github.com/djchill1/Los_Angeles_Mod_v2.1_-_DJ/blob/master/02%20Screenshots/station2.png?raw=true)
 
-### How to play
-Click "clone or download" in the top right of this page to download the latest version to your PC. If you have git installed on your device, you can constantly fetch the latest version of this mod. Otherwise you can download a zip of the entire modification.
-If you download a zip file, extract it to your emergency 4 mods folder. The path of this folder will look something like this: `D:\SteamLibrary\steamapps\common\911 First Responders\Mods`
+### How to play this mod
+To download the latest version of this mod, follow the following steps:
+1. Click "clone or download" in the top right of this page.
+2. Click "open in desktop"
+3. If you don't have github desktop installed, you'll be redirected to a download page. Download, open and go through the setup. (note you don't need to make a github account, you can skip this step.)
+4. [Follow this guide to clone the mod](https://help.github.com/en/desktop/contributing-to-projects/cloning-a-repository-from-github-to-github-desktop), making sure to choose your mods folder as the local location on your computer. The folders path will be something like `D:\SteamLibrary\steamapps\common\911 First Responders\Mods`.
+5. Once downloaded, open Emergency 4 and enjoy!
+
+**Note:** If you want to stay constantly up to date and have the same files for multiplayer gameplay, then be sure to open github desktop and "fetch" the latest updates for the `master` branch.
 
 ### Changelog (from LA Mod v2.1)
 #### v1.0
-* Modified: Most units have LED lightbars from LED Lightbar submod.
-* Added: EMS Chief Dodge Charger (car 2) can park at fire station 2.
+* Added: EMS Chief Dodge Charger (car 2) can park at fire station 1.
+* Added: admin control panel outside fire station 1, with commands to start and stop all calls, start fire, change time and delete unit.
 * Added command: Battalion Chiefs can be called from both fire station control panels.
 * Added command: Battalion Chief and EMS Chief can call a heavy equipment squad.
 * Added: unmarked police Taurus in blue.
@@ -29,6 +35,8 @@ If you download a zip file, extract it to your emergency 4 mods folder. The path
 * Added Event: Car crash #16 outside fire station 1.
 * Added Event: Car crash #17 in the port, with car underwater.
 * Added Event: More bomb locations.
+* Modified: Police Chase command now works in multiplayer for all players.
+* Modified: Most units have LED lightbars from LED Lightbar submod.
 * Modified: Heavy Equipment Squad replaces Hazmat at fire station 2.
 * Removed: EMS Chief's ability to call Hazmat squad.
 
