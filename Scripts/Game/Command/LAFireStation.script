@@ -1266,8 +1266,8 @@ object VcmdEmptyFireStation : CommandScript
 		if (!Caller->IsValid())
 			return false;
 
-		if (!Game::IsFreeplay())
-			return false;
+		/*if (!Game::IsFreeplay())
+			return false; */
 
 		return true;
 	}
