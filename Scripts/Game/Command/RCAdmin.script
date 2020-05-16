@@ -84,7 +84,7 @@ object AcmdAddAnHour : CommandScript
     {
 		SetRestrictions(RESTRICT_SELFEXECUTE);
 		SetCursor("use");
-		SetIcon("H+1");
+		SetIcon("Hplus1");
     }
 
     bool CheckPossible(GameObject *Caller)
