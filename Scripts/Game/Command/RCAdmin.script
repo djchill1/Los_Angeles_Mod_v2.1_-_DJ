@@ -1,0 +1,203 @@
+//******************************************************************************************
+// #Version 1.0#
+//
+// 		Includes: Command to scare people away from the police dog
+//
+//		- AcmdStartFire
+//		- AcmdRemoveObject
+//		- AcmdAddAnHour
+//		- AcmdSubAnHour
+//		- AcmdStopCalls
+//		- AcmdStartCalls
+//
+//		Script originally by Benjamin Meier-Andersen (BMA)
+//		Multiple additions and adjustments for RCID mod by djchill.
+//
+//
+//******************************************************************************************
+
+int RC_hour;
+int RC_minute;
+int RC_second;
+
+int StartingFreq = 100.f;
+
+object AcmdStartFire : CommandScript
+{
+    AcmdStartFire()
+    {
+        SetIcon("Flame");
+        SetCursor("use");
+        SetValidTargets(ACTOR_HOUSE | ACTOR_OPEN_HOUSE | ACTOR_OBJECT);
+    }
+
+    bool CheckPossible(GameObject *Caller)
+    {
+        return true;
+    }
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+    {
+        return true;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+        GameObject t(Target);
+        t.Burn();
+        Mission::PlayHint("light it up!!");
+    }
+};
+
+object AcmdRemoveObject : CommandScript
+{
+    AcmdRemoveObject()
+    {
+        SetIcon("Cross");
+        SetCursor("use");
+        SetValidTargets(ACTOR_VEHICLE | ACTOR_PERSON | ACTOR_OBJECT);
+    }
+
+    bool CheckPossible(GameObject *Caller)
+    {
+        return true;
+    }
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+    {
+		if(!Caller->IsValid() || !Target->IsValid() || Target->GetID() == Caller->GetID())
+			return false;
+        return true;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+        GameObject t(Target);
+        t.PushActionDeleteOwner(ACTION_NEWLIST);
+    }
+};
+
+//Adding An Hour
+object AcmdAddAnHour : CommandScript
+{
+    AddAnHour()
+    {
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetCursor("use");
+		SetIcon("H+1");
+    }
+
+    bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		return true;
+	}
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+    {
+		if (!Caller->IsValid() || !Target->IsValid() || Caller->GetID() != Target->GetID())
+			return false;
+		Vehicle v(Caller);
+		if (v.IsValid() && !v.IsDestroyed())
+			return true;
+		return false;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+		Game::GetTime(RC_hour, RC_minute, RC_second);
+		RC_hour = RC_hour + 1;
+		Game::SetTime(RC_hour, RC_minute, RC_second);
+    }
+};
+//Substracting An Hour
+object AcmdSubAnHour : CommandScript
+{
+    AcmdSubAnHour()
+    {
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+		SetCursor("use");
+		SetIcon("H-1");
+    }
+
+    bool CheckPossible(GameObject *Caller)
+	{
+		if (!Caller->IsValid() || Caller->GetType() != ACTOR_VEHICLE)
+			return false;
+		return true;
+	}
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+    {
+		if (!Caller->IsValid() || !Target->IsValid() || Caller->GetID() != Target->GetID())
+			return false;
+		Vehicle v(Caller);
+		if (v.IsValid() && !v.IsDestroyed())
+			return true;
+		return false;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+		Game::GetTime(RC_hour, RC_minute, RC_second);
+		RC_hour = RC_hour - 1;
+		Game::SetTime(RC_hour, RC_minute, RC_second);
+    }
+};
+
+//Stop all calls
+object AcmdStopCalls : CommandScript
+{
+    AcmdStopCalls()
+    {
+        SetIcon("AStop");
+        SetCursor("use");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+    }
+
+    bool CheckPossible(GameObject *Caller)
+    {
+        return true;
+    }
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+    {
+        return true;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+		StartingFreq = Game::GetGlobalEventFrequencyFactor();
+        Game::SetGlobalEventFrequencyFactor(0.f);
+		Game::ShowHelpTextWindow("All calls have been stopped");
+    }
+};
+
+//Start all calls
+object AcmdStartCalls : CommandScript
+{
+    AcmdStartCalls()
+    {
+        SetIcon("Go");
+        SetCursor("use");
+		SetRestrictions(RESTRICT_SELFEXECUTE);
+    }
+
+    bool CheckPossible(GameObject *Caller)
+    {
+        return true;
+    }
+
+    bool CheckTarget(GameObject *Caller, Actor *Target, int ChildID)
+    {
+        return true;
+    }
+
+    void PushActions(GameObject *Caller, Actor *Target, int childID)
+    {
+		if(Game::GetGlobalEventFrequencyFactor() == 0)
+			Game::SetGlobalEventFrequencyFactor(StartingFreq);
+		Game::ShowHelpTextWindow("Calls have been started again");
+    }
+};
