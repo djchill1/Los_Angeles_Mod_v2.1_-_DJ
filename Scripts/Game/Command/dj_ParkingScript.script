@@ -7,7 +7,8 @@
 
 const char Prototype_Ausrichtung[] = "mod:Prototypes/Objects/Hilfsobjekte/Ausrichtung.e4p"; //Pfad zum Prototyp des Ausrichtungs-Objekt (AO)
 
-const char IMG1[] = "AOWaehlen"; //Bild zum Icon 1
+const char ICON_PARK[] = "Park";
+const char CURSOR_PARK[] = "sendto";
 const char IMG2[] = "Drehen"; //Bild zum Icon 2
 const char IMG3[] = "FZFahren"; //Bild zum Icon 3
 
@@ -16,8 +17,8 @@ object AOWaehlen : CommandScript
 {
 	AOWaehlen()
 	{
-		SetIcon(IMG1);
-		SetCursor(IMG1);
+		SetIcon(ICON_PARK);
+		SetCursor(CURSOR_PARK);
 		SetValidTargets(ACTOR_FLOOR);
 	}
 
