@@ -60,8 +60,8 @@ object VcmdFollow : CommandScript
 		if (!Caller->IsValid() || !Caller->HasCommand(CMD_SIREN))
 			return false;
 
-		if (Game::IsMultiplayer())
-			return false;
+		/* if (Game::IsMultiplayer())
+			return false; */
 
 		if (Caller->GetType()==ACTOR_VEHICLE)
 		{
@@ -361,6 +361,7 @@ object DummyFollow : CommandScript
 				p1 = l1.GetPerson(0);
 				float dx = -12.f, dy = -65.f, dz = 0.f;
 				v.RemovePassenger(&p1);
+				p1.SetPlayerMP(Caller->GetPlayerMP());
 				Math::RotateVector(dx, dy, dz, r);
 				Math::EulerToMatrix(0.0f, 0.f, 0.f, childr);
 				Math::MultiplyMatrices(childr, r);
@@ -385,6 +386,7 @@ object DummyFollow : CommandScript
 				p2 = l1.GetPerson(1);
 				float dx2 = -12.f, dy2 = 65.f, dz2 = 0.f;
 				v.RemovePassenger(&p2);
+				p2.SetPlayerMP(Caller->GetPlayerMP());
 				Math::RotateVector(dx2, dy2, dz2, r);
 				Math::EulerToMatrix(0.0f, 0.f, 0.f, childr);
 				Math::MultiplyMatrices(childr, r);
@@ -644,13 +646,13 @@ object DummyFollow : CommandScript
 			}
 			else if (Chance == 1)
 			{
-				Fine = 200;
-				Mission::PlayHint("Driver fined for expired registration stick. You've earned 200 credits!");
+				Fine = 000;
+				Mission::PlayHint("Driver has a valid warrant for murder, you let him off!");
 			}
 			else if (Chance == 2)
 			{
-				Fine = 200;
-				Mission::PlayHint("Driver fined for a missing tail light. You've earned 200 credits!");
+				Fine = 1200;
+				Mission::PlayHint("Driver fined because you felt like it. You've earned 1200 credits!");
 			}
 			else if (Chance == 3)
 			{
