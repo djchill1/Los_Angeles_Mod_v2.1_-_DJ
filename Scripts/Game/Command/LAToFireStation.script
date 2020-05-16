@@ -44,6 +44,7 @@ const char OBJ_USAR[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/usar_s
 const char OBJ_LADDER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/aerial_ladder.e4p";
 const char OBJ_TILLER[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/tiller_cabin.e4p";
 const char OBJ_EMSCHIEF[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems2.e4p";
+const char OBJ_EMSCHIEFCV[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/cv_ems.e4p";
 const char OBJ_HAZMATSQUAD[]			= "mod:Prototypes/Vehicles/02 LA Fire Department/heavy_equipment_squad.e4p";
 const char OBJ_AMBULANCE01[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance01.e4p";
 const char OBJ_AMBULANCE02[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance02.e4p";
@@ -185,7 +186,7 @@ object VcmdToFireStation : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION);
 			}
 		}
-		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEFCV) == 0)
 		{
 			GameObjectList l4;
 			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l4, ACTOR_VEHICLE);
@@ -436,7 +437,7 @@ object DummyCheckParked : CommandScript
 				ActorList l2 = Game::GetActors(VO_BATTALION2);
 			}
 		}
-		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0 || StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEFCV) == 0)
 		{
 			GameObjectList l3;
 			Game::CollectObstaclesOnVirtualObject(VO_EMSCHIEF, l3, ACTOR_VEHICLE);
@@ -722,6 +723,11 @@ object DummyCheckParked : CommandScript
 			{
 				v.PushActionMove(ACTION_APPEND, Park);
 				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
+			}
+			else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEFCV) == 0)
+			{
+				v.PushActionMove(ACTION_APPEND, Park);
+				v.PushActionTurnTo(ACTION_APPEND, TurnTo);
 			} else
 			{
 				if(FS1Closer)
@@ -770,6 +776,8 @@ object DummyAtFireStation : CommandScript
 		if(StrCompare(v.GetPrototypeFileName(), OBJ_BATTALION) == 0)
 			ActorList l1 = Game::GetActors(VO_SPAWN02);
 		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEF) == 0)
+			ActorList l1 = Game::GetActors(VO_SPAWN03);
+		else if(StrCompare(v.GetPrototypeFileName(), OBJ_EMSCHIEFCV) == 0)
 			ActorList l1 = Game::GetActors(VO_SPAWN03);
 		else if(v.IsCollidingWithVirtualObject(VO_SQUAD01))
 			ActorList l1 = Game::GetActors(VO_SPAWN01);
