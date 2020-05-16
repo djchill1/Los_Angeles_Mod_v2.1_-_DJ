@@ -109,14 +109,14 @@ const char VO_AMBULANCE01[]			= "fs_ambulance01";
 const char VO_AMBULANCE02[]			= "fs_ambulance02";
 const char VO_AMBULANCE03[]			= "fs_ambulance03";
 const char VO_AMBULANCE04[]			= "fs_ambulance04";
-const char VO_USAR[]				= "fs_usar";
+const char VO_USAR[]				= "fs_rescuesquad1";
 const char VO_LADDER[]				= "fs_ladder";
 const char VO_ENGINE01[]			= "fs_engine01";
 const char VO_ENGINE02[]			= "fs_engine02";
 const char VO_ENGINE03[]			= "fs_engine03";
 const char VO_ENGINE04[]			= "fs_engine04";
 const char VO_ENGINE05[]			= "fs_engine05";
-const char VO_HAZMAT[]				= "fs_hazmat";
+const char VO_HAZMAT[]				= "fs_woods";
 
 const char VO_SPAWN01[]				= "fs_spawn01";
 const char VO_SPAWN02[]				= "fs_spawn02";
@@ -1266,8 +1266,8 @@ object VcmdEmptyFireStation : CommandScript
 		if (!Caller->IsValid())
 			return false;
 
-		if (!Game::IsFreeplay())
-			return false;
+		/*if (!Game::IsFreeplay())
+			return false; */
 
 		return true;
 	}

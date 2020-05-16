@@ -6,7 +6,7 @@
 //	- VcmdStart
 //
 //		Script by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -17,6 +17,7 @@ const char NAME_FIRESTATION2[]			= "fire_station2";
 const char NAME_FIRESTATION2_ROOF[]		= "fire_station2_roof";
 const char NAME_CONTROLPANEL[]			= "fire_station_controlpanel";
 const char NAME_CONTROLPANEL2[]			= "fire_station_controlpanel2";
+const char NAME_ADMINPANEL[]			= "admin_controlpanel_fs1";
 const char OBJ_AMBULANCE01[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance01.e4p";
 const char OBJ_AMBULANCE02[]			= "mod:Prototypes/Vehicles/01 LA Ambulance/ambulance02.e4p";
 const char OBJ_BATTALION[]				= "mod:Prototypes/Vehicles/02 LA Fire Department/battalion_chief_vehicle.e4p";
@@ -34,14 +35,14 @@ const char VO_AMBULANCE01[]				= "fs_ambulance01";
 const char VO_AMBULANCE02[]				= "fs_ambulance02";
 const char VO_AMBULANCE03[]				= "fs_ambulance03";
 const char VO_AMBULANCE04[]				= "fs_ambulance04";
-const char VO_USAR[]					= "fs_usar";
+const char VO_USAR[]					= "fs_rescuesquad1";
 const char VO_LADDER[]					= "fs_ladder";
 const char VO_ENGINE01[]				= "fs_engine01";
 const char VO_ENGINE02[]				= "fs_engine02";
 const char VO_ENGINE03[]				= "fs_engine03";
 const char VO_ENGINE04[]				= "fs_engine04";
 const char VO_ENGINE05[]				= "fs_engine05";
-const char VO_HAZMAT[]					= "fs_hazmat";
+const char VO_HAZMAT[]					= "fs_woods";
 const char NAME_GATE01A[]				= "fs_gate01a";
 const char NAME_GATE02A[]				= "fs_gate02a";
 const char NAME_GATE03A[]				= "fs_gate03a";
@@ -76,9 +77,9 @@ object VcmdStart : CommandScript
 		{
 			Vehicle *c = list3.GetVehicle(i);
 			c->SetSmokeLevelDuration(25.f);
-		}	
-		
-		GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION); 
+		}
+
+		GameObjectList l1 = Game::GetGameObjects(NAME_FIRESTATION);
 		for(int i=0; i < l1.GetNumObjects(); i++)
 		{
 			GameObject *obj = l1.GetObject(i);
@@ -109,7 +110,7 @@ object VcmdStart : CommandScript
 		{
 			GameObject *obj = l3.GetObject(i);
 			obj->AssignCommand("VcmdAutoStaffOff");
-			obj->AssignCommand("VcmdRepairVehicles");			
+			obj->AssignCommand("VcmdRepairVehicles");
 			obj->AssignCommand(DUMMY_ALARM);
 			obj->PushActionWait(ACTION_NEWLIST, 1.5f);
 			obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 1, false);
@@ -148,13 +149,13 @@ object VcmdStart : CommandScript
 				obj->SetUserData(1);
 			}
 		}
-		
+
 		GameObjectList gate01a = Game::GetGameObjects(NAME_GATE01A);
 		for(int i=0; i < gate01a.GetNumObjects(); i++)
 			GameObject *gate1 = gate01a.GetObject(i);
 		GameObjectList gate02a = Game::GetGameObjects(NAME_GATE02A);
 		for(int i=0; i < gate02a.GetNumObjects(); i++)
-			GameObject *gate2 = gate02a.GetObject(i);		
+			GameObject *gate2 = gate02a.GetObject(i);
 		GameObjectList gate03a = Game::GetGameObjects(NAME_GATE03A);
 		for(int i=0; i < gate03a.GetNumObjects(); i++)
 			GameObject *gate3 = gate03a.GetObject(i);
@@ -163,7 +164,7 @@ object VcmdStart : CommandScript
 			GameObject *gate4 = gate04a.GetObject(i);
 		GameObjectList gate05a = Game::GetGameObjects(NAME_GATE05A);
 		for(int i=0; i < gate05a.GetNumObjects(); i++)
-			GameObject *gate5 = gate05a.GetObject(i);			
+			GameObject *gate5 = gate05a.GetObject(i);
 		GameObjectList gate06a = Game::GetGameObjects(NAME_GATE06A);
 		for(int i=0; i < gate06a.GetNumObjects(); i++)
 			GameObject *gate6 = gate06a.GetObject(i);
@@ -173,7 +174,7 @@ object VcmdStart : CommandScript
 		GameObjectList gate08a = Game::GetGameObjects(NAME_GATE08A);
 		for(int i=0; i < gate08a.GetNumObjects(); i++)
 			GameObject *gate8 = gate08a.GetObject(i);
-			
+
 		ActorList l6 = Game::GetActors(VO_BATTALION);
 		for(int i=0; i < l6.GetNumActors(); i++)
 		{
@@ -401,7 +402,7 @@ object VcmdStart : CommandScript
 			m.PushActionExecuteCommand(ACTION_NEWLIST, DUMMY_CALLCREW, Caller, 1, false);
 			m.PushActionWait(ACTION_APPEND, 0.5f);
 			m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
-		}		
+		}
 		System::Log("Fire stations activated!");
 	}
 };
