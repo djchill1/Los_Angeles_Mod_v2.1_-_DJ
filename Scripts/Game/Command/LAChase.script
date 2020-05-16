@@ -16,6 +16,7 @@
 const char CMD_FOLLOW[] 				= "VcmdFollow";
 const char CMD_SIREN[]					= "VcmdSiren";
 const char DUMMY_ARREST2[]				= "DummyArrest2";
+const char DUMMY_EXIT[] 					= "EmptyCar";
 const char DUMMY_HASSIREN[] 			= "DummyHasSiren";
 const char DUMMY_DISABLE[] 				= "DummyDisableSiren";
 const char DUMMY_PATROL[] 				= "DummyPatrol";
@@ -290,6 +291,7 @@ object DummyFollow : CommandScript
 			PersonList l1 = v.GetPassengers();
 			Vector Pos = v.GetPosition();
 			Vector Pos2 = v.GetPosition();
+			Game::ExecuteCommand(DUMMY_EXIT, &v, &v);
 			float r[9];
 			float childr[9];
 			v.GetRotation(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]);
