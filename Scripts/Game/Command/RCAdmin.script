@@ -82,9 +82,9 @@ object AcmdAddAnHour : CommandScript
 {
     AddAnHour()
     {
-		SetRestrictions(RESTRICT_SELFEXECUTE);
-		SetCursor("use");
-		SetIcon("Hplus1");
+  		SetRestrictions(RESTRICT_SELFEXECUTE);
+  		SetCursor("use");
+  		SetIcon("Hplus1");
     }
 
     bool CheckPossible(GameObject *Caller)
@@ -116,9 +116,9 @@ object AcmdSubAnHour : CommandScript
 {
     AcmdSubAnHour()
     {
-		SetRestrictions(RESTRICT_SELFEXECUTE);
-		SetCursor("use");
-		SetIcon("H-1");
+  		SetRestrictions(RESTRICT_SELFEXECUTE);
+  		SetCursor("use");
+  		SetIcon("H-1");
     }
 
     bool CheckPossible(GameObject *Caller)
