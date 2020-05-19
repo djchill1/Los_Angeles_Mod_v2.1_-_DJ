@@ -1,4 +1,9 @@
 //******************************************************************************************
+//
+// DJ Additions:
+//  - VcmdMPStart
+//
+//
 // #Version 1.3#
 //
 // 		Includes: Start command de spawn vehicles.
@@ -403,6 +408,105 @@ object VcmdStart : CommandScript
 			m.PushActionWait(ACTION_APPEND, 0.5f);
 			m.PushActionExecuteCommand(ACTION_APPEND, DUMMY_CALLCREW, Caller, 2, false);
 		}
+		System::Log("Fire stations activated!");
+	}
+};
+
+object VcmdMPStart : CommandScript
+{
+	VcmdMPStart()
+	{
+	}
+
+	bool CheckPossible(GameObject *Caller)
+	{
+		return true;
+	}
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		return true;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int ChildID)
+	{
+		VehicleList list3("Unnamed");
+		for(int i=0; i < list3.GetNumVehicles(); i++)
+		{
+			Vehicle *c = list3.GetVehicle(i);
+			c->SetSmokeLevelDuration(25.f);
+		}
+
+		GameObjectList l3 = Game::GetGameObjects(NAME_CONTROLPANEL);
+		for(int i=0; i < l3.GetNumObjects(); i++)
+		{
+			GameObject *obj = l3.GetObject(i);
+			obj->AssignCommand("VcmdAutoStaffOff");
+			obj->AssignCommand("VcmdRepairVehicles");
+			obj->AssignCommand(DUMMY_ALARM);
+			obj->PushActionWait(ACTION_NEWLIST, 1.5f);
+			obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 1, false);
+			obj->PushActionWait(ACTION_APPEND, 16.0f);
+			obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+		}
+		GameObjectList l4 = Game::GetGameObjects(NAME_CONTROLPANEL2);
+		for(int i=0; i < l4.GetNumObjects(); i++)
+		{
+			GameObject *obj = l4.GetObject(i);
+			obj->AssignCommand("VcmdAutoStaffOff");
+			obj->AssignCommand("VcmdRepairVehicles");
+			obj->AssignCommand(DUMMY_ALARM);
+			obj->PushActionWait(ACTION_NEWLIST, 1.5f);
+			obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_GATES, Caller, 3, false);
+			obj->PushActionWait(ACTION_APPEND, 16.0f);
+			obj->PushActionExecuteCommand(ACTION_APPEND, DUMMY_ALARM, Caller, 1, false);
+		}
+		GameObjectList l5 = Game::GetGameObjects(NAME_FIRESTATION_ROOF);
+		for(int i=0; i < l5.GetNumObjects(); i++)
+		{
+			GameObject *obj = l5.GetObject(i);
+			if(obj->GetUserData() == 0)
+			{
+				obj->Hide();
+				obj->SetUserData(1);
+			}
+		}
+		GameObjectList l51 = Game::GetGameObjects(NAME_FIRESTATION2_ROOF);
+		for(int i=0; i < l51.GetNumObjects(); i++)
+		{
+			GameObject *obj = l51.GetObject(i);
+			if(obj->GetUserData() == 0)
+			{
+				obj->Hide();
+				obj->SetUserData(1);
+			}
+		}
+
+		GameObjectList gate01a = Game::GetGameObjects(NAME_GATE01A);
+		for(int i=0; i < gate01a.GetNumObjects(); i++)
+			GameObject *gate1 = gate01a.GetObject(i);
+		GameObjectList gate02a = Game::GetGameObjects(NAME_GATE02A);
+		for(int i=0; i < gate02a.GetNumObjects(); i++)
+			GameObject *gate2 = gate02a.GetObject(i);
+		GameObjectList gate03a = Game::GetGameObjects(NAME_GATE03A);
+		for(int i=0; i < gate03a.GetNumObjects(); i++)
+			GameObject *gate3 = gate03a.GetObject(i);
+		GameObjectList gate04a = Game::GetGameObjects(NAME_GATE04A);
+		for(int i=0; i < gate04a.GetNumObjects(); i++)
+			GameObject *gate4 = gate04a.GetObject(i);
+		GameObjectList gate05a = Game::GetGameObjects(NAME_GATE05A);
+		for(int i=0; i < gate05a.GetNumObjects(); i++)
+			GameObject *gate5 = gate05a.GetObject(i);
+		GameObjectList gate06a = Game::GetGameObjects(NAME_GATE06A);
+		for(int i=0; i < gate06a.GetNumObjects(); i++)
+			GameObject *gate6 = gate06a.GetObject(i);
+		GameObjectList gate07a = Game::GetGameObjects(NAME_GATE07A);
+		for(int i=0; i < gate07a.GetNumObjects(); i++)
+			GameObject *gate7 = gate07a.GetObject(i);
+		GameObjectList gate08a = Game::GetGameObjects(NAME_GATE08A);
+		for(int i=0; i < gate08a.GetNumObjects(); i++)
+			GameObject *gate8 = gate08a.GetObject(i);
+
 		System::Log("Fire stations activated!");
 	}
 };

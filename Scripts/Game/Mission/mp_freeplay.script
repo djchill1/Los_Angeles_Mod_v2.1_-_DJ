@@ -1,8 +1,13 @@
 //******************************************************************************************
+//
+// DJ Additions:
+//  - multiplayer station gates open and roof hide
+//
+//
 // #Version 1.0#
 //
 //		Script by Hoppah
-//		
+//
 //		Usage of this script in other mods is NOT allowed without permission of Hoppah
 //
 //******************************************************************************************
@@ -17,6 +22,10 @@ bool OnLoad()
 
 void start()
 {
+	GameObjectList l1("fire_station_controlpanel");
+	GameObject Obj = l1.GetObject(0);
+	Game::ExecuteCommand("VcmdMPStart", &Obj);
+
 	GameObjectList l2("spawn_check");
 	if (l2.GetNumObjects() > 0)
 	{
