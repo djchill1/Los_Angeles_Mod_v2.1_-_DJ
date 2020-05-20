@@ -3,6 +3,8 @@ djchills own edits of the LA mod v2.1, originally by Hoppah.
 
 The `master` branch will contain the latest stable build, and is the best version to download to play. If you wish, you can download the `Dev`, or any other branch where the latest features will be created. But content here will be very work in progress and may break part of the game, so do so at your own risk.
 
+###### Warning: *Do NOT download the 'zip' of this mod directly from github. It will NOT work in game, and will cause a game crash when loading the mod.*
+
 ### License
 A mit licence file is included in this repository. All work can be re-distributed and re-released in your own modification without contacting the mod author. djchill must be credited whenever mod files are used.
 
@@ -20,6 +22,8 @@ To download the latest version of this mod, follow the following steps:
 5. Once downloaded, open Emergency 4 and enjoy!
 
 **Note:** If you want to stay constantly up to date and have the same files for multiplayer gameplay, then be sure to open github desktop and "fetch" the latest updates for the `master` branch.
+
+###### Warning: *Do NOT download the 'zip' of this mod directly from github. It will NOT work in game, and will cause a game crash when loading the mod.*
 
 ### Changelog (from LA Mod v2.1)
 #### v1.0
