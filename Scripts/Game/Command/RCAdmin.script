@@ -9,6 +9,8 @@
 //		- AcmdSubAnHour
 //		- AcmdStopCalls
 //		- AcmdStartCalls
+//		- AcmdFasterCalls
+//		- AcmdSlowerCalls
 //
 //		Script originally by Benjamin Meier-Andersen (BMA)
 //		Multiple additions and adjustments for RCID mod by djchill.
@@ -200,4 +202,58 @@ object AcmdStartCalls : CommandScript
 			Game::SetGlobalEventFrequencyFactor(StartingFreq);
 		Game::ShowHelpTextWindow("Calls have been started again");
     }
+};
+
+object AcmdFasterCalls : CommandScript
+{
+
+   AcmdFasterCalls()
+   {
+     	SetIcon("eplus");
+   }
+
+   bool CheckPossible(GameObject *Caller)
+   {
+	return true;
+   }
+
+   bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+   {
+	return true;
+   }
+
+   void PushActions(GameObject *Caller, Actor *Target, int childID)
+   {
+	float freq=Game::GetGlobalEventFrequencyFactor();
+	freq=freq+2.0;
+	Game::SetGlobalEventFrequencyFactor(freq);
+   }
+};
+
+object AcmdSlowerCalls : CommandScript
+{
+
+   AcmdSlowerCalls()
+   {
+     	SetIcon("eminus");
+   }
+
+   bool CheckPossible(GameObject *Caller)
+   {
+	return true;
+   }
+
+   bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+   {
+	return true;
+   }
+
+   void PushActions(GameObject *Caller, Actor *Target, int childID)
+   {
+	float freq=Game::GetGlobalEventFrequencyFactor();
+	freq=freq-2.0;
+	if (freq<0)
+		freq=0;
+	Game::SetGlobalEventFrequencyFactor(freq);
+   }
 };
