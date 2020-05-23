@@ -1,0 +1,64 @@
+object UseShears : CommandScript
+{
+	UseShears()
+	{
+		SetValidTargets(ACTOR_VEHICLE);
+		SetRestrictions(RESTRICT_NOTDESTROYED);
+		SetPossibleCallers(ACTOR_PERSON);
+		SetPossibleEquipment(EQUIP_SHEARS);
+		SetPossibleExists(CPE_CAR_W_ENCLOSED_PERSON);
+	}
+
+	/*bool CheckPossible(GameObject *Caller)
+	{
+		if(!Caller->IsValid() || Caller->GetType() != ACTOR_PERSON || Caller->GetEquipment()!=EQUIP_SHEARS)
+			return false;
+		return Game::ExistsCarWithEnclosedPerson();
+	}*/
+
+	bool CheckTarget(GameObject *Caller, Actor *Target, int childID)
+	{
+		if(!Caller->IsValid() || !Target->IsValid() || (Caller->GetID()==Target->GetID()) || Target->GetType() != ACTOR_VEHICLE)
+			return false;
+
+		if (Caller->GetType() != ACTOR_PERSON)
+			return false;
+		Person p(Caller);
+		if(p.GetEnteredCarID() != -1)
+			return false;
+
+		Vehicle veh(Target);
+
+		//if (veh.IsPhysicsSimulationEnabled() && !veh.IsPhysicsFreezed())
+		//	return false;
+
+		bool quiet = true;
+		if (veh.IsPhysicsSimulationEnabled() && !veh.IsPhysicsFreezed())
+		{
+			Vector lin, ang;
+			veh.GetPhysicsLinearVelocity(0, lin);
+			veh.GetPhysicsLinearVelocity(0, ang);
+			if (lin.GetLen() > 8.0f && ang.GetLen() > 0.2f)
+				quiet = false;
+		}
+
+		if (!quiet && !veh.HasName("fgrr_signal"))
+			return false;
+
+		if (Caller->GetEquipment()==EQUIP_SHEARS && veh.IsValid() && veh.HasEnclosedPerson() && !veh.IsInsideWater()
+			&& !veh.IsCarried())
+			return true;
+		
+		return false;
+	}
+
+	void PushActions(GameObject *Caller, Actor *Target, int childID)
+	{
+		Vehicle veh(Target);
+		Vector TargetPos = veh.GetTargetPoint(Caller, TARGET_SHEARSDOOR);
+		
+		Caller->PushActionMove(ACTION_NEWLIST, TargetPos);
+		Caller->PushActionTurnTo(ACTION_APPEND, Target);
+		Caller->PushActionUseEquipment(ACTION_APPEND, Target, childID, 15.0f);  
+	}
+};
