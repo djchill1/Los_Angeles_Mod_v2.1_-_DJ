@@ -225,8 +225,9 @@ object AcmdFasterCalls : CommandScript
    void PushActions(GameObject *Caller, Actor *Target, int childID)
    {
 	float freq=Game::GetGlobalEventFrequencyFactor();
-	freq=freq+2.0;
+	freq=freq+0.2;
 	Game::SetGlobalEventFrequencyFactor(freq);
+  Game::ShowHelpTextWindow("Calls sped up");
    }
 };
 
@@ -251,9 +252,10 @@ object AcmdSlowerCalls : CommandScript
    void PushActions(GameObject *Caller, Actor *Target, int childID)
    {
 	float freq=Game::GetGlobalEventFrequencyFactor();
-	freq=freq-2.0;
+	freq=freq-0.2;
 	if (freq<0)
 		freq=0;
 	Game::SetGlobalEventFrequencyFactor(freq);
+  Game::ShowHelpTextWindow("Calls slowed up");
    }
 };
